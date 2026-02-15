@@ -38,7 +38,7 @@ interface GateData {
 }
 
 export function ReviewGateStatus({ sessionId }: ReviewGateStatusProps) {
-  const { data, loading, error } = useQuery(GET_REVIEW_GATE_STATUS, {
+  const { data, loading, error } = useQuery<any>(GET_REVIEW_GATE_STATUS, {
     variables: { sessionId },
   });
 
@@ -74,10 +74,11 @@ export function ReviewGateStatus({ sessionId }: ReviewGateStatusProps) {
   ];
 
   return (
-    <div className="space-y-2 rounded-lg border border-[var(--cortex-border)] p-4" data-testid="review-gate-status">
-      <h4 className="text-sm font-semibold text-[var(--cortex-text-primary)]">
-        Review Gates
-      </h4>
+    <div
+      className="space-y-2 rounded-lg border border-[var(--cortex-border)] p-4"
+      data-testid="review-gate-status"
+    >
+      <h4 className="text-sm font-semibold text-[var(--cortex-text-primary)]">Review Gates</h4>
       {gates.map((gate, i) => (
         <div key={i} className="flex items-center gap-2 text-sm" data-testid={`gate-${i}`}>
           {gate.met ? (

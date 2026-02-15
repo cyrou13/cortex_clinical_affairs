@@ -8,11 +8,13 @@ function makePrisma(overrides?: {
 }) {
   return {
     validationStudy: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.study !== undefined
-          ? overrides.study
-          : { id: 'study-1', status: 'IN_PROGRESS', type: 'STANDALONE' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.study !== undefined
+            ? overrides.study
+            : { id: 'study-1', status: 'IN_PROGRESS', type: 'STANDALONE' },
+        ),
     },
     dataImport: {
       findFirst: vi.fn().mockResolvedValue(
@@ -33,8 +35,20 @@ function makePrisma(overrides?: {
     acceptanceCriterion: {
       findMany: vi.fn().mockResolvedValue(
         overrides?.criteria ?? [
-          { id: 'crit-1', name: 'Sensitivity', threshold: 0.5, unit: '%', metricType: 'SENSITIVITY' },
-          { id: 'crit-2', name: 'Specificity', threshold: 0.5, unit: '%', metricType: 'SPECIFICITY' },
+          {
+            id: 'crit-1',
+            name: 'Sensitivity',
+            threshold: 0.5,
+            unit: '%',
+            metricType: 'SENSITIVITY',
+          },
+          {
+            id: 'crit-2',
+            name: 'Specificity',
+            threshold: 0.5,
+            unit: '%',
+            metricType: 'SPECIFICITY',
+          },
         ],
       ),
     },
@@ -74,9 +88,7 @@ describe('MapResultsUseCase', () => {
       userId: 'user-1',
     });
 
-    const sensitivityResult = result.endpointResults.find(
-      (r) => r.criterionName === 'Sensitivity',
-    );
+    const sensitivityResult = result.endpointResults.find((r) => r.criterionName === 'Sensitivity');
     expect(sensitivityResult).toBeDefined();
     expect(sensitivityResult!.computedValue).toBeCloseTo(2 / 3, 4);
     expect(sensitivityResult!.result).toBe('MET'); // 0.667 >= 0.5
@@ -92,9 +104,7 @@ describe('MapResultsUseCase', () => {
       userId: 'user-1',
     });
 
-    const specificityResult = result.endpointResults.find(
-      (r) => r.criterionName === 'Specificity',
-    );
+    const specificityResult = result.endpointResults.find((r) => r.criterionName === 'Specificity');
     expect(specificityResult).toBeDefined();
     expect(specificityResult!.computedValue).toBe(1.0);
     expect(specificityResult!.result).toBe('MET');
@@ -113,7 +123,7 @@ describe('MapResultsUseCase', () => {
       userId: 'user-1',
     });
 
-    expect(result.endpointResults[0].result).toBe('NOT_MET');
+    expect(result.endpointResults[0]!.result).toBe('NOT_MET');
     expect(result.overallNotMet).toBe(1);
   });
 
@@ -144,10 +154,10 @@ describe('MapResultsUseCase', () => {
       userId: 'user-1',
     });
 
-    expect(result.endpointResults[0].statistics).toBeDefined();
-    expect(result.endpointResults[0].statistics!.sampleSize).toBe(5);
-    expect(result.endpointResults[0].statistics!.sensitivityCI).toBeDefined();
-    expect(result.endpointResults[0].statistics!.specificityCI).toBeDefined();
+    expect(result.endpointResults[0]!.statistics).toBeDefined();
+    expect(result.endpointResults[0]!.statistics!.sampleSize).toBe(5);
+    expect(result.endpointResults[0]!.statistics!.sensitivityCI).toBeDefined();
+    expect(result.endpointResults[0]!.statistics!.specificityCI).toBeDefined();
   });
 
   it('throws when study not found', async () => {
@@ -200,9 +210,7 @@ describe('MapResultsUseCase', () => {
 
   it('handles PPV metric type', async () => {
     const prisma = makePrisma({
-      criteria: [
-        { id: 'crit-1', name: 'PPV', threshold: 0.5, unit: '%', metricType: 'PPV' },
-      ],
+      criteria: [{ id: 'crit-1', name: 'PPV', threshold: 0.5, unit: '%', metricType: 'PPV' }],
     });
     const useCase = new MapResultsUseCase(prisma);
 
@@ -212,14 +220,12 @@ describe('MapResultsUseCase', () => {
     });
 
     // PPV = 2 / (2 + 0) = 1.0 (no false positives in our test data)
-    expect(result.endpointResults[0].computedValue).toBe(1.0);
+    expect(result.endpointResults[0]!.computedValue).toBe(1.0);
   });
 
   it('handles NPV metric type', async () => {
     const prisma = makePrisma({
-      criteria: [
-        { id: 'crit-1', name: 'NPV', threshold: 0.5, unit: '%', metricType: 'NPV' },
-      ],
+      criteria: [{ id: 'crit-1', name: 'NPV', threshold: 0.5, unit: '%', metricType: 'NPV' }],
     });
     const useCase = new MapResultsUseCase(prisma);
 
@@ -229,7 +235,7 @@ describe('MapResultsUseCase', () => {
     });
 
     // NPV = 2 / (2 + 1) = 0.667
-    expect(result.endpointResults[0].computedValue).toBeCloseTo(2 / 3, 4);
+    expect(result.endpointResults[0]!.computedValue).toBeCloseTo(2 / 3, 4);
   });
 
   it('defaults to sensitivity for unknown metric type', async () => {
@@ -246,6 +252,6 @@ describe('MapResultsUseCase', () => {
     });
 
     // Falls back to sensitivity = 2/3
-    expect(result.endpointResults[0].computedValue).toBeCloseTo(2 / 3, 4);
+    expect(result.endpointResults[0]!.computedValue).toBeCloseTo(2 / 3, 4);
   });
 });

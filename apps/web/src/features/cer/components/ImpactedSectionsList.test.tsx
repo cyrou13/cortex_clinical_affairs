@@ -4,9 +4,30 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { ImpactedSectionsList } from './ImpactedSectionsList';
 
 const mockSections = [
-  { id: 's-1', sectionNumber: 3, title: 'Clinical Data', referencedDoc: 'IFU v1.0', mismatchDetails: 'IFU updated to v2.0', acknowledged: false },
-  { id: 's-2', sectionNumber: 7, title: 'Risk Analysis', referencedDoc: 'Risk File v1.0', mismatchDetails: 'Risk file updated to v1.1', acknowledged: true },
-  { id: 's-3', sectionNumber: 10, title: 'PMCF Plan', referencedDoc: 'IFU v1.0', mismatchDetails: 'IFU updated to v2.0', acknowledged: false },
+  {
+    id: 's-1',
+    sectionNumber: 3,
+    title: 'Clinical Data',
+    referencedDoc: 'IFU v1.0',
+    mismatchDetails: 'IFU updated to v2.0',
+    acknowledged: false,
+  },
+  {
+    id: 's-2',
+    sectionNumber: 7,
+    title: 'Risk Analysis',
+    referencedDoc: 'Risk File v1.0',
+    mismatchDetails: 'Risk file updated to v1.1',
+    acknowledged: true,
+  },
+  {
+    id: 's-3',
+    sectionNumber: 10,
+    title: 'PMCF Plan',
+    referencedDoc: 'IFU v1.0',
+    mismatchDetails: 'IFU updated to v2.0',
+    acknowledged: false,
+  },
 ];
 
 describe('ImpactedSectionsList', () => {
@@ -36,7 +57,7 @@ describe('ImpactedSectionsList', () => {
     const onAck = vi.fn();
     render(<ImpactedSectionsList sections={mockSections} onAcknowledge={onAck} />);
     const ackBtns = screen.getAllByTestId('acknowledge-btn');
-    fireEvent.click(ackBtns[0]);
+    fireEvent.click(ackBtns[0]!);
     expect(onAck).toHaveBeenCalledWith('s-1');
   });
 
@@ -50,7 +71,7 @@ describe('ImpactedSectionsList', () => {
     const onUpdate = vi.fn();
     render(<ImpactedSectionsList sections={mockSections} onUpdateReference={onUpdate} />);
     const updateBtns = screen.getAllByTestId('update-ref-btn');
-    fireEvent.click(updateBtns[0]);
+    fireEvent.click(updateBtns[0]!);
     expect(onUpdate).toHaveBeenCalledWith('s-1');
   });
 });

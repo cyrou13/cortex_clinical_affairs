@@ -28,8 +28,12 @@ interface UpstreamModuleSelectorProps {
   onSelectionChange: (ids: string[]) => void;
 }
 
-export function UpstreamModuleSelector({ projectId, selectedIds, onSelectionChange }: UpstreamModuleSelectorProps) {
-  const { data, loading } = useQuery(GET_UPSTREAM_MODULES, { variables: { projectId } });
+export function UpstreamModuleSelector({
+  projectId,
+  selectedIds,
+  onSelectionChange,
+}: UpstreamModuleSelectorProps) {
+  const { data, loading } = useQuery<any>(GET_UPSTREAM_MODULES, { variables: { projectId } });
 
   const modules: UpstreamModule[] = data?.upstreamModules ?? [];
 
@@ -42,7 +46,11 @@ export function UpstreamModuleSelector({ projectId, selectedIds, onSelectionChan
   };
 
   if (loading) {
-    return <div className="py-4 text-center text-sm text-[var(--cortex-text-muted)]">Loading modules...</div>;
+    return (
+      <div className="py-4 text-center text-sm text-[var(--cortex-text-muted)]">
+        Loading modules...
+      </div>
+    );
   }
 
   return (
@@ -67,21 +75,34 @@ export function UpstreamModuleSelector({ projectId, selectedIds, onSelectionChan
             />
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-[var(--cortex-text-primary)]">{mod.name}</span>
-                <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">{mod.type}</span>
+                <span className="text-sm font-medium text-[var(--cortex-text-primary)]">
+                  {mod.name}
+                </span>
+                <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+                  {mod.type}
+                </span>
               </div>
               {isLocked && (
-                <div className="mt-1 flex items-center gap-1 text-xs text-emerald-600" data-testid="lock-date">
+                <div
+                  className="mt-1 flex items-center gap-1 text-xs text-emerald-600"
+                  data-testid="lock-date"
+                >
                   <Lock size={10} /> Locked {mod.lockedAt}
                 </div>
               )}
             </div>
             {isLocked ? (
-              <span className="inline-flex items-center gap-1 rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700" data-testid="locked-badge">
+              <span
+                className="inline-flex items-center gap-1 rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700"
+                data-testid="locked-badge"
+              >
                 <CheckCircle size={10} /> Locked
               </span>
             ) : (
-              <span className="text-xs text-[var(--cortex-text-muted)]" title="Module must be locked before linking">
+              <span
+                className="text-xs text-[var(--cortex-text-muted)]"
+                title="Module must be locked before linking"
+              >
                 Not locked
               </span>
             )}

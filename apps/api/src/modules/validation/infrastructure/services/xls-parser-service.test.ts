@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  getSchemaForStudyType,
-  validateXlsData,
-  parseXlsContent,
-} from './xls-parser-service.js';
+import { getSchemaForStudyType, validateXlsData, parseXlsContent } from './xls-parser-service.js';
 
 describe('XlsParserService', () => {
   describe('getSchemaForStudyType', () => {
@@ -74,13 +70,13 @@ describe('XlsParserService', () => {
 
     it('flags missing required values in rows', () => {
       const headers = ['case_id', 'ground_truth', 'prediction'];
-      const rows = [
-        { case_id: 'C001', ground_truth: '', prediction: 'POSITIVE' },
-      ];
+      const rows = [{ case_id: 'C001', ground_truth: '', prediction: 'POSITIVE' }];
 
       const result = validateXlsData(headers, rows, standaloneSchema);
       expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('Row 1') && e.includes('ground_truth'))).toBe(true);
+      expect(result.errors.some((e) => e.includes('Row 1') && e.includes('ground_truth'))).toBe(
+        true,
+      );
     });
 
     it('flags invalid number types', () => {
@@ -91,14 +87,14 @@ describe('XlsParserService', () => {
 
       const result = validateXlsData(headers, rows, standaloneSchema);
       expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('confidence') && e.includes('number'))).toBe(true);
+      expect(result.errors.some((e) => e.includes('confidence') && e.includes('number'))).toBe(
+        true,
+      );
     });
 
     it('allows null optional fields', () => {
       const headers = ['case_id', 'ground_truth', 'prediction', 'confidence'];
-      const rows = [
-        { case_id: 'C001', ground_truth: 'POS', prediction: 'POS', confidence: null },
-      ];
+      const rows = [{ case_id: 'C001', ground_truth: 'POS', prediction: 'POS', confidence: null }];
 
       const result = validateXlsData(headers, rows, standaloneSchema);
       expect(result.valid).toBe(true);
@@ -107,9 +103,7 @@ describe('XlsParserService', () => {
     it('validates MRMC schema with reader_id', () => {
       const mrmcSchema = getSchemaForStudyType('MRMC');
       const headers = ['case_id', 'reader_id', 'ground_truth', 'prediction'];
-      const rows = [
-        { case_id: 'C001', reader_id: 'R1', ground_truth: 'POS', prediction: 'POS' },
-      ];
+      const rows = [{ case_id: 'C001', reader_id: 'R1', ground_truth: 'POS', prediction: 'POS' }];
 
       const result = validateXlsData(headers, rows, mrmcSchema);
       expect(result.valid).toBe(true);
@@ -118,9 +112,7 @@ describe('XlsParserService', () => {
     it('flags missing reader_id in MRMC schema', () => {
       const mrmcSchema = getSchemaForStudyType('MRMC');
       const headers = ['case_id', 'ground_truth', 'prediction'];
-      const rows = [
-        { case_id: 'C001', ground_truth: 'POS', prediction: 'POS' },
-      ];
+      const rows = [{ case_id: 'C001', ground_truth: 'POS', prediction: 'POS' }];
 
       const result = validateXlsData(headers, rows, mrmcSchema);
       expect(result.valid).toBe(false);
@@ -151,7 +143,7 @@ describe('XlsParserService', () => {
       const rawRows = [['C001', 'POSITIVE']]; // prediction missing
 
       const result = parseXlsContent(headers, rawRows);
-      expect(result.rows[0].prediction).toBeNull();
+      expect(result.rows[0]?.prediction).toBeNull();
     });
 
     it('returns correct headers', () => {

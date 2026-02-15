@@ -161,8 +161,8 @@ describe('ScreeningPanel', () => {
     // Abstract for art-1 is long, should be truncated to 50 chars + ellipsis
     const rows = screen.getAllByRole('row');
     // First data row (index 1, since 0 is header)
-    const cells = rows[1].querySelectorAll('td');
-    expect(cells[2].textContent!.length).toBeLessThanOrEqual(54); // 50 + "..."
+    const cells = rows[1]!.querySelectorAll('td');
+    expect(cells[2]!.textContent!.length).toBeLessThanOrEqual(54); // 50 + "..."
   });
 
   it('shows error state', () => {

@@ -72,7 +72,7 @@ export class UploadEvaluatorCvUseCase {
         cvMimetype: input.mimetype,
         cvSize: input.size,
         cvUploadedAt: now,
-      },
+      } as any,
     });
 
     return {

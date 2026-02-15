@@ -67,16 +67,18 @@ export class RenumberReferencesUseCase {
       // Collect bibliography refs in order of appearance
       const bibMatches = text.matchAll(/\[(\d+)\]/g);
       for (const match of bibMatches) {
-        if (!bibRefsInOrder.includes(match[1])) {
-          bibRefsInOrder.push(match[1]);
+        const captured = match[1];
+        if (captured && !bibRefsInOrder.includes(captured)) {
+          bibRefsInOrder.push(captured);
         }
       }
 
       // Collect external doc refs in order of appearance
       const extMatches = text.matchAll(/\[(R\d+)\]/g);
       for (const match of extMatches) {
-        if (!extRefsInOrder.includes(match[1])) {
-          extRefsInOrder.push(match[1]);
+        const captured = match[1];
+        if (captured && !extRefsInOrder.includes(captured)) {
+          extRefsInOrder.push(captured);
         }
       }
     }

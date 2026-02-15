@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, NamedDeviceSearchStatus } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
 import { createNamedDeviceSearch } from '../../domain/entities/named-device-search.js';
 
@@ -48,7 +48,7 @@ export class CreateNamedDeviceSearchUseCase {
         deviceName: search.deviceName,
         keywords: search.keywords,
         databases: search.databases,
-        status: search.status,
+        status: search.status as NamedDeviceSearchStatus,
         totalFindings: 0,
         createdById: userId,
       },

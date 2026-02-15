@@ -129,6 +129,7 @@ export class GenerateComplianceStatementUseCase {
           sectionNumber: 'ANNEX-GSPR',
           title: 'GSPR Compliance Statement',
           status: 'DRAFT',
+          orderIndex: 99,
           aiDraftContent: { statementText, summary, gaps } as unknown as Prisma.InputJsonValue,
           createdById: userId,
         },

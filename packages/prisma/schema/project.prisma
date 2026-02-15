@@ -1,13 +1,13 @@
 model Project {
-  id               String        @id @default(uuid())
-  name             String
-  deviceName       String
-  deviceClass      String
+  id                String        @id @default(uuid())
+  name              String
+  deviceName        String
+  deviceClass       String
   regulatoryContext String
-  status           ProjectStatus @default(ACTIVE)
-  createdBy        String
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  status            ProjectStatus @default(ACTIVE)
+  createdBy         String
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   cep         Cep?
   members     ProjectMember[]

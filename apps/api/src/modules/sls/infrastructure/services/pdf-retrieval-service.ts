@@ -54,7 +54,7 @@ export class PdfRetrievalService {
       return { found: false, source: null, pdfBuffer: null, pdfUrl: null };
     }
 
-    const pdfUrl = pdfUrlMatch[1];
+    const pdfUrl = pdfUrlMatch[1]!;
     const pdfResponse = await fetchWithTimeout(pdfUrl, SOURCE_TIMEOUT);
     const pdfBuffer = Buffer.from(await pdfResponse.arrayBuffer());
 
@@ -71,7 +71,7 @@ export class PdfRetrievalService {
       return { found: false, source: null, pdfBuffer: null, pdfUrl: null };
     }
 
-    const data = await response.json();
+    const data: any = await response.json();
     const pdfUrl = data.best_oa_location?.url_for_pdf;
 
     if (!pdfUrl) {
@@ -94,7 +94,7 @@ export class PdfRetrievalService {
       return { found: false, source: null, pdfBuffer: null, pdfUrl: null };
     }
 
-    const data = await response.json();
+    const data: any = await response.json();
     const result = data.resultList?.result?.[0];
     const pdfUrl = result?.fullTextUrlList?.fullTextUrl?.find(
       (u: { documentStyle: string }) => u.documentStyle === 'pdf',

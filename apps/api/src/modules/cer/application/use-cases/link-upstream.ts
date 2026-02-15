@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, CerUpstreamModuleType } from '@prisma/client';
 import {
   NotFoundError,
   ValidationError,
@@ -62,7 +62,7 @@ export class LinkUpstreamUseCase {
     const existingLink = await this.prisma.cerUpstreamLink.findFirst({
       where: {
         cerVersionId,
-        moduleType,
+        moduleType: moduleType as CerUpstreamModuleType,
         moduleId,
       },
     });
@@ -75,13 +75,13 @@ export class LinkUpstreamUseCase {
 
     // Create link
     const linkId = crypto.randomUUID();
-    const lockedAt = new Date(module.lockedAt).toISOString();
+    const lockedAt = new Date(module.lockedAt!).toISOString();
 
     await this.prisma.cerUpstreamLink.create({
       data: {
         id: linkId,
         cerVersionId,
-        moduleType,
+        moduleType: moduleType as CerUpstreamModuleType,
         moduleId,
         lockedAt,
       },
@@ -99,7 +99,7 @@ export class LinkUpstreamUseCase {
   private async findLockedModule(
     moduleType: string,
     moduleId: string,
-  ): Promise<{ id: string; status: string; lockedAt: Date } | null> {
+  ): Promise<{ id: string; status: string; lockedAt: Date | null } | null> {
     switch (moduleType) {
       case 'SLS':
         return this.prisma.slsSession.findUnique({

@@ -23,7 +23,7 @@ interface CerAssemblerProps {
 }
 
 export function CerAssembler({ cerId, prerequisites, onAssemblyStarted }: CerAssemblerProps) {
-  const [assembleCer, { loading: assembling }] = useMutation(ASSEMBLE_CER);
+  const [assembleCer, { loading: assembling }] = useMutation<any>(ASSEMBLE_CER);
 
   const allMet = prerequisites.every((p) => p.met);
 
@@ -53,7 +53,11 @@ export function CerAssembler({ cerId, prerequisites, onAssemblyStarted }: CerAss
             ) : (
               <AlertTriangle size={14} className="text-orange-500" />
             )}
-            <span className={check.met ? 'text-[var(--cortex-text-primary)]' : 'text-[var(--cortex-text-muted)]'}>
+            <span
+              className={
+                check.met ? 'text-[var(--cortex-text-primary)]' : 'text-[var(--cortex-text-muted)]'
+              }
+            >
               {check.label}
             </span>
           </div>
@@ -61,7 +65,10 @@ export function CerAssembler({ cerId, prerequisites, onAssemblyStarted }: CerAss
       </div>
 
       {!allMet && (
-        <div className="rounded border border-orange-200 bg-orange-50 p-3 text-xs text-orange-700" data-testid="prerequisite-warning">
+        <div
+          className="rounded border border-orange-200 bg-orange-50 p-3 text-xs text-orange-700"
+          data-testid="prerequisite-warning"
+        >
           <AlertTriangle size={12} className="mr-1 inline" />
           All prerequisites must be met before assembly.
         </div>

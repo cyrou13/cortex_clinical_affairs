@@ -43,7 +43,7 @@ export class AddManualArticleUseCase {
         sourceDatabase: 'MANUAL',
         pdfStatus: 'MANUAL_UPLOAD',
         pdfStorageKey,
-        pdfSource: 'MANUAL_UPLOAD',
+        source: 'MANUAL_UPLOAD',
       },
     });
 

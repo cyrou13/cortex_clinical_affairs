@@ -158,10 +158,12 @@ export class ManageImportVersionsUseCase {
       }
 
       // Compare fields
-      const allKeys = new Set([...Object.keys(rowsA[i]), ...Object.keys(rowsB[i])]);
+      const rowA = rowsA[i]!;
+      const rowB = rowsB[i]!;
+      const allKeys = new Set([...Object.keys(rowA), ...Object.keys(rowB)]);
       for (const key of allKeys) {
-        const valA = rowsA[i][key];
-        const valB = rowsB[i][key];
+        const valA = rowA[key];
+        const valB = rowB[key];
         if (JSON.stringify(valA) !== JSON.stringify(valB)) {
           modifications++;
           details.push({

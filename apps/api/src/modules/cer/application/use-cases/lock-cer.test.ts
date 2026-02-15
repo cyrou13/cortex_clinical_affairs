@@ -77,26 +77,32 @@ function makePrisma(overrides?: {
       findMany: vi.fn().mockResolvedValue(overrides?.sections ?? defaultSections),
     },
     claimTrace: {
-      count: vi.fn().mockResolvedValue(
-        overrides?.claimTraceCount !== undefined ? overrides.claimTraceCount : 10,
-      ),
+      count: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.claimTraceCount !== undefined ? overrides.claimTraceCount : 10,
+        ),
     },
     evaluator: {
       findMany: vi.fn().mockResolvedValue(overrides?.evaluators ?? defaultEvaluators),
     },
     gsprMapping: {
-      findFirst: vi.fn().mockResolvedValue(
-        overrides?.gsprMapping !== undefined
-          ? overrides.gsprMapping
-          : { id: 'gspr-1', status: 'FINALIZED' },
-      ),
+      findFirst: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.gsprMapping !== undefined
+            ? overrides.gsprMapping
+            : { id: 'gspr-1', status: 'FINALIZED' },
+        ),
     },
     benefitRiskAssessment: {
-      findFirst: vi.fn().mockResolvedValue(
-        overrides?.benefitRisk !== undefined
-          ? overrides.benefitRisk
-          : { id: 'br-1', status: 'FINALIZED' },
-      ),
+      findFirst: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.benefitRisk !== undefined
+            ? overrides.benefitRisk
+            : { id: 'br-1', status: 'FINALIZED' },
+        ),
     },
     auditLog: {
       create: vi.fn().mockResolvedValue({}),
@@ -107,9 +113,7 @@ function makePrisma(overrides?: {
     validationStudy: { findMany: vi.fn().mockResolvedValue([]) },
     pmsRecord: { findMany: vi.fn().mockResolvedValue([]) },
     versionSnapshot: {
-      create: vi.fn().mockImplementation(({ data }) =>
-        Promise.resolve({ id: data.id, ...data }),
-      ),
+      create: vi.fn().mockImplementation(({ data }) => Promise.resolve({ id: data.id, ...data })),
     },
   } as any;
 }
@@ -155,9 +159,9 @@ describe('LockCerUseCase', () => {
     const prisma = makePrisma({ cerVersion: null });
     const useCase = new LockCerUseCase(prisma, eventBus, checksumService);
 
-    await expect(
-      useCase.execute({ cerVersionId: 'missing', userId: USER_ID }),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute({ cerVersionId: 'missing', userId: USER_ID })).rejects.toThrow(
+      'not found',
+    );
   });
 
   it('throws LockConflictError when already locked', async () => {
@@ -191,7 +195,7 @@ describe('LockCerUseCase', () => {
     const sections = Array.from({ length: 14 }, (_, i) =>
       makeSection({ id: `sec-${i}`, sectionType: `SECTION_${i}` }),
     );
-    sections[0].status = 'DRAFT';
+    sections[0]!.status = 'DRAFT';
 
     const prisma = makePrisma({ sections });
     const useCase = new LockCerUseCase(prisma, eventBus, checksumService);

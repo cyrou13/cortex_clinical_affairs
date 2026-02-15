@@ -16,6 +16,8 @@
   "dependencies": {
     "@apollo/server": "^5.4.0",
     "@as-integrations/fastify": "^3.1.0",
+    "@aws-sdk/client-s3": "^3.990.0",
+    "@aws-sdk/s3-request-presigner": "^3.990.0",
     "@cortex/shared": "workspace:*",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.2.0",

@@ -1,7 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
 import { isValidGapSeverity } from '../../domain/value-objects/gap-severity.js';
-import { canTransitionGap } from '../../domain/value-objects/gap-status.js';
+import { canTransitionGap, type GapStatus } from '../../domain/value-objects/gap-status.js';
 
 interface UpdateGapEntryInput {
   gapEntryId: string;
@@ -43,14 +43,15 @@ export class UpdateGapEntryUseCase {
       throw new ValidationError(`Invalid gap severity: ${input.severity}`);
     }
 
-    if (input.status && !canTransitionGap(gap.status, input.status as any)) {
+    if (input.status && !canTransitionGap(gap.status as GapStatus, input.status as GapStatus)) {
       throw new ValidationError(`Cannot transition gap from ${gap.status} to ${input.status}`);
     }
 
     const updateData: Record<string, unknown> = {};
     if (input.description !== undefined) updateData.description = input.description;
     if (input.severity !== undefined) updateData.severity = input.severity;
-    if (input.recommendedActivity !== undefined) updateData.recommendedActivity = input.recommendedActivity;
+    if (input.recommendedActivity !== undefined)
+      updateData.recommendedActivity = input.recommendedActivity;
     if (input.status !== undefined) {
       updateData.status = input.status;
       if (input.status === 'RESOLVED') {
@@ -65,7 +66,10 @@ export class UpdateGapEntryUseCase {
       data: updateData,
     });
 
-    return updated;
+    return {
+      ...updated,
+      resolvedAt: updated.resolvedAt?.toISOString() ?? null,
+    };
   }
 
   async addManual(input: {
@@ -93,6 +97,9 @@ export class UpdateGapEntryUseCase {
       },
     });
 
-    return gap;
+    return {
+      ...gap,
+      resolvedAt: gap.resolvedAt?.toISOString() ?? null,
+    };
   }
 }

@@ -120,7 +120,7 @@ function formatVancouverAuthors(authors: string[]): string {
 
 function formatAuthorYearAuthors(authors: string[]): string {
   if (authors.length === 0) return '';
-  if (authors.length === 1) return authors[0];
+  if (authors.length === 1) return authors[0] ?? '';
   if (authors.length === 2) return `${authors[0]} & ${authors[1]}`;
   return `${authors[0]} et al.`;
 }

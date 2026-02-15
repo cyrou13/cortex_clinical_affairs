@@ -1,4 +1,4 @@
-import type { PrismaClient, Prisma } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
 import type { StorageService } from '../../infrastructure/services/minio-storage-service.js';
 import type { PdfVerificationService } from '../../infrastructure/services/pdf-verification-service.js';
@@ -44,7 +44,7 @@ export class UploadPdfUseCase {
     // Verify PDF
     const verification = await this.verifier.verify(pdfText, {
       title: article.title ?? '',
-      authors: article.authors ?? [],
+      authors: (article.authors ?? []) as { firstName?: string; lastName: string }[],
     });
 
     const pdfStatus = verification.verified ? 'VERIFIED' : 'MISMATCH';
@@ -55,9 +55,9 @@ export class UploadPdfUseCase {
       data: {
         pdfStatus,
         pdfStorageKey: storageKey,
-        pdfSource: 'MANUAL_UPLOAD',
+        source: 'MANUAL_UPLOAD',
         pdfVerificationResult: verification as unknown as Prisma.InputJsonValue,
-      },
+      } as any,
     });
 
     return {

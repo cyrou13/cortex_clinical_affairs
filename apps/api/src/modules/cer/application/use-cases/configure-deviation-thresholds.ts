@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, MandatoryJustificationLevel } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -51,7 +51,8 @@ export class ConfigureDeviationThresholdsUseCase {
       const updated = await this.prisma.pccpDeviationConfig.update({
         where: { id: existing.id },
         data: {
-          mandatoryJustificationLevel: input.mandatoryJustificationLevel,
+          mandatoryJustificationLevel:
+            input.mandatoryJustificationLevel as MandatoryJustificationLevel,
           updatedById: input.userId,
         },
       });
@@ -69,8 +70,10 @@ export class ConfigureDeviationThresholdsUseCase {
       data: {
         id: configId,
         cerVersionId: input.cerVersionId,
-        mandatoryJustificationLevel: input.mandatoryJustificationLevel,
+        mandatoryJustificationLevel:
+          input.mandatoryJustificationLevel as MandatoryJustificationLevel,
         createdById: input.userId,
+        updatedById: input.userId,
       },
     });
 

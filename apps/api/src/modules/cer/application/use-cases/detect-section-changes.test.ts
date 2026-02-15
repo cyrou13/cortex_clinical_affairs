@@ -123,8 +123,8 @@ describe('DetectSectionChangesUseCase', () => {
     });
 
     expect(result.upstreamChanges).toHaveLength(1);
-    expect(result.upstreamChanges[0].changeType).toBe('MODIFIED');
-    expect(result.upstreamChanges[0].moduleType).toBe('SLS');
+    expect(result.upstreamChanges[0]!.changeType).toBe('MODIFIED');
+    expect(result.upstreamChanges[0]!.moduleType).toBe('SLS');
   });
 
   it('detects added upstream module', async () => {
@@ -181,14 +181,10 @@ describe('DetectSectionChangesUseCase', () => {
       previousVersionId: PREV_VERSION_ID,
     });
 
-    const litReview = result.affectedSections.find(
-      (s) => s.sectionType === 'LITERATURE_REVIEW',
-    );
+    const litReview = result.affectedSections.find((s) => s.sectionType === 'LITERATURE_REVIEW');
     expect(litReview!.requiresUpdate).toBe(true);
 
-    const execSummary = result.affectedSections.find(
-      (s) => s.sectionType === 'EXECUTIVE_SUMMARY',
-    );
+    const execSummary = result.affectedSections.find((s) => s.sectionType === 'EXECUTIVE_SUMMARY');
     expect(execSummary!.requiresUpdate).toBe(false);
   });
 

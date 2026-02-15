@@ -43,7 +43,7 @@ describe('SectionNavigator', () => {
     const onNav = vi.fn();
     render(<SectionNavigator sections={mockSections} activeSection={1} onNavigate={onNav} />);
     const items = screen.getAllByTestId('nav-section-item');
-    fireEvent.click(items[2]);
+    fireEvent.click(items[2]!);
     expect(onNav).toHaveBeenCalledWith(3);
   });
 

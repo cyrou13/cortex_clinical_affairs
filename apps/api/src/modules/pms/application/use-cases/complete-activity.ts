@@ -1,7 +1,11 @@
+import { Prisma } from '@prisma/client';
 import type { PrismaClient } from '@prisma/client';
 import type { EventBus } from '../../../../shared/events/event-bus.js';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
-import { canTransitionActivity } from '../../domain/value-objects/activity-status.js';
+import {
+  canTransitionActivity,
+  type ActivityStatus,
+} from '../../domain/value-objects/activity-status.js';
 import { createActivityCompletedEvent } from '../../domain/events/pms-events.js';
 
 interface CompleteActivityInput {
@@ -34,7 +38,7 @@ export class CompleteActivityUseCase {
       throw new NotFoundError('PmcfActivity', input.activityId);
     }
 
-    if (!canTransitionActivity(activity.status, 'COMPLETED')) {
+    if (!canTransitionActivity(activity.status as ActivityStatus, 'COMPLETED')) {
       throw new ValidationError(`Cannot complete activity in ${activity.status} status`);
     }
 
@@ -55,12 +59,19 @@ export class CompleteActivityUseCase {
         completedAt: now,
         findingsSummary: input.findingsSummary.trim(),
         conclusions: input.conclusions.trim(),
-        dataCollected: input.dataCollected ?? null,
+        dataCollected: input.dataCollected
+          ? (input.dataCollected as Prisma.InputJsonValue)
+          : Prisma.DbNull,
       },
     });
 
     const event = createActivityCompletedEvent(
-      { activityId: input.activityId, pmsCycleId: activity.pmsCycleId, activityType: activity.activityType, status: 'COMPLETED' },
+      {
+        activityId: input.activityId,
+        pmsCycleId: activity.pmsCycleId,
+        activityType: activity.activityType,
+        status: 'COMPLETED',
+      },
       input.userId,
       crypto.randomUUID(),
     );

@@ -1,7 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 import type { EventBus } from '../../../../shared/events/event-bus.js';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
-import { canTransitionCycle } from '../../domain/value-objects/cycle-status.js';
+import { canTransitionCycle, type CycleStatus } from '../../domain/value-objects/cycle-status.js';
 import { createPmsCycleCompletedEvent } from '../../domain/events/pms-events.js';
 
 interface CompleteCycleResult {
@@ -26,7 +26,7 @@ export class CompleteCycleUseCase {
       throw new NotFoundError('PmsCycle', cycleId);
     }
 
-    if (!canTransitionCycle(cycle.status, 'COMPLETED')) {
+    if (!canTransitionCycle(cycle.status as CycleStatus, 'COMPLETED')) {
       throw new ValidationError(`Cannot complete cycle in ${cycle.status} status`);
     }
 
@@ -35,7 +35,9 @@ export class CompleteCycleUseCase {
     });
 
     if (incompleteActivities > 0) {
-      throw new ValidationError(`Cannot complete cycle: ${incompleteActivities} activities are not completed`);
+      throw new ValidationError(
+        `Cannot complete cycle: ${incompleteActivities} activities are not completed`,
+      );
     }
 
     const now = new Date();

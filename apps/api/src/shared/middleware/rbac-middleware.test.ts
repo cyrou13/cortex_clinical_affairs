@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   requireAuth,
   checkPermission,
@@ -20,8 +20,9 @@ function makeCtx(overrides: Partial<GraphQLContext> = {}): GraphQLContext {
     } as unknown as GraphQLContext['prisma'],
     user: { id: 'user-1', role: 'ADMIN' },
     requestId: 'req-1',
+    reply: {} as GraphQLContext['reply'],
     ...overrides,
-  };
+  } as GraphQLContext;
 }
 
 describe('RBAC Middleware', () => {
@@ -98,9 +99,9 @@ describe('RBAC Middleware', () => {
 
     it('denies write on locked document for non-Admin', () => {
       const ctx = makeCtx({ user: { id: 'u2', role: 'RA_MANAGER' } });
-      expect(() =>
-        checkDocumentStatusAccess(ctx, 'sls', 'write', { status: 'LOCKED' }),
-      ).toThrow('Document is locked');
+      expect(() => checkDocumentStatusAccess(ctx, 'sls', 'write', { status: 'LOCKED' })).toThrow(
+        'Document is locked',
+      );
     });
 
     it('allows Admin to write on locked document', () => {

@@ -126,16 +126,12 @@ describe('DocxBuilder', () => {
 
   describe('createNumberedList', () => {
     it('creates numbered list from items', () => {
-      const list = builder.createNumberedList([
-        'First item',
-        'Second item',
-        'Third item',
-      ]);
+      const list = builder.createNumberedList(['First item', 'Second item', 'Third item']);
 
       expect(list.type).toBe('numbered-list');
       expect(list.items).toHaveLength(3);
-      expect(list.items[0].text).toBe('First item');
-      expect(list.items[0].level).toBe(0);
+      expect(list.items[0]!.text).toBe('First item');
+      expect(list.items[0]!.level).toBe(0);
     });
 
     it('uses body font style', () => {
@@ -152,7 +148,7 @@ describe('DocxBuilder', () => {
 
       expect(list.type).toBe('bullet-list');
       expect(list.items).toHaveLength(2);
-      expect(list.items[1].text).toBe('Beta');
+      expect(list.items[1]!.text).toBe('Beta');
     });
 
     it('handles single item', () => {
@@ -227,10 +223,7 @@ describe('DocxBuilder', () => {
 
   describe('fluent chaining', () => {
     it('supports method chaining for setTitle and setAuthor', () => {
-      const doc = builder
-        .setTitle('Report')
-        .setAuthor('System')
-        .build();
+      const doc = builder.setTitle('Report').setAuthor('System').build();
 
       expect(doc.metadata.title).toBe('Report');
       expect(doc.metadata.author).toBe('System');
@@ -261,11 +254,11 @@ describe('DocxBuilder', () => {
       const doc = builder.build();
 
       expect(doc.elements).toHaveLength(10);
-      expect(doc.elements[0].type).toBe('heading');
-      expect(doc.elements[5].type).toBe('table');
-      expect(doc.elements[6].type).toBe('page-break');
-      expect(doc.elements[8].type).toBe('numbered-list');
-      expect(doc.elements[9].type).toBe('bullet-list');
+      expect(doc.elements[0]!.type).toBe('heading');
+      expect(doc.elements[5]!.type).toBe('table');
+      expect(doc.elements[6]!.type).toBe('page-break');
+      expect(doc.elements[8]!.type).toBe('numbered-list');
+      expect(doc.elements[9]!.type).toBe('bullet-list');
     });
   });
 });

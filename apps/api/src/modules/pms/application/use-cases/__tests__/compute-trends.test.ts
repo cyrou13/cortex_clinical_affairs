@@ -49,15 +49,15 @@ describe('ComputeTrendsUseCase', () => {
     expect(result.severityDistribution).toEqual({ HIGH: 2, LOW: 1 });
     expect(result.classificationDistribution).toEqual({ MALFUNCTION: 2, INJURY: 1 });
     expect(result.complaintTrends).toHaveLength(1);
-    expect(result.complaintTrends[0].complaintCount).toBe(3);
-    expect(result.complaintTrends[0].incidentCount).toBe(1);
+    expect(result.complaintTrends[0]!.complaintCount).toBe(3);
+    expect(result.complaintTrends[0]!.incidentCount).toBe(1);
   });
 
   it('calculates complaint rate per 1000 devices', async () => {
     const result = await useCase.execute('cycle-1', 'user-1');
 
-    expect(result.complaintTrends[0].complaintRate).toBe(3);
-    expect(result.complaintTrends[0].incidentRate).toBe(1);
+    expect(result.complaintTrends[0]!.complaintRate).toBe(3);
+    expect(result.complaintTrends[0]!.incidentRate).toBe(1);
   });
 
   it('creates a trendAnalysis record in DRAFT status', async () => {
@@ -91,6 +91,6 @@ describe('ComputeTrendsUseCase', () => {
 
     const result = await useCase.execute('cycle-1', 'user-1');
 
-    expect(result.complaintTrends[0].complaintRate).toBe(3000);
+    expect(result.complaintTrends[0]!.complaintRate).toBe(3000);
   });
 });

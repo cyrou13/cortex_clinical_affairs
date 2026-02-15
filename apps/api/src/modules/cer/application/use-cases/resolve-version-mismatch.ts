@@ -54,10 +54,10 @@ export class ResolveVersionMismatchUseCase {
       where: { id: sectionId },
       data: {
         versionMismatchWarning: false,
-        mismatchResolvedAt: new Date().toISOString(),
+        mismatchResolvedAt: new Date(),
         mismatchResolvedById: userId,
         mismatchResolutionAction: action,
-      },
+      } as any,
     });
 
     return {

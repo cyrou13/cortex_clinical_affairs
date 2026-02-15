@@ -80,22 +80,20 @@ export class GenerateBenefitRiskConclusionUseCase {
     // 5. Compute summaries
     const benefitSummary: BenefitSummary = {
       count: benefits.length,
-      descriptions: benefits.map((b: { description: string }) => b.description),
+      descriptions: benefits.map((b) => b.description),
     };
 
     const riskSummary: RiskSummary = {
       total: risks.length,
-      acceptable: risks.filter((r: { riskLevel: string }) => r.riskLevel === 'ACCEPTABLE').length,
-      alarp: risks.filter((r: { riskLevel: string }) => r.riskLevel === 'ALARP').length,
-      unacceptable: risks.filter((r: { riskLevel: string }) => r.riskLevel === 'UNACCEPTABLE')
-        .length,
+      acceptable: risks.filter((r) => r.riskLevel === 'ACCEPTABLE').length,
+      alarp: risks.filter((r) => r.riskLevel === 'ALARP').length,
+      unacceptable: risks.filter((r) => r.riskLevel === 'UNACCEPTABLE').length,
     };
 
     const mitigationSummary: MitigationSummary = {
       total: mitigations.length,
-      withDescription: mitigations.filter(
-        (m: { description: string }) => m.description && m.description.trim().length > 0,
-      ).length,
+      withDescription: mitigations.filter((m) => m.description && m.description.trim().length > 0)
+        .length,
     };
 
     // 6. Determine if benefit-risk ratio is favorable

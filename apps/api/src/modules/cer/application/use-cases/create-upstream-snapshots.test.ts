@@ -23,11 +23,13 @@ function makePrisma(overrides?: {
 }) {
   return {
     cerVersion: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.cerVersion !== undefined
-          ? overrides.cerVersion
-          : { id: CER_VERSION_ID, projectId: PROJECT_ID },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.cerVersion !== undefined
+            ? overrides.cerVersion
+            : { id: CER_VERSION_ID, projectId: PROJECT_ID },
+        ),
     },
     slsSession: {
       findMany: vi.fn().mockResolvedValue(overrides?.slsData ?? []),
@@ -51,11 +53,18 @@ function makePrisma(overrides?: {
           checksum: data.checksum,
         }),
       ),
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.snapshot !== undefined
-          ? overrides.snapshot
-          : { id: 'snap-1', moduleType: 'SLS', data: [{ id: 'sls-1' }], checksum: 'hash-abc-123' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.snapshot !== undefined
+            ? overrides.snapshot
+            : {
+                id: 'snap-1',
+                moduleType: 'SLS',
+                data: [{ id: 'sls-1' }],
+                checksum: 'hash-abc-123',
+              },
+        ),
     },
   } as any;
 }
@@ -72,9 +81,9 @@ describe('CreateUpstreamSnapshotsUseCase', () => {
     const prisma = makePrisma({ cerVersion: null });
     const useCase = new CreateUpstreamSnapshotsUseCase(prisma, checksumService);
 
-    await expect(
-      useCase.execute({ cerVersionId: 'missing', userId: USER_ID }),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute({ cerVersionId: 'missing', userId: USER_ID })).rejects.toThrow(
+      'not found',
+    );
   });
 
   it('returns empty snapshots when no upstream data exists', async () => {
@@ -102,7 +111,7 @@ describe('CreateUpstreamSnapshotsUseCase', () => {
     });
 
     expect(result.snapshotCount).toBe(1);
-    expect(result.snapshots[0].moduleType).toBe('SLS');
+    expect(result.snapshots[0]!.moduleType).toBe('SLS');
   });
 
   it('creates multiple snapshots for multiple upstream modules', async () => {

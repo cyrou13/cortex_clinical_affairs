@@ -37,11 +37,11 @@ interface LockDatasetButtonProps {
 export function LockDatasetButton({ sessionId, onLocked }: LockDatasetButtonProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const { data } = useQuery(LOCK_PREFLIGHT, {
+  const { data } = useQuery<any>(LOCK_PREFLIGHT, {
     variables: { sessionId },
   });
 
-  const [lockDataset, { loading: locking }] = useMutation(LOCK_DATASET);
+  const [lockDataset, { loading: locking }] = useMutation<any>(LOCK_DATASET);
 
   const preflight = data?.lockPreflightCheck;
   const isLocked = preflight?.sessionStatus === 'LOCKED';

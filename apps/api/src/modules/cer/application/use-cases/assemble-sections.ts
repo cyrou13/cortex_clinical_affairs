@@ -81,11 +81,13 @@ export class AssembleSectionsUseCase {
           id: sectionId,
           cerVersionId,
           sectionNumber: mdrSection.number,
+          sectionType: mdrSection.number,
           title: mdrSection.title,
           description: mdrSection.description,
           status: 'DRAFT',
           orderIndex: parseInt(mdrSection.number, 10) - 1,
           versionMismatchWarning: false,
+          createdById: userId,
         },
       });
 

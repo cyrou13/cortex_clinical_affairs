@@ -10,12 +10,8 @@ export class ResolvePdfMismatchUseCase {
     private readonly storage: StorageService,
   ) {}
 
-  async execute(input: {
-    articleId: string;
-    userId: string;
-    resolution: Resolution;
-  }) {
-    const { articleId, userId, resolution } = input;
+  async execute(input: { articleId: string; userId: string; resolution: Resolution }) {
+    const { articleId, userId: _userId, resolution } = input;
 
     const article = await this.prisma.article.findUnique({
       where: { id: articleId },
@@ -47,9 +43,9 @@ export class ResolvePdfMismatchUseCase {
           data: {
             pdfStatus: 'NOT_FOUND',
             pdfStorageKey: null,
-            pdfSource: null,
+            source: null,
             pdfVerificationResult: null,
-          },
+          } as any,
         });
         return { articleId, newStatus: 'NOT_FOUND' };
       }
@@ -64,9 +60,9 @@ export class ResolvePdfMismatchUseCase {
           data: {
             pdfStatus: 'NONE',
             pdfStorageKey: null,
-            pdfSource: null,
+            source: null,
             pdfVerificationResult: null,
-          },
+          } as any,
         });
         return { articleId, newStatus: 'NONE' };
       }

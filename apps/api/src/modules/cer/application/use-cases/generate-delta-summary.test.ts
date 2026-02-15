@@ -88,7 +88,7 @@ describe('GenerateDeltaSummaryUseCase', () => {
     });
 
     expect(result.sectionsAdded).toBe(1);
-    expect(result.diffs[0].status).toBe('ADDED');
+    expect(result.diffs[0]!.status).toBe('ADDED');
   });
 
   it('detects removed sections', async () => {
@@ -106,7 +106,7 @@ describe('GenerateDeltaSummaryUseCase', () => {
     });
 
     expect(result.sectionsRemoved).toBe(1);
-    expect(result.diffs[0].status).toBe('REMOVED');
+    expect(result.diffs[0]!.status).toBe('REMOVED');
   });
 
   it('detects modified sections', async () => {
@@ -126,7 +126,7 @@ describe('GenerateDeltaSummaryUseCase', () => {
     });
 
     expect(result.sectionsModified).toBe(1);
-    expect(result.diffs[0].status).toBe('MODIFIED');
+    expect(result.diffs[0]!.status).toBe('MODIFIED');
   });
 
   it('detects unchanged sections', async () => {
@@ -146,17 +146,13 @@ describe('GenerateDeltaSummaryUseCase', () => {
     });
 
     expect(result.sectionsUnchanged).toBe(1);
-    expect(result.diffs[0].status).toBe('UNCHANGED');
+    expect(result.diffs[0]!.status).toBe('UNCHANGED');
   });
 
   it('computes character diff for modified sections', async () => {
     const prisma = makePrisma({
-      currentSections: [
-        { sectionType: 'SCOPE', title: 'Scope', content: 'AB', orderIndex: 0 },
-      ],
-      previousSections: [
-        { sectionType: 'SCOPE', title: 'Scope', content: 'ABCDE', orderIndex: 0 },
-      ],
+      currentSections: [{ sectionType: 'SCOPE', title: 'Scope', content: 'AB', orderIndex: 0 }],
+      previousSections: [{ sectionType: 'SCOPE', title: 'Scope', content: 'ABCDE', orderIndex: 0 }],
     });
     const useCase = new GenerateDeltaSummaryUseCase(prisma);
 
@@ -165,7 +161,7 @@ describe('GenerateDeltaSummaryUseCase', () => {
       previousVersionId: PREVIOUS_VERSION_ID,
     });
 
-    expect(result.diffs[0].removedCharacters).toBe(3);
+    expect(result.diffs[0]!.removedCharacters).toBe(3);
   });
 
   it('generates summary text', async () => {

@@ -163,7 +163,10 @@ describe('ManageImportVersionsUseCase', () => {
           rowCount: 1,
         },
         importB: {
-          data: [{ case_id: 'C001', value: 1 }, { case_id: 'C002', value: 2 }],
+          data: [
+            { case_id: 'C001', value: 1 },
+            { case_id: 'C002', value: 2 },
+          ],
           rowCount: 2,
         },
       });
@@ -222,9 +225,9 @@ describe('ManageImportVersionsUseCase', () => {
 
       expect(result.modifications).toBe(1);
       expect(result.details).toHaveLength(1);
-      expect(result.details[0].field).toBe('value');
-      expect(result.details[0].oldValue).toBe('old');
-      expect(result.details[0].newValue).toBe('new');
+      expect(result.details[0]!.field).toBe('value');
+      expect(result.details[0]!.oldValue).toBe('old');
+      expect(result.details[0]!.newValue).toBe('new');
     });
 
     it('returns empty diff for identical data', async () => {

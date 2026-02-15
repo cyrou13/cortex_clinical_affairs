@@ -23,11 +23,19 @@ const mockDoc = {
 };
 
 describe('ExternalDocumentManager', () => {
-  const mockUpdate = vi.fn().mockResolvedValue({ data: { updateDocumentVersion: { documentId: 'doc-1', version: '3.0' } } });
+  const mockUpdate = vi
+    .fn()
+    .mockResolvedValue({
+      data: { updateDocumentVersion: { documentId: 'doc-1', version: '3.0' } },
+    });
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseQuery.mockReturnValue({ data: { externalDocument: mockDoc }, loading: false, error: null });
+    mockUseQuery.mockReturnValue({
+      data: { externalDocument: mockDoc },
+      loading: false,
+      error: null,
+    });
     mockUseMutation.mockReturnValue([mockUpdate, { loading: false }]);
   });
 
@@ -71,7 +79,7 @@ describe('ExternalDocumentManager', () => {
   it('shows comparison panel when compare clicked', () => {
     render(<ExternalDocumentManager docId="doc-1" />);
     const compareBtns = screen.getAllByTestId('version-compare');
-    fireEvent.click(compareBtns[0]);
+    fireEvent.click(compareBtns[0]!);
     expect(screen.getByTestId('comparison-panel')).toBeInTheDocument();
   });
 

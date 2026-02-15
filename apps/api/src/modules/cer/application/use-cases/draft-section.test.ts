@@ -1,16 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DraftSectionUseCase } from './draft-section.js';
 
-function makePrisma(overrides?: {
-  section?: Record<string, unknown> | null;
-}) {
+function makePrisma(overrides?: { section?: Record<string, unknown> | null }) {
   return {
     cerSection: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.section !== undefined
-          ? overrides.section
-          : { id: 'sec-1', status: 'DRAFT' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.section !== undefined ? overrides.section : { id: 'sec-1', status: 'DRAFT' },
+        ),
       update: vi.fn().mockResolvedValue({ id: 'sec-1' }),
     },
   } as any;
@@ -19,7 +17,8 @@ function makePrisma(overrides?: {
 function makeLlm() {
   return {
     generateSectionDraft: vi.fn().mockResolvedValue({
-      content: 'This section describes the scope of the clinical evaluation for the CardioValve Pro device.',
+      content:
+        'This section describes the scope of the clinical evaluation for the CardioValve Pro device.',
       references: [{ sourceId: 'soa-1', excerpt: 'Device description' }],
     }),
   };
@@ -104,9 +103,7 @@ describe('DraftSectionUseCase', () => {
       userId: 'user-1',
     });
 
-    expect(llm.generateSectionDraft).toHaveBeenCalledWith(
-      expect.stringContaining('Section 3'),
-    );
+    expect(llm.generateSectionDraft).toHaveBeenCalledWith(expect.stringContaining('Section 3'));
   });
 
   it('stores content in the section', async () => {
@@ -128,7 +125,7 @@ describe('DraftSectionUseCase', () => {
       expect.objectContaining({
         where: { id: 'sec-1' },
         data: expect.objectContaining({
-          status: 'DRAFTED',
+          status: 'DRAFT',
           content: expect.any(String),
           wordCount: expect.any(Number),
         }),
@@ -194,8 +191,6 @@ describe('DraftSectionUseCase', () => {
     });
 
     expect(result.references).toHaveLength(0);
-    expect(llm.generateSectionDraft).toHaveBeenCalledWith(
-      expect.stringContaining('Section 14'),
-    );
+    expect(llm.generateSectionDraft).toHaveBeenCalledWith(expect.stringContaining('Section 14'));
   });
 });

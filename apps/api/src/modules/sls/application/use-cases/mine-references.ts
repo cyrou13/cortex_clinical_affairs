@@ -39,7 +39,7 @@ export class MineReferencesUseCase {
       data: {
         type: 'sls:mine-references',
         status: 'PENDING',
-        createdById: userId,
+        createdBy: userId,
         metadata: { sessionId, articleCount: validArticleIds.length },
       },
     });

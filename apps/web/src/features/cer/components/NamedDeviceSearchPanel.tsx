@@ -27,17 +27,19 @@ interface NamedDeviceSearchPanelProps {
 
 const DATABASES = ['MAUDE', 'ANSM', 'BfArM', 'AFMPS'] as const;
 
-export function NamedDeviceSearchPanel({ cerId, searchHistory = [], onSearchStarted }: NamedDeviceSearchPanelProps) {
+export function NamedDeviceSearchPanel({
+  cerId,
+  searchHistory = [],
+  onSearchStarted,
+}: NamedDeviceSearchPanelProps) {
   const [deviceName, setDeviceName] = useState('');
   const [keywords, setKeywords] = useState('');
   const [selectedDbs, setSelectedDbs] = useState<string[]>(['MAUDE']);
 
-  const [searchVigilance, { loading: searching }] = useMutation(SEARCH_VIGILANCE);
+  const [searchVigilance, { loading: searching }] = useMutation<any>(SEARCH_VIGILANCE);
 
   const toggleDb = (db: string) => {
-    setSelectedDbs((prev) =>
-      prev.includes(db) ? prev.filter((d) => d !== db) : [...prev, db],
-    );
+    setSelectedDbs((prev) => (prev.includes(db) ? prev.filter((d) => d !== db) : [...prev, db]));
   };
 
   const handleSearch = async () => {
@@ -66,7 +68,9 @@ export function NamedDeviceSearchPanel({ cerId, searchHistory = [], onSearchStar
 
       <div className="space-y-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">Device Name</label>
+          <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
+            Device Name
+          </label>
           <input
             type="text"
             value={deviceName}
@@ -78,7 +82,9 @@ export function NamedDeviceSearchPanel({ cerId, searchHistory = [], onSearchStar
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">Keywords</label>
+          <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
+            Keywords
+          </label>
           <input
             type="text"
             value={keywords}
@@ -90,7 +96,9 @@ export function NamedDeviceSearchPanel({ cerId, searchHistory = [], onSearchStar
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">Databases</label>
+          <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
+            Databases
+          </label>
           <div className="flex flex-wrap gap-2">
             {DATABASES.map((db) => (
               <label key={db} className="flex items-center gap-1.5 text-sm">
@@ -124,9 +132,16 @@ export function NamedDeviceSearchPanel({ cerId, searchHistory = [], onSearchStar
             <Clock size={10} /> Search History
           </h4>
           {searchHistory.map((entry) => (
-            <div key={entry.id} className="rounded border border-[var(--cortex-border)] p-2 text-xs">
-              <span className="font-medium text-[var(--cortex-text-primary)]">{entry.deviceName}</span>
-              <span className="ml-2 text-[var(--cortex-text-muted)]">{entry.date} &middot; {entry.resultCount} results</span>
+            <div
+              key={entry.id}
+              className="rounded border border-[var(--cortex-border)] p-2 text-xs"
+            >
+              <span className="font-medium text-[var(--cortex-text-primary)]">
+                {entry.deviceName}
+              </span>
+              <span className="ml-2 text-[var(--cortex-text-muted)]">
+                {entry.date} &middot; {entry.resultCount} results
+              </span>
             </div>
           ))}
         </div>

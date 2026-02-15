@@ -8,20 +8,19 @@ function makePrisma(overrides?: {
   session?: Record<string, unknown> | null;
   articles?: Array<Record<string, unknown>>;
 }) {
-  const session = overrides?.session !== undefined
-    ? overrides.session
-    : { id: SESSION_ID, status: 'SCREENING' };
+  const session =
+    overrides?.session !== undefined ? overrides.session : { id: SESSION_ID, status: 'SCREENING' };
 
   return {
     slsSession: {
       findUnique: vi.fn().mockResolvedValue(session),
     },
     article: {
-      findMany: vi.fn().mockResolvedValue(overrides?.articles ?? [
-        { id: 'art-1' },
-        { id: 'art-2' },
-        { id: 'art-3' },
-      ]),
+      findMany: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.articles ?? [{ id: 'art-1' }, { id: 'art-2' }, { id: 'art-3' }],
+        ),
       updateMany: vi.fn().mockResolvedValue({ count: 3 }),
     },
     asyncTask: {
@@ -96,7 +95,7 @@ describe('RetrievePdfsUseCase', () => {
       where: {
         sessionId: SESSION_ID,
         status: { in: ['INCLUDED', 'FINAL_INCLUDED'] },
-        pdfStatus: { in: ['NONE', null] },
+        OR: [{ pdfStatus: 'NONE' }, { pdfStatus: null }],
       },
       select: { id: true },
     });

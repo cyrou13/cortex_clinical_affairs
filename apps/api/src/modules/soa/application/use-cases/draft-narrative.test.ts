@@ -5,9 +5,7 @@ const SOA_ID = 'soa-1';
 const SECTION_ID = 'sec-1';
 const USER_ID = 'user-1';
 
-function makePrisma(overrides?: {
-  section?: Record<string, unknown> | null;
-}) {
+function makePrisma(overrides?: { section?: Record<string, unknown> | null }) {
   return {
     thematicSection: {
       findUnique: vi.fn().mockResolvedValue(
@@ -50,7 +48,7 @@ describe('DraftNarrativeUseCase', () => {
         data: expect.objectContaining({
           type: 'SOA_DRAFT_NARRATIVE',
           status: 'PENDING',
-          createdById: USER_ID,
+          createdBy: USER_ID,
         }),
       }),
     );

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 import { FileText, CheckCircle, Clock, Edit3, Lock } from 'lucide-react';
@@ -54,7 +54,7 @@ function SectionStatusBadge({ status }: { status: string }) {
     IN_PROGRESS: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'In Progress' },
     FINALIZED: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Finalized' },
   };
-  const c = config[status] ?? config.DRAFT;
+  const c = config[status] ?? { bg: 'bg-gray-100', text: 'text-gray-600', label: 'Draft' };
   return (
     <span
       className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${c.bg} ${c.text}`}
@@ -86,20 +86,21 @@ export function ThematicSectionEditor({
   const [content, setContent] = useState('');
   const [contentInitialized, setContentInitialized] = useState(false);
 
-  const { data, loading } = useQuery(GET_SECTION_DETAILS, {
+  const { data, loading } = useQuery<any>(GET_SECTION_DETAILS, {
     variables: { sectionId },
-    onCompleted: (d) => {
-      if (!contentInitialized && d?.soaSection?.narrativeContent) {
-        setContent(d.soaSection.narrativeContent);
-        setContentInitialized(true);
-      }
-    },
   });
 
   const [updateContent] = useMutation(UPDATE_SECTION_CONTENT);
   const [finalizeSection, { loading: finalizing }] = useMutation(FINALIZE_SECTION);
 
   const section = data?.soaSection;
+
+  useEffect(() => {
+    if (!contentInitialized && data?.soaSection?.narrativeContent) {
+      setContent(data.soaSection.narrativeContent);
+      setContentInitialized(true);
+    }
+  }, [data, contentInitialized]);
   const isFinalized = section?.status === 'FINALIZED';
 
   const handleContentChange = (newContent: string) => {
@@ -115,7 +116,10 @@ export function ThematicSectionEditor({
 
   if (loading) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="section-loading">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="section-loading"
+      >
         Loading section...
       </div>
     );
@@ -124,7 +128,10 @@ export function ThematicSectionEditor({
   return (
     <div className="flex gap-4" data-testid="section-editor">
       {/* Navigation sidebar */}
-      <div className="w-56 shrink-0 space-y-1 rounded-lg border border-[var(--cortex-border)] p-3" data-testid="section-nav">
+      <div
+        className="w-56 shrink-0 space-y-1 rounded-lg border border-[var(--cortex-border)] p-3"
+        data-testid="section-nav"
+      >
         <h4 className="mb-2 text-xs font-semibold uppercase text-[var(--cortex-text-muted)]">
           Sections
         </h4>
@@ -151,7 +158,10 @@ export function ThematicSectionEditor({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <FileText size={16} className="text-[var(--cortex-primary)]" />
-            <h3 className="text-lg font-semibold text-[var(--cortex-text-primary)]" data-testid="section-title">
+            <h3
+              className="text-lg font-semibold text-[var(--cortex-text-primary)]"
+              data-testid="section-title"
+            >
               {section?.title ?? 'Untitled Section'}
             </h3>
           </div>

@@ -1,14 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Job } from 'bullmq';
-import {
-  GenerateReportsProcessor,
-  type GenerateReportJobData,
-} from './generate-reports.js';
+import { GenerateReportsProcessor, type GenerateReportJobData } from './generate-reports.js';
 import type { DocumentData } from '../../shared/docx/hybrid-engine.js';
 
-function createMockJob(
-  overrides?: Partial<GenerateReportJobData>,
-): Job<GenerateReportJobData> {
+function createMockJob(overrides?: Partial<GenerateReportJobData>): Job<GenerateReportJobData> {
   return {
     data: {
       taskId: 'task-001',
@@ -83,10 +78,7 @@ describe('GenerateReportsProcessor', () => {
 
       // Should have published 4 progress events
       expect(mockRedis.publish).toHaveBeenCalledTimes(4);
-      expect(mockRedis.publish).toHaveBeenCalledWith(
-        'task:progress:user-1',
-        expect.any(String),
-      );
+      expect(mockRedis.publish).toHaveBeenCalledWith('task:progress:user-1', expect.any(String));
     });
 
     it('includes progress messages', async () => {
@@ -95,9 +87,7 @@ describe('GenerateReportsProcessor', () => {
       await processor.process(job);
 
       const calls = mockRedis.publish.mock.calls;
-      const messages = calls.map(
-        (c: [string, string]) => JSON.parse(c[1]).message,
-      );
+      const messages = calls.map((c) => JSON.parse(c[1] as string).message);
 
       expect(messages[0]).toContain('Starting');
       expect(messages[1]).toContain('Preparing data');

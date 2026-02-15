@@ -52,7 +52,7 @@ export function QualityAssessmentForm({
   const [contributionLevel, setContributionLevel] = useState('');
   const [notes, setNotes] = useState('');
 
-  const [submitAssessment, { loading }] = useMutation(SUBMIT_QUALITY_ASSESSMENT);
+  const [submitAssessment, { loading }] = useMutation<any>(SUBMIT_QUALITY_ASSESSMENT);
 
   const canSubmit = assessmentType !== '' && contributionLevel !== '' && !locked;
 
@@ -76,7 +76,10 @@ export function QualityAssessmentForm({
   };
 
   return (
-    <div className="space-y-4 rounded-lg border border-[var(--cortex-border)] p-4" data-testid="quality-form">
+    <div
+      className="space-y-4 rounded-lg border border-[var(--cortex-border)] p-4"
+      data-testid="quality-form"
+    >
       <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--cortex-text-primary)]">
         <ClipboardCheck size={14} /> Quality Assessment
       </h3>
@@ -95,7 +98,9 @@ export function QualityAssessmentForm({
           >
             <option value="">Select type...</option>
             {ASSESSMENT_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
             ))}
           </select>
         </div>
@@ -113,7 +118,9 @@ export function QualityAssessmentForm({
           >
             <option value="">Select level...</option>
             {CONTRIBUTION_LEVELS.map((l) => (
-              <option key={l.value} value={l.value}>{l.label}</option>
+              <option key={l.value} value={l.value}>
+                {l.label}
+              </option>
             ))}
           </select>
         </div>

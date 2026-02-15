@@ -63,7 +63,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export function ResultsMappingTable({ studyId }: ResultsMappingTableProps) {
-  const { data, loading } = useQuery(GET_RESULTS_MAPPING, {
+  const { data, loading } = useQuery<any>(GET_RESULTS_MAPPING, {
     variables: { studyId },
   });
 
@@ -71,7 +71,10 @@ export function ResultsMappingTable({ studyId }: ResultsMappingTableProps) {
 
   if (loading) {
     return (
-      <div className="py-6 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="results-loading">
+      <div
+        className="py-6 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="results-loading"
+      >
         Loading results...
       </div>
     );
@@ -105,17 +108,27 @@ export function ResultsMappingTable({ studyId }: ResultsMappingTableProps) {
         </button>
       </div>
 
-      <div className="flex items-center gap-2 rounded-lg border border-[var(--cortex-border)] p-3" data-testid="summary-bar">
+      <div
+        className="flex items-center gap-2 rounded-lg border border-[var(--cortex-border)] p-3"
+        data-testid="summary-bar"
+      >
         <span className="text-sm text-[var(--cortex-text-primary)]">
-          <span className="font-semibold text-emerald-600" data-testid="met-count">{summary.metCount}</span>
+          <span className="font-semibold text-emerald-600" data-testid="met-count">
+            {summary.metCount}
+          </span>
           <span className="text-[var(--cortex-text-muted)]">/</span>
-          <span className="font-semibold" data-testid="total-count">{summary.totalCount}</span>
+          <span className="font-semibold" data-testid="total-count">
+            {summary.totalCount}
+          </span>
           <span className="ml-1 text-[var(--cortex-text-muted)]">endpoints met</span>
         </span>
       </div>
 
       {endpoints.length === 0 ? (
-        <p className="py-4 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="no-results">
+        <p
+          className="py-4 text-center text-sm text-[var(--cortex-text-muted)]"
+          data-testid="no-results"
+        >
           No results available. Import data and recompute.
         </p>
       ) : (

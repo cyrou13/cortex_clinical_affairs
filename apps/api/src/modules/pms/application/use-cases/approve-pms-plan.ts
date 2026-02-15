@@ -1,7 +1,7 @@
 import type { PrismaClient } from '@prisma/client';
 import type { EventBus } from '../../../../shared/events/event-bus.js';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
-import { canTransitionPlan } from '../../domain/value-objects/plan-status.js';
+import { canTransitionPlan, type PmsPlanStatus } from '../../domain/value-objects/plan-status.js';
 import { createPmsPlanApprovedEvent } from '../../domain/events/pms-events.js';
 
 interface ApprovePmsPlanResult {
@@ -26,7 +26,7 @@ export class ApprovePmsPlanUseCase {
       throw new NotFoundError('PmsPlan', pmsPlanId);
     }
 
-    if (!canTransitionPlan(plan.status, 'APPROVED')) {
+    if (!canTransitionPlan(plan.status as PmsPlanStatus, 'APPROVED')) {
       throw new ValidationError(`Cannot approve PMS plan in ${plan.status} status`);
     }
 

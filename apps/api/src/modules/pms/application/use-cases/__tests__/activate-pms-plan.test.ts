@@ -52,7 +52,7 @@ describe('ActivatePmsPlanUseCase', () => {
       }),
     );
 
-    const callData = prisma.pmsPlan.update.mock.calls[0][0].data;
+    const callData = vi.mocked(prisma.pmsPlan.update).mock.calls[0]![0]!.data;
     expect(callData.activatedAt).toBeInstanceOf(Date);
   });
 
@@ -88,9 +88,7 @@ describe('ActivatePmsPlanUseCase', () => {
     });
     useCase = new ActivatePmsPlanUseCase(prisma, mockEventBus as any);
 
-    await expect(useCase.execute('plan-1', 'user-1')).rejects.toThrow(
-      'not found',
-    );
+    await expect(useCase.execute('plan-1', 'user-1')).rejects.toThrow('not found');
   });
 
   it('throws ValidationError when plan is in DRAFT status', async () => {

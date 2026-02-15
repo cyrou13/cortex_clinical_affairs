@@ -58,20 +58,26 @@ function StatusBadge({ status }: { status: string }) {
   };
   const c = config[status] ?? { bg: 'bg-gray-100', text: 'text-gray-700' };
   return (
-    <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${c.bg} ${c.text}`} data-testid="status-badge">
+    <span
+      className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${c.bg} ${c.text}`}
+      data-testid="status-badge"
+    >
       {status.replace('_', ' ')}
     </span>
   );
 }
 
 export function SoaDashboard({ soaId }: SoaDashboardProps) {
-  const { data, loading, error } = useQuery(GET_SOA_DETAILS, {
+  const { data, loading, error } = useQuery<any>(GET_SOA_DETAILS, {
     variables: { soaId },
   });
 
   if (loading) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="soa-loading">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="soa-loading"
+      >
         Loading SOA analysis...
       </div>
     );
@@ -88,7 +94,10 @@ export function SoaDashboard({ soaId }: SoaDashboardProps) {
   const soa = data?.soaAnalysis;
   if (!soa) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="soa-not-found">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="soa-not-found"
+      >
         SOA analysis not found.
       </div>
     );
@@ -103,7 +112,10 @@ export function SoaDashboard({ soaId }: SoaDashboardProps) {
     <div className="space-y-6" data-testid="soa-dashboard">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-[var(--cortex-text-primary)]" data-testid="soa-name">
+          <h2
+            className="text-xl font-semibold text-[var(--cortex-text-primary)]"
+            data-testid="soa-name"
+          >
             {soa.name}
           </h2>
           <div className="mt-1 flex items-center gap-2">
@@ -113,7 +125,10 @@ export function SoaDashboard({ soaId }: SoaDashboardProps) {
             </span>
           </div>
         </div>
-        <div className="text-right text-sm text-[var(--cortex-text-muted)]" data-testid="progress-summary">
+        <div
+          className="text-right text-sm text-[var(--cortex-text-muted)]"
+          data-testid="progress-summary"
+        >
           {finalizedCount}/{sections.length} sections finalized
         </div>
       </div>
@@ -124,7 +139,11 @@ export function SoaDashboard({ soaId }: SoaDashboardProps) {
         </h3>
         <div className="space-y-1" data-testid="linked-sessions">
           {(soa.linkedSessions ?? []).map((s: { id: string; name: string }) => (
-            <div key={s.id} className="flex items-center gap-2 text-sm text-[var(--cortex-text-primary)]" data-testid={`linked-session-${s.id}`}>
+            <div
+              key={s.id}
+              className="flex items-center gap-2 text-sm text-[var(--cortex-text-primary)]"
+              data-testid={`linked-session-${s.id}`}
+            >
               <Lock size={12} className="text-blue-500" />
               {s.name}
             </div>
@@ -160,10 +179,15 @@ export function SoaDashboard({ soaId }: SoaDashboardProps) {
         </div>
       </div>
 
-      <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200" data-testid="progress-bar">
+      <div
+        className="h-2 w-full overflow-hidden rounded-full bg-gray-200"
+        data-testid="progress-bar"
+      >
         <div
           className="h-full rounded-full bg-emerald-500 transition-all"
-          style={{ width: `${sections.length > 0 ? (finalizedCount / sections.length) * 100 : 0}%` }}
+          style={{
+            width: `${sections.length > 0 ? (finalizedCount / sections.length) * 100 : 0}%`,
+          }}
         />
       </div>
     </div>

@@ -39,7 +39,12 @@ export const GET_GRID_CELLS = gql`
 `;
 
 export const UPDATE_GRID_CELL = gql`
-  mutation UpdateGridCell($gridId: String!, $articleId: String!, $columnId: String!, $value: String) {
+  mutation UpdateGridCell(
+    $gridId: String!
+    $articleId: String!
+    $columnId: String!
+    $value: String
+  ) {
     updateGridCell(gridId: $gridId, articleId: $articleId, columnId: $columnId, value: $value) {
       cellId
       value
@@ -75,11 +80,11 @@ export function ExtractionGridPage({ gridId, soaStatus }: ExtractionGridPageProp
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
 
-  const { data: gridData, loading: gridLoading } = useQuery(GET_EXTRACTION_GRID, {
+  const { data: gridData, loading: gridLoading } = useQuery<any>(GET_EXTRACTION_GRID, {
     variables: { gridId },
   });
 
-  const { data: cellsData, loading: cellsLoading } = useQuery(GET_GRID_CELLS, {
+  const { data: cellsData, loading: cellsLoading } = useQuery<any>(GET_GRID_CELLS, {
     variables: { gridId, offset: 0, limit: 100 },
   });
 
@@ -89,7 +94,10 @@ export function ExtractionGridPage({ gridId, soaStatus }: ExtractionGridPageProp
 
   if (gridLoading || cellsLoading) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="grid-loading">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="grid-loading"
+      >
         Loading extraction grid...
       </div>
     );
@@ -172,7 +180,10 @@ export function ExtractionGridPage({ gridId, soaStatus }: ExtractionGridPageProp
       </div>
 
       {columns.length === 0 ? (
-        <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="no-columns">
+        <div
+          className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+          data-testid="no-columns"
+        >
           No columns configured. Add columns or select a template.
         </div>
       ) : (

@@ -52,7 +52,7 @@ export class AmendProtocolUseCase {
       throw new NotFoundError('Protocol', protocolId);
     }
 
-    if (protocol.status !== 'APPROVED' && protocol.status !== 'AMENDED') {
+    if ((protocol.status as string) !== 'APPROVED' && (protocol.status as string) !== 'AMENDED') {
       throw new ValidationError('Only approved or previously amended protocols can be amended');
     }
 
@@ -75,7 +75,7 @@ export class AmendProtocolUseCase {
       where: { id: protocolId },
       data: {
         version: newVersionStr,
-        status: 'AMENDED',
+        status: 'AMENDED' as any,
         summary: input.summary ?? protocol.summary,
         endpoints: input.endpoints ?? protocol.endpoints,
         sampleSizeJustification: input.sampleSizeJustification ?? protocol.sampleSizeJustification,
@@ -86,7 +86,7 @@ export class AmendProtocolUseCase {
 
     // Create amendment record
     const amendmentId = crypto.randomUUID();
-    await this.prisma.protocolAmendment.create({
+    await (this.prisma as any).protocolAmendment.create({
       data: {
         id: amendmentId,
         protocolId,

@@ -14,11 +14,11 @@ function makePrisma(overrides?: {
 }) {
   return {
     cerVersion: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.cerVersion !== undefined
-          ? overrides.cerVersion
-          : { id: VERSION_ID },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.cerVersion !== undefined ? overrides.cerVersion : { id: VERSION_ID },
+        ),
     },
     gsprMatrixRow: {
       findMany: vi.fn().mockResolvedValue(
@@ -26,16 +26,21 @@ function makePrisma(overrides?: {
           { gsprId: 'GSPR-1', title: 'Safety', status: 'COMPLIANT', notes: null },
           { gsprId: 'GSPR-2', title: 'Risk management', status: 'COMPLIANT', notes: null },
           { gsprId: 'GSPR-3', title: 'Design', status: 'PARTIAL', notes: 'Need more evidence' },
-          { gsprId: 'GSPR-12', title: 'Biological', status: 'NOT_APPLICABLE', notes: 'No biological material' },
+          {
+            gsprId: 'GSPR-12',
+            title: 'Biological',
+            status: 'NOT_APPLICABLE',
+            notes: 'No biological material',
+          },
         ],
       ),
     },
     cerSection: {
-      findFirst: vi.fn().mockResolvedValue(
-        overrides?.existingSection !== undefined
-          ? overrides.existingSection
-          : null,
-      ),
+      findFirst: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.existingSection !== undefined ? overrides.existingSection : null,
+        ),
       create: vi.fn().mockResolvedValue({ id: 'new-sec' }),
       update: vi.fn().mockResolvedValue({ id: 'existing-sec' }),
     },
@@ -69,7 +74,7 @@ describe('GenerateComplianceStatementUseCase', () => {
     const result = await useCase.execute({ cerVersionId: VERSION_ID, userId: USER_ID });
 
     expect(result.gaps).toHaveLength(1);
-    expect(result.gaps[0].gsprId).toBe('GSPR-3');
+    expect(result.gaps[0]!.gsprId).toBe('GSPR-3');
   });
 
   it('generates conclusion mentioning gap count', async () => {
@@ -101,18 +106,18 @@ describe('GenerateComplianceStatementUseCase', () => {
     const prisma = makePrisma({ cerVersion: null });
     const useCase = new GenerateComplianceStatementUseCase(prisma);
 
-    await expect(
-      useCase.execute({ cerVersionId: 'missing', userId: USER_ID }),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute({ cerVersionId: 'missing', userId: USER_ID })).rejects.toThrow(
+      'not found',
+    );
   });
 
   it('throws ValidationError when no GSPR matrix exists', async () => {
     const prisma = makePrisma({ gsprRows: [] });
     const useCase = new GenerateComplianceStatementUseCase(prisma);
 
-    await expect(
-      useCase.execute({ cerVersionId: VERSION_ID, userId: USER_ID }),
-    ).rejects.toThrow('No GSPR matrix found');
+    await expect(useCase.execute({ cerVersionId: VERSION_ID, userId: USER_ID })).rejects.toThrow(
+      'No GSPR matrix found',
+    );
   });
 
   it('creates new CER section when none exists', async () => {

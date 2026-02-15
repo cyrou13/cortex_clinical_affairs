@@ -48,6 +48,7 @@ export class ImportComplaintsUseCase {
 
     for (let i = 0; i < input.complaints.length; i++) {
       const complaint = input.complaints[i];
+      if (!complaint) continue;
 
       if (complaint.externalId) {
         const existing = await this.prisma.complaint.findFirst({

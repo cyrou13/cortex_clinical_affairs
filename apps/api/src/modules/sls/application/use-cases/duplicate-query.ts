@@ -1,4 +1,5 @@
-import type { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { PrismaClient } from '@prisma/client';
 import { generateId } from '@cortex/shared';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
 import { QueryEntity } from '../../domain/entities/query.js';
@@ -56,7 +57,7 @@ export class DuplicateQueryUseCase {
         queryId: newId,
         version: 1,
         queryString: duplicateData.queryString,
-        diff: null,
+        diff: Prisma.JsonNull,
         createdById: userId,
       },
     });

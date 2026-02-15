@@ -59,7 +59,9 @@ export class ImportArticlesUseCase {
       authors: a.authors ?? undefined,
       doi: a.doi ?? undefined,
       pmid: a.pmid ?? undefined,
-      publicationDate: a.publicationDate ? a.publicationDate.toISOString().split('T')[0] : undefined,
+      publicationDate: a.publicationDate
+        ? a.publicationDate.toISOString().split('T')[0]
+        : undefined,
       journal: a.journal ?? undefined,
       sourceDatabase: a.sourceDatabase ?? undefined,
     }));
@@ -80,7 +82,7 @@ export class ImportArticlesUseCase {
         publicationDate: article.publicationDate ? new Date(article.publicationDate) : null,
         journal: article.journal ?? null,
         sourceDatabase: article.sourceDatabase ?? null,
-        status: 'PENDING',
+        status: 'PENDING' as const,
       }));
 
       await this.prisma.article.createMany({

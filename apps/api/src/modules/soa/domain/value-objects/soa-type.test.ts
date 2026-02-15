@@ -21,20 +21,20 @@ describe('SoaType value object', () => {
   it('returns 6 sections for CLINICAL', () => {
     const sections = getSectionsForType('CLINICAL');
     expect(sections).toHaveLength(6);
-    expect(sections[0].key).toBe('CLINICAL_1');
-    expect(sections[5].key).toBe('CLINICAL_6');
+    expect(sections[0]!.key).toBe('CLINICAL_1');
+    expect(sections[5]!.key).toBe('CLINICAL_6');
   });
 
   it('returns 5 sections for SIMILAR_DEVICE', () => {
     const sections = getSectionsForType('SIMILAR_DEVICE');
     expect(sections).toHaveLength(5);
-    expect(sections[0].key).toBe('DEVICE_1');
-    expect(sections[4].key).toBe('DEVICE_5');
+    expect(sections[0]!.key).toBe('DEVICE_1');
+    expect(sections[4]!.key).toBe('DEVICE_5');
   });
 
   it('returns 4 sections for ALTERNATIVE', () => {
     const sections = getSectionsForType('ALTERNATIVE');
     expect(sections).toHaveLength(4);
-    expect(sections[0].key).toBe('ALT_1');
+    expect(sections[0]!.key).toBe('ALT_1');
   });
 });

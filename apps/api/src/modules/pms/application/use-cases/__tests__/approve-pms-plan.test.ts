@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { PrismaClient } from '@prisma/client';
+import type * as PlanStatusModule from '../../../domain/value-objects/plan-status.js';
 import { ApprovePmsPlanUseCase } from '../approve-pms-plan.js';
 
 vi.mock('../../../domain/value-objects/plan-status.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../domain/value-objects/plan-status.js')>();
+  const actual = await importOriginal<typeof PlanStatusModule>();
   return { ...actual };
 });
 
@@ -59,7 +60,7 @@ describe('ApprovePmsPlanUseCase', () => {
       }),
     );
 
-    const callData = prisma.pmsPlan.update.mock.calls[0][0].data;
+    const callData = vi.mocked(prisma.pmsPlan.update).mock.calls[0]![0]!.data;
     expect(callData.approvedAt).toBeInstanceOf(Date);
   });
 
@@ -95,9 +96,7 @@ describe('ApprovePmsPlanUseCase', () => {
     });
     useCase = new ApprovePmsPlanUseCase(prisma, mockEventBus as any);
 
-    await expect(useCase.execute('plan-1', 'user-1')).rejects.toThrow(
-      'not found',
-    );
+    await expect(useCase.execute('plan-1', 'user-1')).rejects.toThrow('not found');
   });
 
   it('throws ValidationError when plan is already APPROVED', async () => {

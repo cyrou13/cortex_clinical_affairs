@@ -50,7 +50,10 @@ function StatusBadge({ status }: { status: string }) {
   };
   const c = config[status] ?? { bg: 'bg-gray-100', text: 'text-gray-700' };
   return (
-    <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${c.bg} ${c.text}`} data-testid="study-status">
+    <span
+      className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${c.bg} ${c.text}`}
+      data-testid="study-status"
+    >
       {status.replace('_', ' ')}
     </span>
   );
@@ -68,13 +71,16 @@ function TypeBadge({ type }: { type: string }) {
 }
 
 export function ValidationDashboard({ studyId }: ValidationDashboardProps) {
-  const { data, loading, error } = useQuery(GET_VALIDATION_STUDY, {
+  const { data, loading, error } = useQuery<any>(GET_VALIDATION_STUDY, {
     variables: { studyId },
   });
 
   if (loading) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="validation-loading">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="validation-loading"
+      >
         Loading validation study...
       </div>
     );
@@ -82,7 +88,10 @@ export function ValidationDashboard({ studyId }: ValidationDashboardProps) {
 
   if (error) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-error)]" data-testid="validation-error">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-error)]"
+        data-testid="validation-error"
+      >
         Failed to load validation study.
       </div>
     );
@@ -91,7 +100,10 @@ export function ValidationDashboard({ studyId }: ValidationDashboardProps) {
   const study = data?.validationStudy;
   if (!study) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="validation-not-found">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="validation-not-found"
+      >
         Validation study not found.
       </div>
     );
@@ -103,9 +115,7 @@ export function ValidationDashboard({ studyId }: ValidationDashboardProps) {
     <div className="space-y-6" data-testid="validation-dashboard">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-[var(--cortex-text-primary)]">
-            {study.name}
-          </h2>
+          <h2 className="text-xl font-semibold text-[var(--cortex-text-primary)]">{study.name}</h2>
           <div className="mt-1 flex items-center gap-2">
             <StatusBadge status={study.status} />
             <TypeBadge type={study.type} />
@@ -121,28 +131,40 @@ export function ValidationDashboard({ studyId }: ValidationDashboardProps) {
           <div className="flex items-center gap-2 text-xs text-[var(--cortex-text-muted)]">
             <Link size={12} /> SOA Reference
           </div>
-          <div className="mt-1 text-sm font-medium text-[var(--cortex-text-primary)]" data-testid="soa-link">
+          <div
+            className="mt-1 text-sm font-medium text-[var(--cortex-text-primary)]"
+            data-testid="soa-link"
+          >
             {study.soaAnalysis?.name ?? 'Not linked'}
           </div>
         </div>
 
         <div className="rounded-lg border border-[var(--cortex-border)] p-4">
           <div className="text-xs text-[var(--cortex-text-muted)]">Protocol Version</div>
-          <div className="mt-1 text-sm font-medium text-[var(--cortex-text-primary)]" data-testid="protocol-version">
+          <div
+            className="mt-1 text-sm font-medium text-[var(--cortex-text-primary)]"
+            data-testid="protocol-version"
+          >
             {study.protocol?.version ? `v${study.protocol.version}` : 'No protocol'}
           </div>
         </div>
 
         <div className="rounded-lg border border-[var(--cortex-border)] p-4">
           <div className="text-xs text-[var(--cortex-text-muted)]">Data Imports</div>
-          <div className="mt-1 text-sm font-medium text-[var(--cortex-text-primary)]" data-testid="import-count">
+          <div
+            className="mt-1 text-sm font-medium text-[var(--cortex-text-primary)]"
+            data-testid="import-count"
+          >
             {study.importCount ?? 0}
           </div>
         </div>
 
         <div className="rounded-lg border border-[var(--cortex-border)] p-4">
           <div className="text-xs text-[var(--cortex-text-muted)]">Results</div>
-          <div className="mt-1 text-sm font-medium text-[var(--cortex-text-primary)]" data-testid="results-summary">
+          <div
+            className="mt-1 text-sm font-medium text-[var(--cortex-text-primary)]"
+            data-testid="results-summary"
+          >
             {study.results
               ? `${study.results.metCount}/${study.results.totalCount} met`
               : 'No results'}
@@ -164,9 +186,13 @@ export function ValidationDashboard({ studyId }: ValidationDashboardProps) {
               >
                 <div className="flex items-center gap-2">
                   <CheckCircle size={12} className="text-emerald-500" />
-                  <span className="text-[var(--cortex-text-primary)]">{report.type.replace('_', ' ')}</span>
+                  <span className="text-[var(--cortex-text-primary)]">
+                    {report.type.replace('_', ' ')}
+                  </span>
                 </div>
-                <span className="text-xs text-[var(--cortex-text-muted)]">{report.generatedAt}</span>
+                <span className="text-xs text-[var(--cortex-text-muted)]">
+                  {report.generatedAt}
+                </span>
               </div>
             ))}
           </div>

@@ -81,7 +81,7 @@ export class UpdateGsprRowUseCase {
     // 5. Persist
     await this.prisma.gsprMatrixRow.update({
       where: { id: gsprMatrixRowId },
-      data: updateData,
+      data: updateData as any,
     });
 
     // 6. Audit log
@@ -107,7 +107,8 @@ export class UpdateGsprRowUseCase {
       gsprId: row.gsprId,
       status: effectiveStatus as GsprStatus,
       evidenceReferences:
-        evidenceReferences ?? (Array.isArray(row.evidenceReferences) ? row.evidenceReferences : []),
+        evidenceReferences ??
+        (Array.isArray(row.evidenceReferences) ? (row.evidenceReferences as string[]) : []),
       notes: effectiveNotes ?? null,
     };
   }

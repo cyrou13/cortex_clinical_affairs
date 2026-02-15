@@ -43,15 +43,26 @@ interface ExternalDocumentManagerProps {
 
 export function ExternalDocumentManager({ docId, onVersionUpdated }: ExternalDocumentManagerProps) {
   const [compareVersions, setCompareVersions] = useState<[string, string] | null>(null);
-  const { data, loading, error } = useQuery(GET_EXTERNAL_DOCUMENT, { variables: { docId } });
+  const { data, loading, error } = useQuery<any>(GET_EXTERNAL_DOCUMENT, { variables: { docId } });
   const [updateVersion, { loading: updating }] = useMutation(UPDATE_DOCUMENT_VERSION);
 
   if (loading) {
-    return <div className="py-4 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="doc-loading">Loading document...</div>;
+    return (
+      <div
+        className="py-4 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="doc-loading"
+      >
+        Loading document...
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="py-4 text-center text-sm text-[var(--cortex-error)]" data-testid="doc-error">Failed to load document.</div>;
+    return (
+      <div className="py-4 text-center text-sm text-[var(--cortex-error)]" data-testid="doc-error">
+        Failed to load document.
+      </div>
+    );
   }
 
   const doc = data?.externalDocument;
@@ -75,7 +86,9 @@ export function ExternalDocumentManager({ docId, onVersionUpdated }: ExternalDoc
           <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--cortex-text-primary)]">
             <FileText size={14} /> {doc.title}
           </h3>
-          <span className="text-xs text-[var(--cortex-text-muted)]">Current: v{doc.currentVersion}</span>
+          <span className="text-xs text-[var(--cortex-text-muted)]">
+            Current: v{doc.currentVersion}
+          </span>
         </div>
         <button
           type="button"
@@ -98,7 +111,9 @@ export function ExternalDocumentManager({ docId, onVersionUpdated }: ExternalDoc
             )}
             <div className="flex-1 rounded border border-[var(--cortex-border)] p-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-[var(--cortex-text-primary)]">v{v.version}</span>
+                <span className="text-sm font-medium text-[var(--cortex-text-primary)]">
+                  v{v.version}
+                </span>
                 <div className="flex items-center gap-2">
                   <span className="flex items-center gap-1 text-xs text-[var(--cortex-text-muted)]">
                     <Clock size={10} /> {v.date}
@@ -106,7 +121,7 @@ export function ExternalDocumentManager({ docId, onVersionUpdated }: ExternalDoc
                   {idx < versions.length - 1 && (
                     <button
                       type="button"
-                      onClick={() => handleCompare(v.version, versions[idx + 1].version)}
+                      onClick={() => handleCompare(v.version, versions[idx + 1]!.version)}
                       className="inline-flex items-center gap-1 text-xs text-[var(--cortex-primary)] hover:underline"
                       data-testid="version-compare"
                     >
@@ -123,7 +138,10 @@ export function ExternalDocumentManager({ docId, onVersionUpdated }: ExternalDoc
       </div>
 
       {compareVersions && (
-        <div className="rounded border border-blue-200 bg-blue-50 p-3 text-sm" data-testid="comparison-panel">
+        <div
+          className="rounded border border-blue-200 bg-blue-50 p-3 text-sm"
+          data-testid="comparison-panel"
+        >
           Comparing v{compareVersions[0]} with v{compareVersions[1]}
         </div>
       )}

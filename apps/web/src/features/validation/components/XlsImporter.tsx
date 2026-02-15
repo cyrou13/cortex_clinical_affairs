@@ -34,7 +34,7 @@ export function XlsImporter({ studyId, onUploaded }: XlsImporterProps) {
   const [dragOver, setDragOver] = useState(false);
   const [validation, setValidation] = useState<ValidationResult | null>(null);
 
-  const [uploadXls, { loading: uploading }] = useMutation(UPLOAD_XLS);
+  const [uploadXls, { loading: uploading }] = useMutation<any>(UPLOAD_XLS);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -90,12 +90,13 @@ export function XlsImporter({ studyId, onUploaded }: XlsImporterProps) {
   };
 
   return (
-    <div className="space-y-4 rounded-lg border border-[var(--cortex-border)] p-6" data-testid="xls-importer">
+    <div
+      className="space-y-4 rounded-lg border border-[var(--cortex-border)] p-6"
+      data-testid="xls-importer"
+    >
       <div className="flex items-center gap-2">
         <FileSpreadsheet size={20} className="text-[var(--cortex-primary)]" />
-        <h3 className="text-lg font-semibold text-[var(--cortex-text-primary)]">
-          Data Import
-        </h3>
+        <h3 className="text-lg font-semibold text-[var(--cortex-text-primary)]">Data Import</h3>
       </div>
 
       <div
@@ -131,11 +132,16 @@ export function XlsImporter({ studyId, onUploaded }: XlsImporterProps) {
       </div>
 
       {file && (
-        <div className="flex items-center justify-between rounded border border-[var(--cortex-border)] p-3" data-testid="file-info">
+        <div
+          className="flex items-center justify-between rounded border border-[var(--cortex-border)] p-3"
+          data-testid="file-info"
+        >
           <div className="flex items-center gap-2">
             <FileSpreadsheet size={16} className="text-emerald-500" />
             <div>
-              <div className="text-sm font-medium text-[var(--cortex-text-primary)]">{file.name}</div>
+              <div className="text-sm font-medium text-[var(--cortex-text-primary)]">
+                {file.name}
+              </div>
               <div className="text-xs text-[var(--cortex-text-muted)]">
                 {formatFileSize(file.size)} - {file.type || 'application/vnd.ms-excel'}
               </div>
@@ -154,32 +160,45 @@ export function XlsImporter({ studyId, onUploaded }: XlsImporterProps) {
       )}
 
       {validation && validation.valid && (
-        <div className="flex items-start gap-2 rounded border border-emerald-200 bg-emerald-50 p-3" data-testid="validation-success">
+        <div
+          className="flex items-start gap-2 rounded border border-emerald-200 bg-emerald-50 p-3"
+          data-testid="validation-success"
+        >
           <CheckCircle size={16} className="mt-0.5 text-emerald-500" />
           <p className="text-sm text-emerald-700">Schema validation passed successfully.</p>
         </div>
       )}
 
       {validation && validation.errors.length > 0 && (
-        <div className="space-y-1 rounded border border-red-200 bg-red-50 p-3" data-testid="validation-errors">
+        <div
+          className="space-y-1 rounded border border-red-200 bg-red-50 p-3"
+          data-testid="validation-errors"
+        >
           <div className="flex items-center gap-2">
             <XCircle size={16} className="text-red-500" />
             <span className="text-sm font-medium text-red-700">Validation Errors</span>
           </div>
           {validation.errors.map((err, idx) => (
-            <p key={idx} className="ml-6 text-xs text-red-600">{err}</p>
+            <p key={idx} className="ml-6 text-xs text-red-600">
+              {err}
+            </p>
           ))}
         </div>
       )}
 
       {validation && validation.warnings.length > 0 && (
-        <div className="space-y-1 rounded border border-orange-200 bg-orange-50 p-3" data-testid="validation-warnings">
+        <div
+          className="space-y-1 rounded border border-orange-200 bg-orange-50 p-3"
+          data-testid="validation-warnings"
+        >
           <div className="flex items-center gap-2">
             <AlertTriangle size={16} className="text-orange-500" />
             <span className="text-sm font-medium text-orange-700">Warnings</span>
           </div>
           {validation.warnings.map((warn, idx) => (
-            <p key={idx} className="ml-6 text-xs text-orange-600">{warn}</p>
+            <p key={idx} className="ml-6 text-xs text-orange-600">
+              {warn}
+            </p>
           ))}
         </div>
       )}

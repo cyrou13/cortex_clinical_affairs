@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, DeviationStatus } from '@prisma/client';
 import {
   NotFoundError,
   ValidationError,
@@ -74,11 +74,11 @@ export class ApproveDeviationJustificationUseCase {
     await this.prisma.pccpDeviation.update({
       where: { id: input.deviationId },
       data: {
-        status: 'APPROVED',
+        status: 'APPROVED' as DeviationStatus,
         justificationApproved: true,
         approvedById: input.approverId,
         approvedAt: now,
-      },
+      } as any,
     });
 
     // Emit event

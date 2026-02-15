@@ -109,7 +109,7 @@ export class LockCerUseCase {
       {
         cerVersionId,
         projectId: cerVersion.projectId,
-        versionNumber: cerVersion.versionNumber,
+        versionNumber: cerVersion.versionNumber.toString(),
       },
       userId,
       crypto.randomUUID(),
@@ -200,14 +200,14 @@ export class LockCerUseCase {
     });
 
     // Check 5: GSPR matrix finalized
-    const gsprMatrix = await this.prisma.gsprMapping.findFirst({
+    const gsprMatrix = await (this.prisma.gsprMapping as any).findFirst({
       where: { cerVersionId },
       select: { id: true, status: true },
     });
 
     checks.push({
       label: 'GSPR matrix finalized',
-      passed: gsprMatrix?.status === 'FINALIZED',
+      passed: (gsprMatrix?.status as string) === 'FINALIZED',
       detail: gsprMatrix ? `Status: ${gsprMatrix.status}` : 'No GSPR matrix found',
     });
 

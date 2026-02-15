@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, Prisma } from '@prisma/client';
 import {
   NotFoundError,
   ValidationError,
@@ -93,12 +93,11 @@ export class ManageVersionsUseCase {
       data: {
         id: cerVersionId,
         projectId: input.projectId,
-        versionNumber,
+        versionNumber: parseInt(versionNumber, 10),
         versionType: input.versionType,
         status: 'DRAFT',
-        previousVersionId: input.previousVersionId ?? null,
         createdById: input.userId,
-      },
+      } as any,
     });
 
     let duplicatedSections = 0;
@@ -155,13 +154,15 @@ export class ManageVersionsUseCase {
         data: {
           id: crypto.randomUUID(),
           cerVersionId: toVersionId,
+          sectionNumber: section.sectionNumber,
           sectionType: section.sectionType,
           title: section.title,
           orderIndex: section.orderIndex,
-          content: section.content,
+          content: section.content as Prisma.InputJsonValue,
           status: 'DRAFT',
+          createdById: section.createdById,
           previousSectionId: section.id,
-        },
+        } as any,
       });
     }
 
@@ -179,10 +180,12 @@ export class ManageVersionsUseCase {
         data: {
           id: crypto.randomUUID(),
           cerVersionId: toVersionId,
-          claimId: trace.claimId,
-          sectionType: trace.sectionType,
-          evidenceReference: trace.evidenceReference,
-          traceType: trace.traceType,
+          cerSectionId: trace.cerSectionId,
+          refNumber: trace.refNumber,
+          claimId: trace.claimId ?? undefined,
+          sectionType: trace.sectionType ?? undefined,
+          evidenceReference: trace.evidenceReference ?? undefined,
+          traceType: trace.traceType ?? undefined,
         },
       });
     }
@@ -197,9 +200,12 @@ export class ManageVersionsUseCase {
         data: {
           id: crypto.randomUUID(),
           cerVersionId: toVersionId,
-          sourceSectionType: ref.sourceSectionType,
-          targetSectionType: ref.targetSectionType,
-          description: ref.description,
+          type: ref.type,
+          refNumber: ref.refNumber,
+          targetType: ref.targetType,
+          sourceSectionType: ref.sourceSectionType ?? undefined,
+          targetSectionType: ref.targetSectionType ?? undefined,
+          description: ref.description ?? undefined,
         },
       });
     }
@@ -214,13 +220,17 @@ export class ManageVersionsUseCase {
         data: {
           id: crypto.randomUUID(),
           cerVersionId: toVersionId,
+          orderIndex: entry.orderIndex,
           citationKey: entry.citationKey,
           title: entry.title,
-          authors: entry.authors,
+          authors: entry.authors as Prisma.InputJsonValue,
           journal: entry.journal,
           year: entry.year,
           doi: entry.doi,
           referenceType: entry.referenceType,
+          formattedCitation: entry.formattedCitation,
+          citationStyle: entry.citationStyle,
+          createdById: entry.createdById,
         },
       });
     }

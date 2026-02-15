@@ -47,14 +47,10 @@ export class TrackExtractionStatusUseCase {
       throw new NotFoundError('GridCell', `${gridId}/${articleId}`);
     }
 
-    const statuses = cells.map(
-      (c: { validationStatus: CellValidationStatus }) => c.validationStatus,
-    );
-    const flaggedCells = statuses.filter((s: CellValidationStatus) => s === 'FLAGGED').length;
-    const validatedCells = statuses.filter(
-      (s: CellValidationStatus) => s === 'VALIDATED' || s === 'CORRECTED',
-    ).length;
-    const pendingCells = statuses.filter((s: CellValidationStatus) => s === 'PENDING').length;
+    const statuses = cells.map((c) => c.validationStatus as CellValidationStatus);
+    const flaggedCells = statuses.filter((s) => s === 'FLAGGED').length;
+    const validatedCells = statuses.filter((s) => s === 'VALIDATED' || s === 'CORRECTED').length;
+    const pendingCells = statuses.filter((s) => s === 'PENDING').length;
 
     let status: ArticleExtractionStatus;
     if (flaggedCells > 0) {

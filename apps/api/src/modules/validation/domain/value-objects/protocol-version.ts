@@ -8,8 +8,8 @@ export function parseVersion(versionStr: string): ProtocolVersion {
   if (parts.length !== 2) {
     throw new Error(`Invalid version format: ${versionStr}. Expected "major.minor"`);
   }
-  const major = parseInt(parts[0], 10);
-  const minor = parseInt(parts[1], 10);
+  const major = parseInt(parts[0]!, 10);
+  const minor = parseInt(parts[1]!, 10);
   if (isNaN(major) || isNaN(minor) || major < 1 || minor < 0) {
     throw new Error(`Invalid version numbers: ${versionStr}`);
   }

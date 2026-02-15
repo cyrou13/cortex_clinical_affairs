@@ -58,16 +58,16 @@ export class LinkSoaBenchmarksUseCase {
           id: criterionId,
           validationStudyId,
           soaBenchmarkId: benchmark.id,
-          name: benchmark.name,
+          name: benchmark.name ?? '',
           threshold: benchmark.threshold,
           unit: benchmark.unit,
-          metricType: benchmark.metricType ?? null,
+          metricType: (benchmark.metricType ?? undefined) as any,
         },
       });
 
       importedBenchmarks.push({
         id: criterionId,
-        name: benchmark.name,
+        name: benchmark.name ?? '',
         threshold: benchmark.threshold,
         unit: benchmark.unit,
       });

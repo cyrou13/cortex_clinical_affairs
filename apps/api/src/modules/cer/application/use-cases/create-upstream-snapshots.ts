@@ -105,7 +105,7 @@ export class CreateUpstreamSnapshotsUseCase {
     const dataString = JSON.stringify(snapshot.data);
     const valid = this.checksumService.verifyHash(dataString, snapshot.checksum);
 
-    return { valid, moduleType: snapshot.moduleType };
+    return { valid, moduleType: snapshot.moduleType ?? '' };
   }
 
   private async createSnapshot(
@@ -122,20 +122,23 @@ export class CreateUpstreamSnapshotsUseCase {
     const created = await this.prisma.versionSnapshot.create({
       data: {
         id: snapshotId,
+        entityType: 'CerVersion',
+        entityId: cerVersionId,
+        version: 1,
         cerVersionId,
         moduleType,
         data: data as unknown as Prisma.InputJsonValue,
         checksum,
-        createdById: userId,
+        createdBy: userId,
       },
     });
 
     return {
       id: created.id,
-      cerVersionId: created.cerVersionId,
-      moduleType: created.moduleType,
+      cerVersionId: created.cerVersionId ?? '',
+      moduleType: created.moduleType ?? '',
       data: created.data,
-      checksum: created.checksum,
+      checksum: created.checksum ?? '',
     };
   }
 }

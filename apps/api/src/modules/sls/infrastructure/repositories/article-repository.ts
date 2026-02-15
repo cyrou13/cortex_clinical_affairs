@@ -1,15 +1,10 @@
-import type { PrismaClient, Prisma } from '@prisma/client';
+import type { PrismaClient, ArticleStatus } from '@prisma/client';
 import type { ArticleFilter } from '@cortex/shared';
 
 export class ArticleRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async findBySessionId(
-    sessionId: string,
-    filter?: ArticleFilter,
-    offset = 0,
-    limit = 50,
-  ) {
+  async findBySessionId(sessionId: string, filter?: ArticleFilter, offset = 0, limit = 50) {
     const where: Record<string, unknown> = { sessionId };
 
     if (filter) {
@@ -73,14 +68,14 @@ export class ArticleRepository {
 
   async createMany(articles: Array<Record<string, unknown>>) {
     return this.prisma.article.createMany({
-      data: articles,
+      data: articles as any,
     });
   }
 
   async updateStatus(id: string, status: string) {
     return this.prisma.article.update({
       where: { id },
-      data: { status },
+      data: { status: status as ArticleStatus },
     });
   }
 

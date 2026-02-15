@@ -90,12 +90,12 @@ export class GenerateDeltaSummaryUseCase {
           sectionType: section.sectionType,
           title: section.title,
           status: 'ADDED',
-          addedCharacters: (section.content ?? '').length,
+          addedCharacters: ((section.content as string) ?? '').length,
           removedCharacters: 0,
         });
       } else {
-        const currentContent = section.content ?? '';
-        const previousContent = prev.content ?? '';
+        const currentContent = (section.content as string) ?? '';
+        const previousContent = (prev.content as string) ?? '';
 
         if (currentContent === previousContent) {
           sectionsUnchanged++;
@@ -129,7 +129,7 @@ export class GenerateDeltaSummaryUseCase {
           title: section.title,
           status: 'REMOVED',
           addedCharacters: 0,
-          removedCharacters: (section.content ?? '').length,
+          removedCharacters: ((section.content as string) ?? '').length,
         });
       }
     }

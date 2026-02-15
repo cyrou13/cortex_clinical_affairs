@@ -210,8 +210,8 @@ describe('GetClaimTraceUseCase', () => {
     const result = await useCase.execute({ claimTraceId: TRACE_ID });
 
     expect(result.auditTrail).toHaveLength(2);
-    expect(result.auditTrail[0].action).toBe('claimTrace.created');
-    expect(result.auditTrail[1].action).toBe('claimTrace.updated');
+    expect(result.auditTrail[0]!.action).toBe('claimTrace.created');
+    expect(result.auditTrail[1]!.action).toBe('claimTrace.updated');
   });
 
   it('returns empty audit trail when no entries', async () => {

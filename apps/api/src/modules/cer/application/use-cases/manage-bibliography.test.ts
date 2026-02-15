@@ -89,8 +89,8 @@ describe('ManageBibliographyUseCase', () => {
     });
 
     expect(result.totalEntries).toBe(2);
-    expect(result.entries[0].orderIndex).toBe(1);
-    expect(result.entries[1].orderIndex).toBe(2);
+    expect(result.entries[0]!.orderIndex).toBe(1);
+    expect(result.entries[1]!.orderIndex).toBe(2);
   });
 
   it('deduplicates same article referenced multiple times', async () => {
@@ -121,8 +121,8 @@ describe('ManageBibliographyUseCase', () => {
       userId: USER_ID,
     });
 
-    expect(result.entries[0].formattedCitation).toContain('Smith J');
-    expect(result.entries[0].formattedCitation).toContain('JAMA');
+    expect(result.entries[0]!.formattedCitation).toContain('Smith J');
+    expect(result.entries[0]!.formattedCitation).toContain('JAMA');
   });
 
   it('formats citations in Author-Year style', async () => {
@@ -135,7 +135,7 @@ describe('ManageBibliographyUseCase', () => {
       userId: USER_ID,
     });
 
-    expect(result.entries[0].formattedCitation).toContain('(2025)');
+    expect(result.entries[0]!.formattedCitation).toContain('(2025)');
     expect(result.citationStyle).toBe('AUTHOR_YEAR');
   });
 
@@ -236,6 +236,6 @@ describe('ManageBibliographyUseCase', () => {
     });
 
     expect(result.totalEntries).toBe(1);
-    expect(result.entries[0].formattedCitation).toContain('Smith J');
+    expect(result.entries[0]!.formattedCitation).toContain('Smith J');
   });
 });

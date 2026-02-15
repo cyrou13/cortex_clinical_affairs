@@ -11,11 +11,11 @@ function makePrisma(overrides?: {
 }) {
   return {
     cerVersion: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.cerVersion !== undefined
-          ? overrides.cerVersion
-          : { id: VERSION_ID },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.cerVersion !== undefined ? overrides.cerVersion : { id: VERSION_ID },
+        ),
     },
     cerSection: {
       findMany: vi.fn().mockResolvedValue(
@@ -35,11 +35,7 @@ function makePrisma(overrides?: {
       ),
     },
     crossReference: {
-      findMany: vi.fn().mockResolvedValue(
-        overrides?.crossRefs ?? [
-          { refNumber: 'R1' },
-        ],
-      ),
+      findMany: vi.fn().mockResolvedValue(overrides?.crossRefs ?? [{ refNumber: 'R1' }]),
     },
   } as any;
 }
@@ -57,8 +53,8 @@ describe('ManageCrossReferencesUseCase', () => {
 
     expect(result.bibliographyRefs.length).toBe(2); // [1] and [2]
     expect(result.externalDocRefs.length).toBe(2); // [R1] and [R2]
-    expect(result.bibliographyRefs[0].type).toBe('BIBLIOGRAPHY');
-    expect(result.externalDocRefs[0].type).toBe('EXTERNAL_DOC');
+    expect(result.bibliographyRefs[0]!.type).toBe('BIBLIOGRAPHY');
+    expect(result.externalDocRefs[0]!.type).toBe('EXTERNAL_DOC');
   });
 
   it('detects orphaned references (no target)', async () => {
@@ -106,9 +102,7 @@ describe('ManageCrossReferencesUseCase', () => {
     const prisma = makePrisma({ cerVersion: null });
     const useCase = new ManageCrossReferencesUseCase(prisma);
 
-    await expect(
-      useCase.execute({ cerVersionId: 'missing' }),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute({ cerVersionId: 'missing' })).rejects.toThrow('not found');
   });
 
   it('handles sections with no references', async () => {

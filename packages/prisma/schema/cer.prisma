@@ -7,7 +7,9 @@ enum CerVersionStatus {
 
 enum CerSectionStatus {
   DRAFT
+  REVIEWED
   APPROVED
+  FINALIZED
   LOCKED
 }
 
@@ -60,6 +62,7 @@ enum DeviationSignificance {
 enum DeviationStatus {
   IDENTIFIED
   JUSTIFIED
+  APPROVED
   CLOSED
 }
 
@@ -81,41 +84,45 @@ enum EvaluatorRole {
 }
 
 enum NamedDeviceSearchStatus {
+  PENDING
   DRAFT
   RUNNING
   COMPLETED
   FAILED
+  PARTIAL
 }
 
 // 1. CerVersion - root aggregate
 model CerVersion {
   id                String           @id @default(uuid())
   projectId         String
-  regulatoryContext  String
+  regulatoryContext String
   versionType       String
   versionNumber     Int
   status            CerVersionStatus @default(DRAFT)
+  lockedAt          DateTime?
+  lockedById        String?
   createdById       String
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  project                 Project                  @relation(fields: [projectId], references: [id])
-  sections                CerSection[]
-  upstreamLinks           CerUpstreamLink[]
-  externalDocuments       CerExternalDocument[]
-  gsprRows                GsprMatrixRow[]
-  benefitRiskItems        BenefitRiskItem[]
-  benefitRiskAssessment   BenefitRiskAssessment?
-  benefitRiskMitigations  BenefitRiskMitigation[]
-  pccpDeviations          PccpDeviation[]
-  pccpDeviationConfig     PccpDeviationConfig?
-  pccpAcceptanceCriteria  PccpAcceptanceCriteria[]
-  evaluators              Evaluator[]
-  bibliographyEntries     BibliographyEntry[]
-  eSignatures             ESignature[]
-  namedDeviceSearches     NamedDeviceSearch[]
-  crossReferences         CrossReference[]
-  generatedReports        GeneratedReport[]
+  project                Project                  @relation(fields: [projectId], references: [id])
+  sections               CerSection[]
+  upstreamLinks          CerUpstreamLink[]
+  externalDocuments      CerExternalDocument[]
+  gsprRows               GsprMatrixRow[]
+  benefitRiskItems       BenefitRiskItem[]
+  benefitRiskAssessment  BenefitRiskAssessment?
+  benefitRiskMitigations BenefitRiskMitigation[]
+  pccpDeviations         PccpDeviation[]
+  pccpDeviationConfig    PccpDeviationConfig?
+  pccpAcceptanceCriteria PccpAcceptanceCriteria[]
+  evaluators             Evaluator[]
+  bibliographyEntries    BibliographyEntry[]
+  eSignatures            ESignature[]
+  namedDeviceSearches    NamedDeviceSearch[]
+  crossReferences        CrossReference[]
+  generatedReports       GeneratedReport[]
 
   @@index([projectId])
 }
@@ -127,21 +134,29 @@ model CerSection {
   sectionNumber          String
   sectionType            String
   title                  String
+  description            String?
   status                 CerSectionStatus @default(DRAFT)
   content                Json?
   humanEditedContent     Json?
   aiDraftContent         Json?
   orderIndex             Int
+  wordCount              Int?
+  requiresUpdate         Boolean          @default(false)
   createdById            String
   updatedById            String?
   versionMismatchWarning Boolean          @default(false)
+  mismatchResolvedAt     DateTime?
+  mismatchResolvedById   String?
+  changeReason           String?
+  humanEditPercentage    Float?
+  draftedAt              DateTime?
   createdAt              DateTime         @default(now())
   updatedAt              DateTime         @updatedAt
 
-  cerVersion    CerVersion          @relation(fields: [cerVersionId], references: [id])
-  docLinks      CerSectionDocLink[]
-  claimTraces   ClaimTrace[]
-  evaluators    Evaluator[]
+  cerVersion  CerVersion          @relation(fields: [cerVersionId], references: [id])
+  docLinks    CerSectionDocLink[]
+  claimTraces ClaimTrace[]
+  evaluators  Evaluator[]
 
   @@index([cerVersionId])
 }
@@ -172,7 +187,7 @@ model CerExternalDocument {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  cerVersion CerVersion                 @relation(fields: [cerVersionId], references: [id])
+  cerVersion CerVersion                   @relation(fields: [cerVersionId], references: [id])
   history    CerExternalDocumentHistory[]
   docLinks   CerSectionDocLink[]
 
@@ -181,12 +196,12 @@ model CerExternalDocument {
 
 // 5. CerExternalDocumentHistory - version history
 model CerExternalDocumentHistory {
-  id         String   @id @default(uuid())
-  documentId String
-  version    String
-  date       String
-  summary    String
-  archivedAt DateTime
+  id           String   @id @default(uuid())
+  documentId   String
+  version      String
+  date         String
+  summary      String
+  archivedAt   DateTime
   archivedById String
 
   document CerExternalDocument @relation(fields: [documentId], references: [id])
@@ -212,18 +227,18 @@ model CerSectionDocLink {
 
 // 7. GsprMatrixRow - GSPR compliance matrix
 model GsprMatrixRow {
-  id                  String               @id @default(uuid())
-  cerVersionId        String
-  gsprId              String
-  title               String
-  description         String
-  chapter             String
-  section             String
-  status              GsprComplianceStatus
-  evidenceReferences  Json?
-  notes               String?
-  createdById         String
-  createdAt           DateTime             @default(now())
+  id                 String               @id @default(uuid())
+  cerVersionId       String
+  gsprId             String
+  title              String
+  description        String
+  chapter            String
+  section            String
+  status             GsprComplianceStatus
+  evidenceReferences Json?
+  notes              String?
+  createdById        String
+  createdAt          DateTime             @default(now())
 
   cerVersion CerVersion @relation(fields: [cerVersionId], references: [id])
 
@@ -232,7 +247,7 @@ model GsprMatrixRow {
 
 // 8. BenefitRiskItem - benefits and risks
 model BenefitRiskItem {
-  id           String             @id @default(uuid())
+  id           String              @id @default(uuid())
   cerVersionId String
   itemType     BenefitRiskItemType
   description  String
@@ -242,7 +257,7 @@ model BenefitRiskItem {
   probability  RiskProbability?
   riskLevel    RiskLevel?
   createdById  String
-  createdAt    DateTime           @default(now())
+  createdAt    DateTime            @default(now())
 
   cerVersion  CerVersion              @relation(fields: [cerVersionId], references: [id])
   mitigations BenefitRiskMitigation[]
@@ -273,6 +288,7 @@ model BenefitRiskAssessment {
   cerVersionId String   @unique
   conclusion   String
   rationale    String?
+  status       String   @default("DRAFT")
   createdById  String
   createdAt    DateTime @default(now())
 
@@ -289,12 +305,16 @@ model PccpDeviation {
   actualValue      String
   significance     DeviationSignificance
   impactedSections Json?
-  status           DeviationStatus
-  exceedsThreshold Boolean               @default(false)
-  source           DeviationSource
-  justification    String?
-  createdById      String
-  createdAt        DateTime              @default(now())
+  status                DeviationStatus
+  exceedsThreshold      Boolean               @default(false)
+  source                DeviationSource
+  justification         String?
+  justificationApproved Boolean?
+  approvedById          String?
+  approvedAt            DateTime?
+  resolutionAction      String?
+  createdById           String
+  createdAt             DateTime              @default(now())
 
   cerVersion CerVersion @relation(fields: [cerVersionId], references: [id])
 
@@ -303,13 +323,13 @@ model PccpDeviation {
 
 // 12. PccpDeviationConfig - thresholds config
 model PccpDeviationConfig {
-  id                         String                     @id @default(uuid())
-  cerVersionId               String                     @unique
+  id                          String                      @id @default(uuid())
+  cerVersionId                String                      @unique
   mandatoryJustificationLevel MandatoryJustificationLevel
-  createdById                String
-  updatedById                String
-  createdAt                  DateTime                   @default(now())
-  updatedAt                  DateTime                   @updatedAt
+  createdById                 String
+  updatedById                 String
+  createdAt                   DateTime                    @default(now())
+  updatedAt                   DateTime                    @updatedAt
 
   cerVersion CerVersion @relation(fields: [cerVersionId], references: [id])
 }
@@ -337,8 +357,13 @@ model Evaluator {
   userId        String
   role          EvaluatorRole
   assignedById  String
-  cvFilePath    String?
-  coiDeclaredAt DateTime?
+  cvFilePath      String?
+  cvFilename      String?
+  cvStorageKey    String?
+  cvMimetype      String?
+  hasConflict     Boolean?
+  conflictDetails String?
+  coiDeclaredAt   DateTime?
   signedAt      DateTime?
   signatureHash String?
   createdAt     DateTime      @default(now())
@@ -357,6 +382,12 @@ model BibliographyEntry {
   orderIndex        Int
   articleId         String?
   title             String
+  citationKey       String?
+  authors           Json?
+  journal           String?
+  year              Int?
+  doi               String?
+  referenceType     String?
   formattedCitation String
   citationStyle     String
   createdById       String
@@ -369,25 +400,37 @@ model BibliographyEntry {
 
 // 16. ClaimTrace - traceability links
 model ClaimTrace {
-  id           String   @id @default(uuid())
-  cerSectionId String
-  slsArticleId String?
-  refNumber    String
-  createdAt    DateTime @default(now())
+  id                String   @id @default(uuid())
+  cerSectionId      String
+  cerVersionId      String?
+  slsArticleId      String?
+  claimId           String?
+  claimText         String?
+  soaSourceId       String?
+  validationStudyId String?
+  sectionType       String?
+  evidenceReference String?
+  traceType         String?
+  refNumber         String
+  createdAt         DateTime @default(now())
 
   cerSection CerSection @relation(fields: [cerSectionId], references: [id])
 
   @@index([cerSectionId])
+  @@index([cerVersionId])
 }
 
 // 17. CrossReference - cross-references within CER
 model CrossReference {
-  id           String @id @default(uuid())
-  cerVersionId String
-  type         String
-  refNumber    String
-  targetType   String
-  targetId     String?
+  id                String  @id @default(uuid())
+  cerVersionId      String
+  type              String
+  refNumber         String
+  targetType        String
+  targetId          String?
+  sourceSectionType String?
+  targetSectionType String?
+  description       String?
 
   cerVersion CerVersion @relation(fields: [cerVersionId], references: [id])
 
@@ -430,6 +473,7 @@ model RiskEntry {
   id              String          @id @default(uuid())
   projectId       String
   riskDescription String
+  description     String?
   severity        RiskSeverity
   probability     RiskProbability
   status          String
@@ -442,15 +486,17 @@ model RiskEntry {
 
 // 21. GeneratedReport - generated report packages
 model GeneratedReport {
-  id           String   @id @default(uuid())
-  cerVersionId String
-  reportType   String
-  filePath     String?
-  status       String
-  createdById  String
-  createdAt    DateTime @default(now())
+  id                String   @id @default(uuid())
+  cerVersionId      String
+  validationStudyId String?
+  reportType        String
+  filePath          String?
+  status            String
+  createdById       String
+  createdAt         DateTime @default(now())
 
   cerVersion CerVersion @relation(fields: [cerVersionId], references: [id])
 
   @@index([cerVersionId])
+  @@index([validationStudyId])
 }

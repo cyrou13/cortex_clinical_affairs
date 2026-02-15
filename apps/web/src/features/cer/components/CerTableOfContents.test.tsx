@@ -6,7 +6,10 @@ import { CerTableOfContents } from './CerTableOfContents';
 const mockSections = Array.from({ length: 14 }, (_, i) => ({
   sectionNumber: i + 1,
   title: `Section ${i + 1} Title`,
-  status: (i < 5 ? 'FINALIZED' : i < 8 ? 'REVIEWED' : 'DRAFT') as 'DRAFT' | 'REVIEWED' | 'FINALIZED',
+  status: (i < 5 ? 'FINALIZED' : i < 8 ? 'REVIEWED' : 'DRAFT') as
+    | 'DRAFT'
+    | 'REVIEWED'
+    | 'FINALIZED',
   wordCount: 500 + i * 100,
   hasTraceability: i < 10,
 }));
@@ -54,7 +57,7 @@ describe('CerTableOfContents', () => {
     const onClick = vi.fn();
     render(<CerTableOfContents sections={mockSections} onSectionClick={onClick} />);
     const items = screen.getAllByTestId('toc-section-item');
-    fireEvent.click(items[2]);
+    fireEvent.click(items[2]!);
     expect(onClick).toHaveBeenCalledWith(3);
   });
 

@@ -68,7 +68,10 @@ function ValidationBadge({ status }: { status: string }) {
 
   const Icon = config.icon;
   return (
-    <span className={`inline-flex items-center gap-1 text-xs ${config.className}`} data-testid="validation-badge">
+    <span
+      className={`inline-flex items-center gap-1 text-xs ${config.className}`}
+      data-testid="validation-badge"
+    >
       <Icon size={12} />
       {config.label}
     </span>
@@ -76,7 +79,7 @@ function ValidationBadge({ status }: { status: string }) {
 }
 
 export function MinedReferenceReview({ sessionId }: MinedReferenceReviewProps) {
-  const { data, loading, error } = useQuery(GET_MINED_REFERENCES, {
+  const { data, loading, error } = useQuery<any>(GET_MINED_REFERENCES, {
     variables: { sessionId },
   });
 
@@ -90,7 +93,10 @@ export function MinedReferenceReview({ sessionId }: MinedReferenceReviewProps) {
 
   if (loading) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="references-loading">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="references-loading"
+      >
         Loading mined references...
       </div>
     );
@@ -98,7 +104,10 @@ export function MinedReferenceReview({ sessionId }: MinedReferenceReviewProps) {
 
   if (error) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-error)]" data-testid="references-error">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-error)]"
+        data-testid="references-error"
+      >
         Failed to load references.
       </div>
     );
@@ -109,7 +118,10 @@ export function MinedReferenceReview({ sessionId }: MinedReferenceReviewProps) {
 
   if (references.length === 0) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="references-empty">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="references-empty"
+      >
         No mined references found.
       </div>
     );
@@ -122,7 +134,10 @@ export function MinedReferenceReview({ sessionId }: MinedReferenceReviewProps) {
           Mined References ({references.length})
         </h3>
         {pendingCount > 0 && (
-          <span className="rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700" data-testid="pending-count">
+          <span
+            className="rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700"
+            data-testid="pending-count"
+          >
             {pendingCount} pending
           </span>
         )}
@@ -132,10 +147,18 @@ export function MinedReferenceReview({ sessionId }: MinedReferenceReviewProps) {
         <table className="w-full text-sm" data-testid="references-table">
           <thead className="bg-[var(--cortex-bg-muted)]">
             <tr>
-              <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">Title</th>
-              <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">Year</th>
-              <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">Status</th>
-              <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">Actions</th>
+              <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">
+                Title
+              </th>
+              <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">
+                Year
+              </th>
+              <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">
+                Status
+              </th>
+              <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--cortex-border)]">
@@ -144,7 +167,9 @@ export function MinedReferenceReview({ sessionId }: MinedReferenceReviewProps) {
                 <td className="max-w-[300px] truncate px-3 py-2 text-[var(--cortex-text-primary)]">
                   <div>{ref.title}</div>
                   {ref.isDuplicate && (
-                    <span className="text-xs text-orange-500" data-testid="duplicate-indicator">Duplicate</span>
+                    <span className="text-xs text-orange-500" data-testid="duplicate-indicator">
+                      Duplicate
+                    </span>
                   )}
                 </td>
                 <td className="px-3 py-2 text-[var(--cortex-text-muted)]">{ref.year ?? '—'}</td>
@@ -165,7 +190,9 @@ export function MinedReferenceReview({ sessionId }: MinedReferenceReviewProps) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => reject({ variables: { referenceId: ref.id, reason: 'Not relevant' } })}
+                        onClick={() =>
+                          reject({ variables: { referenceId: ref.id, reason: 'Not relevant' } })
+                        }
                         disabled={rejecting}
                         className="inline-flex items-center gap-1 rounded bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
                         data-testid="reject-ref-btn"
@@ -174,7 +201,10 @@ export function MinedReferenceReview({ sessionId }: MinedReferenceReviewProps) {
                       </button>
                     </div>
                   ) : (
-                    <span className={`text-xs font-medium ${ref.approvalStatus === 'APPROVED' ? 'text-emerald-600' : 'text-red-600'}`} data-testid="approval-status">
+                    <span
+                      className={`text-xs font-medium ${ref.approvalStatus === 'APPROVED' ? 'text-emerald-600' : 'text-red-600'}`}
+                      data-testid="approval-status"
+                    >
                       {ref.approvalStatus}
                     </span>
                   )}

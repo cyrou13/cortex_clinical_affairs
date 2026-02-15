@@ -51,10 +51,10 @@ export class ManageSectionUseCase {
       where: { id: sectionId },
       data: {
         narrativeContent,
-        status: 'IN_PROGRESS',
+        status: 'IN_PROGRESS' as any,
         updatedById: userId,
         updatedAt,
-      },
+      } as any,
     });
 
     return {
@@ -78,7 +78,7 @@ export class ManageSectionUseCase {
       throw new ValidationError('Cannot finalize section on a locked SOA analysis');
     }
 
-    if (!section.narrativeContent || !section.narrativeContent.trim()) {
+    if (!section.narrativeContent || !(section.narrativeContent as string).trim()) {
       throw new ValidationError('Cannot finalize section with empty narrative content');
     }
 
@@ -90,7 +90,7 @@ export class ManageSectionUseCase {
         status: 'FINALIZED',
         updatedById: userId,
         updatedAt: finalizedAt,
-      },
+      } as any,
     });
 
     return {

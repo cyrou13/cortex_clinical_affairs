@@ -38,7 +38,7 @@ interface PdfMismatchReviewProps {
 }
 
 export function PdfMismatchReview({ sessionId }: PdfMismatchReviewProps) {
-  const { data, loading, error } = useQuery(GET_PDF_MISMATCHES, {
+  const { data, loading, error } = useQuery<any>(GET_PDF_MISMATCHES, {
     variables: { sessionId },
   });
 
@@ -48,7 +48,10 @@ export function PdfMismatchReview({ sessionId }: PdfMismatchReviewProps) {
 
   if (loading) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="mismatch-loading">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="mismatch-loading"
+      >
         Loading mismatches...
       </div>
     );
@@ -56,7 +59,10 @@ export function PdfMismatchReview({ sessionId }: PdfMismatchReviewProps) {
 
   if (error) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-error)]" data-testid="mismatch-error">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-error)]"
+        data-testid="mismatch-error"
+      >
         Failed to load mismatches.
       </div>
     );
@@ -66,7 +72,10 @@ export function PdfMismatchReview({ sessionId }: PdfMismatchReviewProps) {
 
   if (articles.length === 0) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="mismatch-empty">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="mismatch-empty"
+      >
         No mismatches to review.
       </div>
     );
@@ -92,7 +101,10 @@ export function PdfMismatchReview({ sessionId }: PdfMismatchReviewProps) {
             <div className="mb-2 flex items-start gap-2">
               <AlertTriangle size={16} className="mt-0.5 shrink-0 text-orange-500" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-[var(--cortex-text-primary)]" data-testid="mismatch-title">
+                <p
+                  className="text-sm font-medium text-[var(--cortex-text-primary)]"
+                  data-testid="mismatch-title"
+                >
                   {article.title}
                 </p>
                 <div className="mt-1 space-y-1">

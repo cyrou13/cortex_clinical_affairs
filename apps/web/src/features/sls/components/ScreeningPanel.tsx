@@ -81,7 +81,7 @@ export function ScreeningPanel({ sessionId }: ScreeningPanelProps) {
   const [detailArticleId, setDetailArticleId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const { data, loading, error } = useQuery(GET_SCREENING_ARTICLES, {
+  const { data, loading, error } = useQuery<any>(GET_SCREENING_ARTICLES, {
     variables: { sessionId, filter: activeTab },
   });
 
@@ -155,11 +155,7 @@ export function ScreeningPanel({ sessionId }: ScreeningPanelProps) {
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Filter tabs */}
-        <ScreeningFilterTabs
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          counts={counts}
-        />
+        <ScreeningFilterTabs activeTab={activeTab} onTabChange={setActiveTab} counts={counts} />
 
         {/* Bulk actions */}
         <BulkActionsToolbar
@@ -172,19 +168,28 @@ export function ScreeningPanel({ sessionId }: ScreeningPanelProps) {
         {/* Table */}
         <div className="flex-1 overflow-y-auto">
           {loading && (
-            <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="screening-loading">
+            <div
+              className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+              data-testid="screening-loading"
+            >
               Loading articles...
             </div>
           )}
 
           {error && !loading && (
-            <div className="py-8 text-center text-sm text-[var(--cortex-error)]" data-testid="screening-error">
+            <div
+              className="py-8 text-center text-sm text-[var(--cortex-error)]"
+              data-testid="screening-error"
+            >
               Failed to load articles.
             </div>
           )}
 
           {!loading && !error && articles.length === 0 && (
-            <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="screening-empty">
+            <div
+              className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+              data-testid="screening-empty"
+            >
               No articles to screen.
             </div>
           )}
@@ -270,10 +275,7 @@ export function ScreeningPanel({ sessionId }: ScreeningPanelProps) {
 
       {/* Detail panel */}
       {detailArticleId && (
-        <ArticleDetailPanel
-          articleId={detailArticleId}
-          onClose={() => setDetailArticleId(null)}
-        />
+        <ArticleDetailPanel articleId={detailArticleId} onClose={() => setDetailArticleId(null)} />
       )}
     </div>
   );

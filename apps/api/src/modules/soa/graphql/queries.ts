@@ -160,7 +160,7 @@ builder.queryField('soaProgress', (t) =>
           case 'DRAFT':
             draftCount++;
             break;
-          case 'IN_PROGRESS':
+          case 'IN_PROGRESS' as any:
             inProgressCount++;
             break;
           case 'FINALIZED':

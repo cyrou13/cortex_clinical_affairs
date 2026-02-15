@@ -70,39 +70,41 @@ export class DetectSectionChangesUseCase {
 
     const previousModuleMap = new Map<string, any>();
     for (const snap of previousSnapshots) {
-      previousModuleMap.set(snap.moduleType, snap);
+      previousModuleMap.set(snap.moduleType ?? '', snap);
     }
 
     const currentModuleMap = new Map<string, any>();
     for (const snap of currentSnapshots) {
-      currentModuleMap.set(snap.moduleType, snap);
+      currentModuleMap.set(snap.moduleType ?? '', snap);
     }
 
     // Check for added and modified modules
     for (const snap of currentSnapshots) {
-      const prev = previousModuleMap.get(snap.moduleType);
+      const mt = snap.moduleType ?? '';
+      const prev = previousModuleMap.get(mt);
       if (!prev) {
         upstreamChanges.push({
-          moduleType: snap.moduleType,
+          moduleType: mt,
           changeType: 'ADDED',
-          description: `New ${snap.moduleType} data added`,
+          description: `New ${mt} data added`,
         });
       } else if (snap.checksum !== prev.checksum) {
         upstreamChanges.push({
-          moduleType: snap.moduleType,
+          moduleType: mt,
           changeType: 'MODIFIED',
-          description: `${snap.moduleType} data has been modified`,
+          description: `${mt} data has been modified`,
         });
       }
     }
 
     // Check for removed modules
     for (const snap of previousSnapshots) {
-      if (!currentModuleMap.has(snap.moduleType)) {
+      const mt = snap.moduleType ?? '';
+      if (!currentModuleMap.has(mt)) {
         upstreamChanges.push({
-          moduleType: snap.moduleType,
+          moduleType: mt,
           changeType: 'REMOVED',
-          description: `${snap.moduleType} data has been removed`,
+          description: `${mt} data has been removed`,
         });
       }
     }
@@ -151,7 +153,7 @@ export class DetectSectionChangesUseCase {
           data: {
             requiresUpdate: true,
             changeReason: affected.changeReason,
-          },
+          } as any,
         });
       }
     }

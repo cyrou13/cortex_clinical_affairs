@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 import { CheckCircle, XCircle } from 'lucide-react';
-import { cn } from '../../../shared/utils/cn';
 
 export const GET_SPOT_CHECK_SAMPLE = gql`
   query GetSpotCheckSample($sessionId: String!, $category: String!, $count: Int!) {
@@ -49,7 +48,7 @@ export function SpotCheckView({ sessionId, category, sampleSize }: SpotCheckView
   const [currentIndex, setCurrentIndex] = useState(0);
   const [results, setResults] = useState<Array<{ articleId: string; agreed: boolean }>>([]);
 
-  const { data, loading, error } = useQuery(GET_SPOT_CHECK_SAMPLE, {
+  const { data, loading, error } = useQuery<any>(GET_SPOT_CHECK_SAMPLE, {
     variables: { sessionId, category, count: sampleSize },
   });
 
@@ -96,7 +95,10 @@ export function SpotCheckView({ sessionId, category, sampleSize }: SpotCheckView
 
   if (loading) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="spot-check-loading">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="spot-check-loading"
+      >
         Loading spot-check sample...
       </div>
     );
@@ -104,7 +106,10 @@ export function SpotCheckView({ sessionId, category, sampleSize }: SpotCheckView
 
   if (error) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-error)]" data-testid="spot-check-error">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-error)]"
+        data-testid="spot-check-error"
+      >
         Failed to load spot-check sample.
       </div>
     );
@@ -112,14 +117,20 @@ export function SpotCheckView({ sessionId, category, sampleSize }: SpotCheckView
 
   if (isComplete) {
     return (
-      <div className="space-y-4 rounded-lg border border-[var(--cortex-border)] p-6" data-testid="spot-check-complete">
+      <div
+        className="space-y-4 rounded-lg border border-[var(--cortex-border)] p-6"
+        data-testid="spot-check-complete"
+      >
         <h3 className="text-lg font-semibold text-[var(--cortex-text-primary)]">
           Spot-check Complete
         </h3>
         <div className="text-2xl font-bold" data-testid="spot-check-accuracy">
           AI Accuracy: {accuracy}%
         </div>
-        <div className="text-sm text-[var(--cortex-text-secondary)]" data-testid="spot-check-summary">
+        <div
+          className="text-sm text-[var(--cortex-text-secondary)]"
+          data-testid="spot-check-summary"
+        >
           {agreements} agreements, {overrides} overrides out of {results.length} articles
         </div>
       </div>
@@ -128,7 +139,10 @@ export function SpotCheckView({ sessionId, category, sampleSize }: SpotCheckView
 
   if (!currentArticle) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="spot-check-empty">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="spot-check-empty"
+      >
         No articles available for spot-checking.
       </div>
     );
@@ -144,13 +158,22 @@ export function SpotCheckView({ sessionId, category, sampleSize }: SpotCheckView
       </div>
 
       {/* Article card */}
-      <div className="rounded-lg border border-[var(--cortex-border)] p-4" data-testid="spot-check-article">
-        <h4 className="mb-2 text-base font-semibold text-[var(--cortex-text-primary)]" data-testid="spot-check-title">
+      <div
+        className="rounded-lg border border-[var(--cortex-border)] p-4"
+        data-testid="spot-check-article"
+      >
+        <h4
+          className="mb-2 text-base font-semibold text-[var(--cortex-text-primary)]"
+          data-testid="spot-check-title"
+        >
           {currentArticle.title}
         </h4>
 
         {currentArticle.abstract && (
-          <p className="mb-3 text-sm text-[var(--cortex-text-secondary)]" data-testid="spot-check-abstract">
+          <p
+            className="mb-3 text-sm text-[var(--cortex-text-secondary)]"
+            data-testid="spot-check-abstract"
+          >
             {currentArticle.abstract}
           </p>
         )}

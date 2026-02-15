@@ -16,8 +16,9 @@ function makeCtx(overrides: Partial<GraphQLContext> = {}): GraphQLContext {
     } as unknown as GraphQLContext['prisma'],
     user: { id: 'user-1', role: 'ADMIN' },
     requestId: 'req-1',
+    reply: {} as GraphQLContext['reply'],
     ...overrides,
-  };
+  } as GraphQLContext;
 }
 
 describe('Audit Middleware – withAudit', () => {

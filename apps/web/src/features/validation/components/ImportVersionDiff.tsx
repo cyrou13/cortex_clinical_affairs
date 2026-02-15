@@ -36,13 +36,16 @@ interface ImportVersionDiffProps {
 }
 
 export function ImportVersionDiff({ studyId, versionA, versionB }: ImportVersionDiffProps) {
-  const { data, loading } = useQuery(GET_IMPORT_DIFF, {
+  const { data, loading } = useQuery<any>(GET_IMPORT_DIFF, {
     variables: { studyId, versionA, versionB },
   });
 
   if (loading) {
     return (
-      <div className="py-6 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="diff-loading">
+      <div
+        className="py-6 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="diff-loading"
+      >
         Computing diff...
       </div>
     );
@@ -82,28 +85,38 @@ export function ImportVersionDiff({ studyId, versionA, versionB }: ImportVersion
     <div className="space-y-4" data-testid="import-diff">
       <div className="flex items-center gap-2">
         <GitCompare size={16} className="text-[var(--cortex-primary)]" />
-        <h3 className="text-sm font-semibold text-[var(--cortex-text-primary)]">
-          Version Diff
-        </h3>
+        <h3 className="text-sm font-semibold text-[var(--cortex-text-primary)]">Version Diff</h3>
       </div>
 
-      <div className="flex gap-4 rounded-lg border border-[var(--cortex-border)] p-3" data-testid="diff-summary">
+      <div
+        className="flex gap-4 rounded-lg border border-[var(--cortex-border)] p-3"
+        data-testid="diff-summary"
+      >
         <div className="flex items-center gap-2">
           <Plus size={14} className="text-emerald-600" />
-          <span className="text-sm text-emerald-700" data-testid="added-count">{summary.added} added</span>
+          <span className="text-sm text-emerald-700" data-testid="added-count">
+            {summary.added} added
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <Minus size={14} className="text-red-600" />
-          <span className="text-sm text-red-700" data-testid="removed-count">{summary.removed} removed</span>
+          <span className="text-sm text-red-700" data-testid="removed-count">
+            {summary.removed} removed
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <RefreshCw size={14} className="text-orange-600" />
-          <span className="text-sm text-orange-700" data-testid="modified-count">{summary.modified} modified</span>
+          <span className="text-sm text-orange-700" data-testid="modified-count">
+            {summary.modified} modified
+          </span>
         </div>
       </div>
 
       {rows.length === 0 ? (
-        <p className="py-4 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="no-diff">
+        <p
+          className="py-4 text-center text-sm text-[var(--cortex-text-muted)]"
+          data-testid="no-diff"
+        >
           No differences found.
         </p>
       ) : (
@@ -119,7 +132,11 @@ export function ImportVersionDiff({ studyId, versionA, versionB }: ImportVersion
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.id} className={getRowColor(row.type)} data-testid={`diff-row-${row.id}`}>
+                <tr
+                  key={row.id}
+                  className={getRowColor(row.type)}
+                  data-testid={`diff-row-${row.id}`}
+                >
                   <td className="border-r border-[#ECF0F1] px-3 py-1.5">
                     <div className="flex items-center gap-1">
                       {getTypeIcon(row.type)}
@@ -132,9 +149,7 @@ export function ImportVersionDiff({ studyId, versionA, versionB }: ImportVersion
                   <td className="border-r border-[#ECF0F1] px-3 py-1.5 text-red-600">
                     {row.oldValue ?? '—'}
                   </td>
-                  <td className="px-3 py-1.5 text-emerald-600">
-                    {row.newValue ?? '—'}
-                  </td>
+                  <td className="px-3 py-1.5 text-emerald-600">{row.newValue ?? '—'}</td>
                 </tr>
               ))}
             </tbody>

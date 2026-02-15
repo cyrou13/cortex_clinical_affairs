@@ -147,9 +147,11 @@ describe('UpdateGapEntryUseCase', () => {
             resolvedAt: null,
             resolutionNotes: null,
           }),
-          update: vi.fn().mockImplementation((args: { data: Record<string, unknown> }) =>
-            Promise.resolve({ id: 'gap-1', ...args.data }),
-          ),
+          update: vi
+            .fn()
+            .mockImplementation((args: { data: Record<string, unknown> }) =>
+              Promise.resolve({ id: 'gap-1', ...args.data }),
+            ),
           create: vi.fn(),
         },
       });
@@ -162,7 +164,7 @@ describe('UpdateGapEntryUseCase', () => {
         userId: 'user-1',
       });
 
-      const callData = prisma.gapRegistryEntry.update.mock.calls[0][0].data;
+      const callData = vi.mocked(prisma.gapRegistryEntry.update).mock.calls[0]![0]!.data;
       expect(callData.status).toBe('RESOLVED');
       expect(callData.resolvedAt).toBeInstanceOf(Date);
       expect(callData.resolvedBy).toBe('user-1');
@@ -176,9 +178,11 @@ describe('UpdateGapEntryUseCase', () => {
             id: 'gap-1',
             status: 'IN_PROGRESS',
           }),
-          update: vi.fn().mockImplementation((args: { data: Record<string, unknown> }) =>
-            Promise.resolve({ id: 'gap-1', ...args.data }),
-          ),
+          update: vi
+            .fn()
+            .mockImplementation((args: { data: Record<string, unknown> }) =>
+              Promise.resolve({ id: 'gap-1', ...args.data }),
+            ),
           create: vi.fn(),
         },
       });
@@ -190,7 +194,7 @@ describe('UpdateGapEntryUseCase', () => {
         userId: 'user-1',
       });
 
-      const callData = prisma.gapRegistryEntry.update.mock.calls[0][0].data;
+      const callData = vi.mocked(prisma.gapRegistryEntry.update).mock.calls[0]![0]!.data;
       expect(callData.resolutionNotes).toBeNull();
     });
 
@@ -201,7 +205,7 @@ describe('UpdateGapEntryUseCase', () => {
         userId: 'user-1',
       });
 
-      const callData = prisma.gapRegistryEntry.update.mock.calls[0][0].data;
+      const callData = vi.mocked(prisma.gapRegistryEntry.update).mock.calls[0]![0]!.data;
       expect(callData).toHaveProperty('description');
       expect(callData).not.toHaveProperty('severity');
       expect(callData).not.toHaveProperty('status');
@@ -309,15 +313,15 @@ describe('UpdateGapEntryUseCase', () => {
     it('generates unique IDs for manual entries', async () => {
       await useCase.addManual(validManualInput);
 
-      const callData = prisma.gapRegistryEntry.create.mock.calls[0][0].data;
+      const callData = vi.mocked(prisma.gapRegistryEntry.create).mock.calls[0]![0]!.data;
       expect(callData.id).toBeDefined();
       expect(callData.sourceId).toBeDefined();
     });
 
     it('throws ValidationError for invalid severity in manual entry', async () => {
-      await expect(
-        useCase.addManual({ ...validManualInput, severity: 'EXTREME' }),
-      ).rejects.toThrow('Invalid gap severity');
+      await expect(useCase.addManual({ ...validManualInput, severity: 'EXTREME' })).rejects.toThrow(
+        'Invalid gap severity',
+      );
     });
 
     it('accepts all valid severities for manual entries', async () => {

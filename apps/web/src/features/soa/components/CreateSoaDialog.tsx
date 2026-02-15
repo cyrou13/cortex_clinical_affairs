@@ -34,8 +34,16 @@ export const CREATE_SOA = gql`
 `;
 
 const SOA_TYPES = [
-  { value: 'CLINICAL', label: 'Clinical SOA', description: 'Clinical evaluation per MDR Annex XIV' },
-  { value: 'SIMILAR_DEVICE', label: 'Similar Device SOA', description: 'Equivalence assessment for similar devices' },
+  {
+    value: 'CLINICAL',
+    label: 'Clinical SOA',
+    description: 'Clinical evaluation per MDR Annex XIV',
+  },
+  {
+    value: 'SIMILAR_DEVICE',
+    label: 'Similar Device SOA',
+    description: 'Equivalence assessment for similar devices',
+  },
   { value: 'ALTERNATIVE', label: 'Alternative SOA', description: 'Alternative therapies analysis' },
 ] as const;
 
@@ -51,17 +59,17 @@ export function CreateSoaDialog({ projectId, open, onClose, onCreated }: CreateS
   const [soaType, setSoaType] = useState('CLINICAL');
   const [selectedSessions, setSelectedSessions] = useState<string[]>([]);
 
-  const { data: sessionsData } = useQuery(GET_LOCKED_SESSIONS, {
+  const { data: sessionsData } = useQuery<any>(GET_LOCKED_SESSIONS, {
     variables: { projectId },
     skip: !open,
   });
 
-  const { data: depData } = useQuery(CHECK_DEPENDENCY, {
+  const { data: depData } = useQuery<any>(CHECK_DEPENDENCY, {
     variables: { projectId, soaType },
     skip: !open || soaType !== 'SIMILAR_DEVICE',
   });
 
-  const [createSoa, { loading: creating }] = useMutation(CREATE_SOA);
+  const [createSoa, { loading: creating }] = useMutation<any>(CREATE_SOA);
 
   useEffect(() => {
     if (!open) {
@@ -77,9 +85,7 @@ export function CreateSoaDialog({ projectId, open, onClose, onCreated }: CreateS
 
   const handleSessionToggle = (sessionId: string) => {
     setSelectedSessions((prev) =>
-      prev.includes(sessionId)
-        ? prev.filter((id) => id !== sessionId)
-        : [...prev, sessionId],
+      prev.includes(sessionId) ? prev.filter((id) => id !== sessionId) : [...prev, sessionId],
     );
   };
 
@@ -103,7 +109,10 @@ export function CreateSoaDialog({ projectId, open, onClose, onCreated }: CreateS
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" data-testid="create-soa-dialog">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      data-testid="create-soa-dialog"
+    >
       <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -112,14 +121,21 @@ export function CreateSoaDialog({ projectId, open, onClose, onCreated }: CreateS
               Create SOA Analysis
             </h2>
           </div>
-          <button type="button" onClick={onClose} className="text-[var(--cortex-text-muted)] hover:text-[var(--cortex-text-primary)]" data-testid="close-dialog-btn">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-[var(--cortex-text-muted)] hover:text-[var(--cortex-text-primary)]"
+            data-testid="close-dialog-btn"
+          >
             <X size={18} />
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">Name</label>
+            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
+              Name
+            </label>
             <input
               type="text"
               value={name}
@@ -131,7 +147,9 @@ export function CreateSoaDialog({ projectId, open, onClose, onCreated }: CreateS
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">SOA Type</label>
+            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
+              SOA Type
+            </label>
             <div className="space-y-2" data-testid="soa-type-selector">
               {SOA_TYPES.map((t) => (
                 <label
@@ -161,7 +179,10 @@ export function CreateSoaDialog({ projectId, open, onClose, onCreated }: CreateS
           </div>
 
           {warnings.length > 0 && (
-            <div className="rounded-lg border border-orange-200 bg-orange-50 p-3" data-testid="dependency-warning">
+            <div
+              className="rounded-lg border border-orange-200 bg-orange-50 p-3"
+              data-testid="dependency-warning"
+            >
               <div className="flex items-start gap-2">
                 <AlertTriangle size={16} className="mt-0.5 text-orange-500" />
                 <div className="text-xs text-orange-700">
@@ -184,7 +205,10 @@ export function CreateSoaDialog({ projectId, open, onClose, onCreated }: CreateS
             ) : (
               <div className="space-y-1" data-testid="session-picker">
                 {sessions.map((s: { id: string; name: string }) => (
-                  <label key={s.id} className="flex items-center gap-2 rounded border border-[var(--cortex-border)] p-2 text-sm">
+                  <label
+                    key={s.id}
+                    className="flex items-center gap-2 rounded border border-[var(--cortex-border)] p-2 text-sm"
+                  >
                     <input
                       type="checkbox"
                       checked={selectedSessions.includes(s.id)}

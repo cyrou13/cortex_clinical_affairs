@@ -1,4 +1,8 @@
-import type { PrismaClient, Prisma } from '@prisma/client';
+import type {
+  PrismaClient,
+  Prisma,
+  DeviationSignificance as PrismaDeviationSignificance,
+} from '@prisma/client';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
 import type { EventBus } from '../../../../shared/events/event-bus.js';
 import { createPccpDeviationCreatedEvent } from '../../domain/events/cer-events.js';
@@ -119,12 +123,13 @@ export class TrackDeviationsUseCase {
         description: input.description,
         expectedValue: input.expectedValue,
         actualValue: input.actualValue,
-        significance: input.significance,
+        significance: input.significance as PrismaDeviationSignificance,
         justification: input.justification ?? null,
         impactedSections: input.impactedSections as unknown as Prisma.InputJsonValue,
         resolutionAction: input.resolutionAction ?? null,
         status: 'IDENTIFIED',
         exceedsThreshold,
+        source: 'VALIDATION_RESULT',
         createdById: input.userId,
       },
     });
@@ -231,7 +236,9 @@ export class TrackDeviationsUseCase {
       actualValue: updated.actualValue,
       significance: updated.significance,
       justification: updated.justification,
-      impactedSections: Array.isArray(updated.impactedSections) ? updated.impactedSections : [],
+      impactedSections: Array.isArray(updated.impactedSections)
+        ? (updated.impactedSections as string[])
+        : [],
       resolutionAction: updated.resolutionAction,
       status: updated.status,
       exceedsThreshold: updated.exceedsThreshold ?? false,

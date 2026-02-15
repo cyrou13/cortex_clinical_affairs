@@ -31,11 +31,11 @@ interface PdfRetrievalPanelProps {
 export function PdfRetrievalPanel({ sessionId }: PdfRetrievalPanelProps) {
   const [taskId, setTaskId] = useState<string | null>(null);
 
-  const { data: statsData } = useQuery(GET_PDF_RETRIEVAL_STATS, {
+  const { data: statsData } = useQuery<any>(GET_PDF_RETRIEVAL_STATS, {
     variables: { sessionId },
   });
 
-  const [launchRetrieval, { loading: launching }] = useMutation(LAUNCH_PDF_RETRIEVAL);
+  const [launchRetrieval, { loading: launching }] = useMutation<any>(LAUNCH_PDF_RETRIEVAL);
 
   const stats = statsData?.pdfRetrievalStats;
   const isRetrieving = stats?.retrieving > 0 || !!taskId;
@@ -51,9 +51,7 @@ export function PdfRetrievalPanel({ sessionId }: PdfRetrievalPanelProps) {
   return (
     <div className="space-y-4" data-testid="pdf-retrieval-panel">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-[var(--cortex-text-primary)]">
-          PDF Retrieval
-        </h3>
+        <h3 className="text-lg font-semibold text-[var(--cortex-text-primary)]">PDF Retrieval</h3>
         <button
           type="button"
           onClick={handleLaunch}
@@ -61,11 +59,7 @@ export function PdfRetrievalPanel({ sessionId }: PdfRetrievalPanelProps) {
           className="inline-flex items-center gap-2 rounded bg-[var(--cortex-primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           data-testid="launch-retrieval-btn"
         >
-          {isRetrieving ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            <Download size={16} />
-          )}
+          {isRetrieving ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
           {isRetrieving ? 'Retrieving...' : 'Retrieve PDFs'}
         </button>
       </div>
@@ -74,7 +68,10 @@ export function PdfRetrievalPanel({ sessionId }: PdfRetrievalPanelProps) {
       {stats && (
         <div className="space-y-3" data-testid="pdf-stats">
           {/* Progress bar */}
-          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200" data-testid="pdf-progress-bar">
+          <div
+            className="h-2 w-full overflow-hidden rounded-full bg-gray-200"
+            data-testid="pdf-progress-bar"
+          >
             <div
               className="h-full rounded-full bg-blue-500 transition-all"
               style={{ width: `${percentFound}%` }}
@@ -83,19 +80,33 @@ export function PdfRetrievalPanel({ sessionId }: PdfRetrievalPanelProps) {
 
           {/* Metrics */}
           <div className="grid grid-cols-4 gap-3">
-            <div className="rounded border border-[var(--cortex-border)] p-3 text-center" data-testid="stat-total">
-              <div className="text-xl font-bold text-[var(--cortex-text-primary)]">{stats.total}</div>
+            <div
+              className="rounded border border-[var(--cortex-border)] p-3 text-center"
+              data-testid="stat-total"
+            >
+              <div className="text-xl font-bold text-[var(--cortex-text-primary)]">
+                {stats.total}
+              </div>
               <div className="text-xs text-[var(--cortex-text-muted)]">Total</div>
             </div>
-            <div className="rounded border border-emerald-200 bg-emerald-50 p-3 text-center" data-testid="stat-found">
+            <div
+              className="rounded border border-emerald-200 bg-emerald-50 p-3 text-center"
+              data-testid="stat-found"
+            >
               <div className="text-xl font-bold text-emerald-600">{stats.found}</div>
               <div className="text-xs text-emerald-600">Found</div>
             </div>
-            <div className="rounded border border-gray-200 bg-gray-50 p-3 text-center" data-testid="stat-not-found">
+            <div
+              className="rounded border border-gray-200 bg-gray-50 p-3 text-center"
+              data-testid="stat-not-found"
+            >
               <div className="text-xl font-bold text-gray-500">{stats.notFound}</div>
               <div className="text-xs text-gray-500">Not Found</div>
             </div>
-            <div className="rounded border border-orange-200 bg-orange-50 p-3 text-center" data-testid="stat-mismatches">
+            <div
+              className="rounded border border-orange-200 bg-orange-50 p-3 text-center"
+              data-testid="stat-mismatches"
+            >
               <div className="text-xl font-bold text-orange-600">{stats.mismatches}</div>
               <div className="text-xs text-orange-600">Mismatches</div>
             </div>

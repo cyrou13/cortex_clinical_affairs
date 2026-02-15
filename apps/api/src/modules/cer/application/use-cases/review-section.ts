@@ -95,13 +95,13 @@ export class ReviewSectionUseCase {
     await this.prisma.cerSection.update({
       where: { id: cerSectionId },
       data: {
-        status: targetStatus,
+        status: targetStatus as any,
         humanEditedContent: content as unknown as Prisma.InputJsonValue,
         humanEditPercentage,
         wordCount,
         updatedAt: now,
         updatedById: userId,
-      },
+      } as any,
     });
 
     // 6. Audit log
@@ -162,8 +162,9 @@ export function extractInlineReferences(text: string): string[] {
   const matches: string[] = [];
   let match: RegExpExecArray | null;
   while ((match = regex.exec(text)) !== null) {
-    if (!matches.includes(match[1])) {
-      matches.push(match[1]);
+    const captured = match[1];
+    if (captured && !matches.includes(captured)) {
+      matches.push(captured);
     }
   }
   return matches;

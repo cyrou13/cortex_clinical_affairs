@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, CerUpstreamModuleType } from '@prisma/client';
 import {
   NotFoundError,
   ValidationError,
@@ -98,20 +98,21 @@ export class CreateCerUseCase {
         projectId,
         regulatoryContext,
         versionType,
-        versionNumber,
+        versionNumber: parseInt(versionNumber, 10),
         status: 'DRAFT',
         createdById: userId,
       },
     });
 
     // Create upstream links
-    const upstreamLinks: Array<{ moduleType: string; moduleId: string; lockedAt: string }> = [];
+    const upstreamLinks: Array<{ moduleType: string; moduleId: string; lockedAt: Date | null }> =
+      [];
 
     for (const sls of slsSessions) {
       upstreamLinks.push({
         moduleType: 'SLS',
         moduleId: sls.id,
-        lockedAt: new Date(sls.lockedAt).toISOString(),
+        lockedAt: sls.lockedAt,
       });
     }
 
@@ -119,7 +120,7 @@ export class CreateCerUseCase {
       upstreamLinks.push({
         moduleType: 'SOA',
         moduleId: soa.id,
-        lockedAt: new Date(soa.lockedAt).toISOString(),
+        lockedAt: soa.lockedAt,
       });
     }
 
@@ -127,7 +128,7 @@ export class CreateCerUseCase {
       upstreamLinks.push({
         moduleType: 'VALIDATION',
         moduleId: val.id,
-        lockedAt: new Date(val.lockedAt).toISOString(),
+        lockedAt: val.lockedAt,
       });
     }
 
@@ -136,7 +137,7 @@ export class CreateCerUseCase {
         data: {
           id: crypto.randomUUID(),
           cerVersionId,
-          moduleType: link.moduleType,
+          moduleType: link.moduleType as CerUpstreamModuleType,
           moduleId: link.moduleId,
           lockedAt: link.lockedAt,
         },

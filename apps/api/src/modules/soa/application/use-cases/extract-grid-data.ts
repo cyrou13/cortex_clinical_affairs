@@ -74,7 +74,7 @@ export class ExtractGridDataUseCase {
         id: crypto.randomUUID(),
         type: 'SOA_GRID_EXTRACTION',
         status: 'PENDING',
-        createdById: input.userId,
+        createdBy: input.userId,
         metadata: {
           gridId: input.gridId,
           articleCount: articles.length,

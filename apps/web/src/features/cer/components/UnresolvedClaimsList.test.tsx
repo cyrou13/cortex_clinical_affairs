@@ -4,9 +4,24 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { UnresolvedClaimsList } from './UnresolvedClaimsList';
 
 const mockClaims = [
-  { id: 'c-1', text: 'Device shows improved efficacy over predicate', sectionNumber: 3, sectionTitle: 'Clinical Data' },
-  { id: 'c-2', text: 'No adverse events reported in 5-year follow-up', sectionNumber: 7, sectionTitle: 'Post-Market Data' },
-  { id: 'c-3', text: 'Biocompatibility testing meets ISO 10993', sectionNumber: 5, sectionTitle: 'Preclinical Data' },
+  {
+    id: 'c-1',
+    text: 'Device shows improved efficacy over predicate',
+    sectionNumber: 3,
+    sectionTitle: 'Clinical Data',
+  },
+  {
+    id: 'c-2',
+    text: 'No adverse events reported in 5-year follow-up',
+    sectionNumber: 7,
+    sectionTitle: 'Post-Market Data',
+  },
+  {
+    id: 'c-3',
+    text: 'Biocompatibility testing meets ISO 10993',
+    sectionNumber: 5,
+    sectionTitle: 'Preclinical Data',
+  },
 ];
 
 describe('UnresolvedClaimsList', () => {
@@ -37,7 +52,7 @@ describe('UnresolvedClaimsList', () => {
     const onLink = vi.fn();
     render(<UnresolvedClaimsList claims={mockClaims} onLinkSource={onLink} />);
     const btns = screen.getAllByTestId('link-source-btn');
-    fireEvent.click(btns[0]);
+    fireEvent.click(btns[0]!);
     expect(onLink).toHaveBeenCalledWith('c-1');
   });
 

@@ -1,4 +1,5 @@
-import type { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { PrismaClient } from '@prisma/client';
 import { CreateQueryInput, generateId } from '@cortex/shared';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
 import { validateBooleanQuery } from '../../domain/value-objects/boolean-query.js';
@@ -6,10 +7,7 @@ import { validateBooleanQuery } from '../../domain/value-objects/boolean-query.j
 export class ConstructQueryUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async execute(
-    input: unknown,
-    userId: string,
-  ) {
+  async execute(input: unknown, userId: string) {
     const parsed = CreateQueryInput.safeParse(input);
     if (!parsed.success) {
       throw new ValidationError(
@@ -35,9 +33,7 @@ export class ConstructQueryUseCase {
     // 2. Validate boolean query syntax
     const validation = validateBooleanQuery(queryString);
     if (!validation.valid) {
-      throw new ValidationError(
-        `Invalid query syntax: ${validation.errors.join('; ')}`,
-      );
+      throw new ValidationError(`Invalid query syntax: ${validation.errors.join('; ')}`);
     }
 
     // 3. Create query with version 1
@@ -62,7 +58,7 @@ export class ConstructQueryUseCase {
         queryId,
         version: 1,
         queryString,
-        diff: null,
+        diff: Prisma.JsonNull,
         createdById: userId,
       },
     });

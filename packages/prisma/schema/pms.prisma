@@ -144,20 +144,20 @@ model PmsResponsibility {
 // --- Story 6.2: Gap Registry ---
 
 model GapRegistryEntry {
-  id                  String      @id @default(uuid())
+  id                  String    @id @default(uuid())
   pmsPlanId           String
-  sourceModule        String      @default("MANUAL")
-  sourceId            String      @default("")
+  sourceModule        String    @default("MANUAL")
+  sourceId            String    @default("")
   description         String
-  severity            String      @default("MEDIUM")
+  severity            String    @default("MEDIUM")
   recommendedActivity String
-  status              String      @default("OPEN")
-  manuallyCreated     Boolean     @default(false)
+  status              String    @default("OPEN")
+  manuallyCreated     Boolean   @default(false)
   resolvedAt          DateTime?
   resolvedBy          String?
   resolutionNotes     String?
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   plan PmsPlan @relation(fields: [pmsPlanId], references: [id])
 
@@ -168,24 +168,25 @@ model GapRegistryEntry {
 // --- Story 6.3: PMS Cycle ---
 
 model PmsCycle {
-  id           String      @id @default(uuid())
+  id           String    @id @default(uuid())
   pmsPlanId    String
   cerVersionId String
   name         String
   startDate    DateTime
   endDate      DateTime
-  status       String      @default("PLANNED")
+  status       String    @default("PLANNED")
   completedAt  DateTime?
+  activatedAt  DateTime?
   createdById  String
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  plan               PmsPlan             @relation(fields: [pmsPlanId], references: [id])
-  activities         PmcfActivity[]
-  complaints         Complaint[]
-  trendAnalyses      TrendAnalysis[]
+  plan                 PmsPlan              @relation(fields: [pmsPlanId], references: [id])
+  activities           PmcfActivity[]
+  complaints           Complaint[]
+  trendAnalyses        TrendAnalysis[]
   installedBaseEntries InstalledBaseEntry[]
-  cerUpdateDecisions CerUpdateDecision[]
+  cerUpdateDecisions   CerUpdateDecision[]
 
   @@index([pmsPlanId, status])
 }
@@ -253,9 +254,9 @@ model Complaint {
 // --- Story 6.6: Trend Analysis ---
 
 model TrendAnalysis {
-  id                         String    @id @default(uuid())
+  id                         String   @id @default(uuid())
   pmsCycleId                 String
-  analysisDate               DateTime  @default(now())
+  analysisDate               DateTime @default(now())
   createdById                String
   installedBase              Json?
   complaintTrends            Json?
@@ -263,9 +264,9 @@ model TrendAnalysis {
   classificationDistribution Json?
   significantChanges         Json?
   conclusions                String?
-  status                     String    @default("DRAFT")
-  createdAt                  DateTime  @default(now())
-  updatedAt                  DateTime  @updatedAt
+  status                     String   @default("DRAFT")
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 
   cycle PmsCycle @relation(fields: [pmsCycleId], references: [id])
 
@@ -292,18 +293,18 @@ model InstalledBaseEntry {
 // --- Story 6.9: CER Update Decision ---
 
 model CerUpdateDecision {
-  id                          String    @id @default(uuid())
-  pmsCycleId                  String
-  benefitRiskReAssessment     String
-  conclusion                  String
-  justification               String
-  materialChangesIdentified   Boolean   @default(false)
-  materialChangesDescription  String?
-  status                      String    @default("DRAFT")
-  decidedBy                   String
-  decidedAt                   DateTime?
-  createdAt                   DateTime  @default(now())
-  updatedAt                   DateTime  @updatedAt
+  id                         String    @id @default(uuid())
+  pmsCycleId                 String
+  benefitRiskReAssessment    String
+  conclusion                 String
+  justification              String
+  materialChangesIdentified  Boolean   @default(false)
+  materialChangesDescription String?
+  status                     String    @default("DRAFT")
+  decidedBy                  String
+  decidedAt                  DateTime?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
 
   cycle PmsCycle @relation(fields: [pmsCycleId], references: [id])
 

@@ -108,7 +108,8 @@ describe('ImportComplaintsUseCase', () => {
     prisma = makePrisma({
       complaint: {
         findFirst: vi.fn().mockResolvedValue(null),
-        create: vi.fn()
+        create: vi
+          .fn()
           .mockResolvedValueOnce({ id: 'ok' })
           .mockRejectedValueOnce(new Error('DB constraint violation')),
       },
@@ -119,7 +120,7 @@ describe('ImportComplaintsUseCase', () => {
 
     expect(result.imported).toBe(1);
     expect(result.errors).toHaveLength(1);
-    expect(result.errors[0].rowIndex).toBe(1);
-    expect(result.errors[0].message).toContain('DB constraint violation');
+    expect(result.errors[0]!.rowIndex).toBe(1);
+    expect(result.errors[0]!.message).toContain('DB constraint violation');
   });
 });

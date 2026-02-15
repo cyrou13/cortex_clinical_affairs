@@ -38,7 +38,7 @@ describe('AssemblyProgressOverlay', () => {
     const onRetry = vi.fn();
     render(<AssemblyProgressOverlay sections={mockSections} onRetry={onRetry} />);
     const retryBtns = screen.getAllByTestId('retry-btn');
-    fireEvent.click(retryBtns[0]);
+    fireEvent.click(retryBtns[0]!);
     expect(onRetry).toHaveBeenCalledWith(5);
   });
 

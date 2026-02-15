@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { UploadPdfUseCase } from './upload-pdf.js';
+import type { PdfVerificationService } from '../../infrastructure/services/pdf-verification-service.js';
 
 function makeStorage() {
   return {
@@ -19,10 +20,12 @@ function makeVerifier(verified = true) {
       extractedAuthors: ['Smith'],
       mismatchReasons: verified ? [] : ['Title mismatch'],
     }),
-  };
+  } as unknown as PdfVerificationService;
 }
 
-function makePrisma(article: Record<string, unknown> | null = { id: 'art-1', title: 'Test', authors: [] }) {
+function makePrisma(
+  article: Record<string, unknown> | null = { id: 'art-1', title: 'Test', authors: [] },
+) {
   return {
     article: {
       findUnique: vi.fn().mockResolvedValue(article),

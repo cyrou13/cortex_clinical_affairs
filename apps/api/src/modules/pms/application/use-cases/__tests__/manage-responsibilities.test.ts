@@ -104,14 +104,14 @@ describe('ManageResponsibilitiesUseCase', () => {
     it('sets description to null when not provided', async () => {
       await useCase.add(validInput);
 
-      const callData = prisma.pmsResponsibility.create.mock.calls[0][0].data;
+      const callData = vi.mocked(prisma.pmsResponsibility.create).mock.calls[0]![0]!.data;
       expect(callData.description).toBeNull();
     });
 
     it('throws ValidationError for invalid activity type', async () => {
-      await expect(
-        useCase.add({ ...validInput, activityType: 'INVALID_TYPE' }),
-      ).rejects.toThrow('Invalid activity type');
+      await expect(useCase.add({ ...validInput, activityType: 'INVALID_TYPE' })).rejects.toThrow(
+        'Invalid activity type',
+      );
     });
 
     it('throws NotFoundError when plan does not exist', async () => {

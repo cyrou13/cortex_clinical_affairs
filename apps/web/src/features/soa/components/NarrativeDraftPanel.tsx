@@ -38,7 +38,7 @@ export function NarrativeDraftPanel({
   const [draftContent, setDraftContent] = useState<string | null>(null);
   const [draftId, setDraftId] = useState<string | null>(null);
 
-  const [generateDraft, { loading: generating }] = useMutation(GENERATE_NARRATIVE_DRAFT);
+  const [generateDraft, { loading: generating }] = useMutation<any>(GENERATE_NARRATIVE_DRAFT);
   const [acceptDraft, { loading: accepting }] = useMutation(ACCEPT_NARRATIVE_DRAFT);
 
   const handleGenerate = async () => {
@@ -72,7 +72,10 @@ export function NarrativeDraftPanel({
   };
 
   return (
-    <div className="space-y-4 rounded-lg border border-[var(--cortex-border)] p-4" data-testid="narrative-draft-panel">
+    <div
+      className="space-y-4 rounded-lg border border-[var(--cortex-border)] p-4"
+      data-testid="narrative-draft-panel"
+    >
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--cortex-text-primary)]">
           <Sparkles size={14} className="text-purple-500" /> AI Narrative Draft
@@ -95,7 +98,9 @@ export function NarrativeDraftPanel({
       {generating && (
         <div className="flex flex-col items-center gap-2 py-6" data-testid="draft-loading">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
-          <span className="text-sm text-[var(--cortex-text-muted)]">Generating narrative draft...</span>
+          <span className="text-sm text-[var(--cortex-text-muted)]">
+            Generating narrative draft...
+          </span>
         </div>
       )}
 

@@ -33,9 +33,11 @@ const processors: Record<string, { process: (job: Job<TaskJobData>) => Promise<u
   'sls:mine-references': new MineReferencesProcessor(redis),
   'soa:extract-grid-data': new ExtractGridDataProcessor(redis),
   'soa:draft-narrative': new DraftNarrativeProcessor(redis),
-  'cer:draft-section': new DraftSectionProcessor(redis),
+  'cer:draft-section': new DraftSectionProcessor(redis, undefined as never),
   'cer:generate-docx': new GenerateDocxProcessor(redis),
-  'validation:generate-report': new GenerateReportsProcessor(redis),
+  'validation:generate-report': new GenerateReportsProcessor(redis) as unknown as {
+    process: (job: Job<TaskJobData>) => Promise<unknown>;
+  },
   'pms:generate-pmcf-report': new GeneratePmcfReportProcessor(redis),
   'pms:generate-psur': new GeneratePsurProcessor(redis),
   'sls:custom-filter-score': new CustomFilterScoreProcessor(redis),

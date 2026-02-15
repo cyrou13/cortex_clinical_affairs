@@ -7,17 +7,23 @@ function makePrisma(overrides?: {
 }) {
   return {
     soaAnalysis: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.soa !== undefined
-          ? overrides.soa
-          : { id: 'soa-1', type: 'SIMILAR_DEVICE' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.soa !== undefined ? overrides.soa : { id: 'soa-1', type: 'SIMILAR_DEVICE' },
+        ),
     },
     soaBenchmark: {
       findMany: vi.fn().mockResolvedValue(
         overrides?.benchmarks ?? [
-          { id: 'bm-1', name: 'Sensitivity', threshold: 0.90, unit: '%', metricType: 'SENSITIVITY' },
-          { id: 'bm-2', name: 'Specificity', threshold: 0.85, unit: '%', metricType: 'SPECIFICITY' },
+          { id: 'bm-1', name: 'Sensitivity', threshold: 0.9, unit: '%', metricType: 'SENSITIVITY' },
+          {
+            id: 'bm-2',
+            name: 'Specificity',
+            threshold: 0.85,
+            unit: '%',
+            metricType: 'SPECIFICITY',
+          },
           { id: 'bm-3', name: 'Accuracy', threshold: 0.92, unit: '%', metricType: 'ACCURACY' },
         ],
       ),
@@ -50,7 +56,13 @@ describe('LinkSoaBenchmarksUseCase', () => {
   it('maps benchmark data correctly to acceptance criteria', async () => {
     const prisma = makePrisma({
       benchmarks: [
-        { id: 'bm-1', name: 'Test Metric', threshold: 0.95, unit: 'ratio', metricType: 'SENSITIVITY' },
+        {
+          id: 'bm-1',
+          name: 'Test Metric',
+          threshold: 0.95,
+          unit: 'ratio',
+          metricType: 'SENSITIVITY',
+        },
       ],
     });
     const useCase = new LinkSoaBenchmarksUseCase(prisma);
@@ -60,9 +72,9 @@ describe('LinkSoaBenchmarksUseCase', () => {
       soaAnalysisId: 'soa-1',
     });
 
-    expect(result.benchmarks[0].name).toBe('Test Metric');
-    expect(result.benchmarks[0].threshold).toBe(0.95);
-    expect(result.benchmarks[0].unit).toBe('ratio');
+    expect(result.benchmarks[0]!.name).toBe('Test Metric');
+    expect(result.benchmarks[0]!.threshold).toBe(0.95);
+    expect(result.benchmarks[0]!.unit).toBe('ratio');
     expect(prisma.acceptanceCriterion.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({

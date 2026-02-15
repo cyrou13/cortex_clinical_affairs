@@ -46,7 +46,7 @@ export class DraftNarrativeUseCase {
         id: crypto.randomUUID(),
         type: 'SOA_DRAFT_NARRATIVE',
         status: 'PENDING',
-        createdById: input.userId,
+        createdBy: input.userId,
         metadata: {
           sectionId: input.sectionId,
           soaAnalysisId: input.soaAnalysisId,

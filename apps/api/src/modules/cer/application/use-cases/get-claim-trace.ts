@@ -89,7 +89,7 @@ export class GetClaimTraceUseCase {
     }
 
     const level1: Level1_CerClaim = {
-      text: trace.claimText,
+      text: trace.claimText ?? '',
       sectionNumber: section.sectionNumber,
       sectionTitle: section.title,
       cerSectionId: trace.cerSectionId,
@@ -156,8 +156,8 @@ export class GetClaimTraceUseCase {
           id: true,
           title: true,
           doi: true,
-          query: true,
-          database: true,
+          source: true,
+          sourceDatabase: true,
         },
       });
 
@@ -166,8 +166,8 @@ export class GetClaimTraceUseCase {
           slsArticleId: article.id,
           title: article.title ?? '',
           doi: article.doi ?? null,
-          query: article.query ?? null,
-          database: article.database ?? null,
+          query: article.source ?? null,
+          database: article.sourceDatabase ?? null,
         };
       }
     }

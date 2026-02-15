@@ -14,21 +14,25 @@ function makePrisma(overrides?: {
 }) {
   return {
     cerVersion: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.cerVersion !== undefined
-          ? overrides.cerVersion
-          : { id: CER_VERSION_ID, projectId: PROJECT_ID },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.cerVersion !== undefined
+            ? overrides.cerVersion
+            : { id: CER_VERSION_ID, projectId: PROJECT_ID },
+        ),
     },
     pccpAcceptanceCriteria: {
       findMany: vi.fn().mockResolvedValue(overrides?.pccpCriteria ?? []),
     },
     pccpDeviationConfig: {
-      findFirst: vi.fn().mockResolvedValue(
-        overrides?.config !== undefined
-          ? overrides.config
-          : { mandatoryJustificationLevel: 'HIGH' },
-      ),
+      findFirst: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.config !== undefined
+            ? overrides.config
+            : { mandatoryJustificationLevel: 'HIGH' },
+        ),
     },
     validationResult: {
       findMany: vi.fn().mockResolvedValue(overrides?.validationResults ?? []),
@@ -37,9 +41,7 @@ function makePrisma(overrides?: {
       findMany: vi.fn().mockResolvedValue(overrides?.soaBenchmarks ?? []),
     },
     pccpDeviation: {
-      create: vi.fn().mockImplementation(({ data }) =>
-        Promise.resolve({ id: data.id, ...data }),
-      ),
+      create: vi.fn().mockImplementation(({ data }) => Promise.resolve({ id: data.id, ...data })),
     },
   } as any;
 }
@@ -53,9 +55,9 @@ describe('DetectDeviationsUseCase', () => {
     const prisma = makePrisma({ cerVersion: null });
     const useCase = new DetectDeviationsUseCase(prisma);
 
-    await expect(
-      useCase.execute({ cerVersionId: 'missing', userId: USER_ID }),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute({ cerVersionId: 'missing', userId: USER_ID })).rejects.toThrow(
+      'not found',
+    );
   });
 
   it('returns empty results when no PCCP criteria exist', async () => {
@@ -81,9 +83,7 @@ describe('DetectDeviationsUseCase', () => {
           tolerance: 5,
         },
       ],
-      validationResults: [
-        { parameterName: 'sensitivity', value: '88' },
-      ],
+      validationResults: [{ parameterName: 'sensitivity', value: '88' }],
     });
     const useCase = new DetectDeviationsUseCase(prisma);
 
@@ -93,9 +93,9 @@ describe('DetectDeviationsUseCase', () => {
     });
 
     expect(result.detectedCount).toBe(1);
-    expect(result.deviations[0].source).toBe('VALIDATION_RESULT');
-    expect(result.deviations[0].expectedValue).toBe('95');
-    expect(result.deviations[0].actualValue).toBe('88');
+    expect(result.deviations[0]!.source).toBe('VALIDATION_RESULT');
+    expect(result.deviations[0]!.expectedValue).toBe('95');
+    expect(result.deviations[0]!.actualValue).toBe('88');
   });
 
   it('detects SOA benchmark deviations', async () => {
@@ -108,9 +108,7 @@ describe('DetectDeviationsUseCase', () => {
           tolerance: 5,
         },
       ],
-      soaBenchmarks: [
-        { parameterName: 'specificity', benchmarkValue: '92' },
-      ],
+      soaBenchmarks: [{ parameterName: 'specificity', benchmarkValue: '92' }],
     });
     const useCase = new DetectDeviationsUseCase(prisma);
 
@@ -120,7 +118,7 @@ describe('DetectDeviationsUseCase', () => {
     });
 
     expect(result.detectedCount).toBe(1);
-    expect(result.deviations[0].source).toBe('SOA_BENCHMARK');
+    expect(result.deviations[0]!.source).toBe('SOA_BENCHMARK');
   });
 
   it('creates PccpDeviation records for detected deviations', async () => {
@@ -133,9 +131,7 @@ describe('DetectDeviationsUseCase', () => {
           tolerance: 5,
         },
       ],
-      validationResults: [
-        { parameterName: 'sensitivity', value: '80' },
-      ],
+      validationResults: [{ parameterName: 'sensitivity', value: '80' }],
     });
     const useCase = new DetectDeviationsUseCase(prisma);
 
@@ -158,9 +154,7 @@ describe('DetectDeviationsUseCase', () => {
           tolerance: 5,
         },
       ],
-      validationResults: [
-        { parameterName: 'sensitivity', value: '95' },
-      ],
+      validationResults: [{ parameterName: 'sensitivity', value: '95' }],
     });
     const useCase = new DetectDeviationsUseCase(prisma);
 
@@ -182,9 +176,7 @@ describe('DetectDeviationsUseCase', () => {
           tolerance: 10,
         },
       ],
-      validationResults: [
-        { parameterName: 'sensitivity', value: '95' },
-      ],
+      validationResults: [{ parameterName: 'sensitivity', value: '95' }],
     });
     const useCase = new DetectDeviationsUseCase(prisma);
 
@@ -193,7 +185,7 @@ describe('DetectDeviationsUseCase', () => {
       userId: USER_ID,
     });
 
-    expect(result.deviations[0].significance).toBe('LOW');
+    expect(result.deviations[0]!.significance).toBe('LOW');
   });
 
   it('computes CRITICAL significance for large deviations', async () => {
@@ -206,9 +198,7 @@ describe('DetectDeviationsUseCase', () => {
           tolerance: 5,
         },
       ],
-      validationResults: [
-        { parameterName: 'sensitivity', value: '50' },
-      ],
+      validationResults: [{ parameterName: 'sensitivity', value: '50' }],
     });
     const useCase = new DetectDeviationsUseCase(prisma);
 
@@ -217,7 +207,7 @@ describe('DetectDeviationsUseCase', () => {
       userId: USER_ID,
     });
 
-    expect(result.deviations[0].significance).toBe('CRITICAL');
+    expect(result.deviations[0]!.significance).toBe('CRITICAL');
   });
 
   it('detects both validation and SOA deviations together', async () => {
@@ -236,12 +226,8 @@ describe('DetectDeviationsUseCase', () => {
           tolerance: 5,
         },
       ],
-      validationResults: [
-        { parameterName: 'sensitivity', value: '80' },
-      ],
-      soaBenchmarks: [
-        { parameterName: 'specificity', benchmarkValue: '85' },
-      ],
+      validationResults: [{ parameterName: 'sensitivity', value: '80' }],
+      soaBenchmarks: [{ parameterName: 'specificity', benchmarkValue: '85' }],
     });
     const useCase = new DetectDeviationsUseCase(prisma);
 

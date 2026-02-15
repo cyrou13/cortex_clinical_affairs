@@ -50,16 +50,20 @@ interface StudyConfiguratorProps {
   onLaunchMiniSls?: () => void;
 }
 
-export function StudyConfigurator({ projectId, onCreated, onLaunchMiniSls }: StudyConfiguratorProps) {
+export function StudyConfigurator({
+  projectId,
+  onCreated,
+  onLaunchMiniSls,
+}: StudyConfiguratorProps) {
   const [name, setName] = useState('');
   const [studyType, setStudyType] = useState<'STANDALONE' | 'MRMC'>('STANDALONE');
   const [selectedSoaId, setSelectedSoaId] = useState('');
 
-  const { data: soaData, loading: soaLoading } = useQuery(GET_LOCKED_SOA_ANALYSES, {
+  const { data: soaData, loading: soaLoading } = useQuery<any>(GET_LOCKED_SOA_ANALYSES, {
     variables: { projectId },
   });
 
-  const [createStudy, { loading: creating }] = useMutation(CREATE_VALIDATION_STUDY);
+  const [createStudy, { loading: creating }] = useMutation<any>(CREATE_VALIDATION_STUDY);
 
   const soaAnalyses: LockedSoa[] = soaData?.lockedSoaAnalyses ?? [];
   const selectedSoa = soaAnalyses.find((s) => s.id === selectedSoaId);
@@ -83,7 +87,10 @@ export function StudyConfigurator({ projectId, onCreated, onLaunchMiniSls }: Stu
   };
 
   return (
-    <div className="space-y-6 rounded-lg border border-[var(--cortex-border)] p-6" data-testid="study-configurator">
+    <div
+      className="space-y-6 rounded-lg border border-[var(--cortex-border)] p-6"
+      data-testid="study-configurator"
+    >
       <div className="flex items-center gap-2">
         <FlaskConical size={20} className="text-[var(--cortex-primary)]" />
         <h2 className="text-lg font-semibold text-[var(--cortex-text-primary)]">
@@ -93,7 +100,9 @@ export function StudyConfigurator({ projectId, onCreated, onLaunchMiniSls }: Stu
 
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">Study Name</label>
+          <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
+            Study Name
+          </label>
           <input
             type="text"
             value={name}
@@ -105,7 +114,9 @@ export function StudyConfigurator({ projectId, onCreated, onLaunchMiniSls }: Stu
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">Study Type</label>
+          <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
+            Study Type
+          </label>
           <div className="flex gap-4">
             <label
               className={`flex cursor-pointer items-center gap-2 rounded-lg border p-3 text-sm ${
@@ -146,7 +157,9 @@ export function StudyConfigurator({ projectId, onCreated, onLaunchMiniSls }: Stu
               />
               <div>
                 <div className="font-medium">MRMC</div>
-                <div className="text-xs text-[var(--cortex-text-muted)]">Multi-reader multi-case</div>
+                <div className="text-xs text-[var(--cortex-text-muted)]">
+                  Multi-reader multi-case
+                </div>
               </div>
             </label>
           </div>
@@ -180,9 +193,15 @@ export function StudyConfigurator({ projectId, onCreated, onLaunchMiniSls }: Stu
             <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
               Auto-Imported Benchmarks
             </label>
-            <div className="space-y-1 rounded border border-[var(--cortex-border)] p-3" data-testid="benchmark-list">
+            <div
+              className="space-y-1 rounded border border-[var(--cortex-border)] p-3"
+              data-testid="benchmark-list"
+            >
               {benchmarks.map((b) => (
-                <div key={b.id} className="flex items-center justify-between text-sm text-[var(--cortex-text-primary)]">
+                <div
+                  key={b.id}
+                  className="flex items-center justify-between text-sm text-[var(--cortex-text-primary)]"
+                >
                   <span>{b.name}</span>
                   <span className="text-xs text-[var(--cortex-text-muted)]">
                     {b.value} {b.unit}

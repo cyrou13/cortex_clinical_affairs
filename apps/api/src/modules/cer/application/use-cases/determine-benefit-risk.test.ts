@@ -14,11 +14,13 @@ function makePrisma(overrides?: {
 }) {
   return {
     cerVersion: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.cerVersion !== undefined
-          ? overrides.cerVersion
-          : { id: VERSION_ID, projectId: PROJECT_ID },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.cerVersion !== undefined
+            ? overrides.cerVersion
+            : { id: VERSION_ID, projectId: PROJECT_ID },
+        ),
     },
     benefitRiskItem: {
       count: vi.fn().mockResolvedValue(overrides?.existingCount ?? 0),
@@ -28,24 +30,39 @@ function makePrisma(overrides?: {
       create: vi.fn().mockImplementation(({ data }) => Promise.resolve({ id: data.id })),
     },
     soaAnalysis: {
-      findMany: vi.fn().mockResolvedValue(
-        overrides?.soaAnalyses ?? [
-          { id: 'soa-1', clinicalBenefits: ['Improved diagnostic accuracy', 'Faster processing'] },
-        ],
-      ),
+      findMany: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.soaAnalyses ?? [
+            {
+              id: 'soa-1',
+              clinicalBenefits: ['Improved diagnostic accuracy', 'Faster processing'],
+            },
+          ],
+        ),
     },
     validationStudy: {
-      findMany: vi.fn().mockResolvedValue(
-        overrides?.validationStudies ?? [
-          { id: 'study-1', name: 'Sensitivity Study' },
-        ],
-      ),
+      findMany: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.validationStudies ?? [{ id: 'study-1', name: 'Sensitivity Study' }],
+        ),
     },
     riskEntry: {
       findMany: vi.fn().mockResolvedValue(
         overrides?.riskEntries ?? [
-          { id: 'risk-1', description: 'False positive', severity: 'MINOR', probability: 'OCCASIONAL' },
-          { id: 'risk-2', description: 'System failure', severity: 'CRITICAL', probability: 'REMOTE' },
+          {
+            id: 'risk-1',
+            description: 'False positive',
+            severity: 'MINOR',
+            probability: 'OCCASIONAL',
+          },
+          {
+            id: 'risk-2',
+            description: 'System failure',
+            severity: 'CRITICAL',
+            probability: 'REMOTE',
+          },
         ],
       ),
     },
@@ -78,7 +95,7 @@ describe('DetermineBenefitRiskUseCase', () => {
     const result = await useCase.execute({ cerVersionId: VERSION_ID, userId: USER_ID });
 
     expect(result.risks).toHaveLength(2);
-    expect(result.risks[0].description).toBe('False positive');
+    expect(result.risks[0]!.description).toBe('False positive');
   });
 
   it('computes risk levels using severity x probability matrix', async () => {
@@ -88,9 +105,9 @@ describe('DetermineBenefitRiskUseCase', () => {
     const result = await useCase.execute({ cerVersionId: VERSION_ID, userId: USER_ID });
 
     // MINOR x OCCASIONAL = 2*3 = 6 -> ALARP
-    expect(result.risks[0].riskLevel).toBe('ALARP');
+    expect(result.risks[0]!.riskLevel).toBe('ALARP');
     // CRITICAL x REMOTE = 4*2 = 8 -> ALARP
-    expect(result.risks[1].riskLevel).toBe('ALARP');
+    expect(result.risks[1]!.riskLevel).toBe('ALARP');
   });
 
   it('creates mitigations for non-ACCEPTABLE risks', async () => {
@@ -107,18 +124,18 @@ describe('DetermineBenefitRiskUseCase', () => {
     const prisma = makePrisma({ cerVersion: null });
     const useCase = new DetermineBenefitRiskUseCase(prisma);
 
-    await expect(
-      useCase.execute({ cerVersionId: 'missing', userId: USER_ID }),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute({ cerVersionId: 'missing', userId: USER_ID })).rejects.toThrow(
+      'not found',
+    );
   });
 
   it('throws ValidationError if analysis already exists', async () => {
     const prisma = makePrisma({ existingCount: 5 });
     const useCase = new DetermineBenefitRiskUseCase(prisma);
 
-    await expect(
-      useCase.execute({ cerVersionId: VERSION_ID, userId: USER_ID }),
-    ).rejects.toThrow('already exists');
+    await expect(useCase.execute({ cerVersionId: VERSION_ID, userId: USER_ID })).rejects.toThrow(
+      'already exists',
+    );
   });
 
   it('returns risk matrix summary', async () => {
@@ -140,7 +157,7 @@ describe('DetermineBenefitRiskUseCase', () => {
     const result = await useCase.execute({ cerVersionId: VERSION_ID, userId: USER_ID });
 
     expect(result.risks.length).toBeGreaterThan(0);
-    expect(result.risks[0].source).toBe('Default');
+    expect(result.risks[0]!.source).toBe('Default');
   });
 
   it('creates default benefit when no upstream data found', async () => {
@@ -155,7 +172,7 @@ describe('DetermineBenefitRiskUseCase', () => {
     const result = await useCase.execute({ cerVersionId: VERSION_ID, userId: USER_ID });
 
     expect(result.benefits).toHaveLength(1);
-    expect(result.benefits[0].source).toBe('Manual');
+    expect(result.benefits[0]!.source).toBe('Manual');
   });
 
   it('persists all benefit and risk items', async () => {
@@ -199,20 +216,20 @@ describe('DetermineBenefitRiskUseCase', () => {
 describe('computeRiskLevel', () => {
   it('returns ACCEPTABLE for low severity and low probability', () => {
     expect(computeRiskLevel('NEGLIGIBLE', 'IMPROBABLE')).toBe('ACCEPTABLE'); // 1*1=1
-    expect(computeRiskLevel('MINOR', 'IMPROBABLE')).toBe('ACCEPTABLE');      // 2*1=2
-    expect(computeRiskLevel('NEGLIGIBLE', 'REMOTE')).toBe('ACCEPTABLE');     // 1*2=2
-    expect(computeRiskLevel('MINOR', 'REMOTE')).toBe('ACCEPTABLE');          // 2*2=4
+    expect(computeRiskLevel('MINOR', 'IMPROBABLE')).toBe('ACCEPTABLE'); // 2*1=2
+    expect(computeRiskLevel('NEGLIGIBLE', 'REMOTE')).toBe('ACCEPTABLE'); // 1*2=2
+    expect(computeRiskLevel('MINOR', 'REMOTE')).toBe('ACCEPTABLE'); // 2*2=4
   });
 
   it('returns ALARP for medium scores', () => {
-    expect(computeRiskLevel('SERIOUS', 'OCCASIONAL')).toBe('ALARP');  // 3*3=9
-    expect(computeRiskLevel('MINOR', 'OCCASIONAL')).toBe('ALARP');    // 2*3=6
-    expect(computeRiskLevel('CRITICAL', 'REMOTE')).toBe('ALARP');     // 4*2=8
+    expect(computeRiskLevel('SERIOUS', 'OCCASIONAL')).toBe('ALARP'); // 3*3=9
+    expect(computeRiskLevel('MINOR', 'OCCASIONAL')).toBe('ALARP'); // 2*3=6
+    expect(computeRiskLevel('CRITICAL', 'REMOTE')).toBe('ALARP'); // 4*2=8
   });
 
   it('returns UNACCEPTABLE for high scores', () => {
     expect(computeRiskLevel('CATASTROPHIC', 'FREQUENT')).toBe('UNACCEPTABLE'); // 5*5=25
-    expect(computeRiskLevel('CRITICAL', 'FREQUENT')).toBe('UNACCEPTABLE');     // 4*5=20
+    expect(computeRiskLevel('CRITICAL', 'FREQUENT')).toBe('UNACCEPTABLE'); // 4*5=20
     expect(computeRiskLevel('CATASTROPHIC', 'PROBABLE')).toBe('UNACCEPTABLE'); // 5*4=20
   });
 });

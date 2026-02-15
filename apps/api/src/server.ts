@@ -13,7 +13,7 @@ import { getEnvConfig, type EnvConfig } from './config/env.js';
 import { createAuthMiddleware } from './shared/middleware/auth-middleware.js';
 import { JwtService } from './modules/auth/infrastructure/services/jwt-service.js';
 import { randomUUID } from 'node:crypto';
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 
 export interface BuildServerOptions {
   prisma?: PrismaClient;

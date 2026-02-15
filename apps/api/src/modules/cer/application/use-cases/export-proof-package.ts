@@ -179,7 +179,7 @@ export class ExportProofPackageUseCase {
 
     return {
       claimTraceId,
-      claimText: trace.claimText,
+      claimText: trace.claimText ?? '',
       refNumber: trace.refNumber,
       sectionTitle: section.title,
       sectionNumber: section.sectionNumber,

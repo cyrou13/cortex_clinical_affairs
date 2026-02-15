@@ -38,9 +38,7 @@ function makePrisma(overrides?: {
       update: vi.fn().mockResolvedValue({ id: SECTION_ID }),
     },
     claimTrace: {
-      findMany: vi.fn().mockResolvedValue(
-        overrides?.claimTraces ?? [],
-      ),
+      findMany: vi.fn().mockResolvedValue(overrides?.claimTraces ?? []),
     },
     auditLog: {
       create: vi.fn().mockResolvedValue({}),
@@ -182,7 +180,7 @@ describe('ReviewSectionUseCase', () => {
 
     const result = await useCase.execute({
       cerSectionId: SECTION_ID,
-      content: 'word1 word2 word3',
+      content: 'word1 word2 word3' as unknown as Record<string, unknown>,
       targetStatus: 'REVIEWED',
       userId: USER_ID,
     });

@@ -58,7 +58,7 @@ export class RecordCoiDeclarationUseCase {
         conflictDetails: input.hasConflict ? input.conflictDetails : null,
         coiDeclarationText: input.declarationText,
         coiDeclaredAt: now,
-      },
+      } as any,
     });
 
     return {

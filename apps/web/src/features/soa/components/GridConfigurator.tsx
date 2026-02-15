@@ -28,7 +28,12 @@ export const CREATE_EXTRACTION_GRID = gql`
 `;
 
 export const ADD_GRID_COLUMN = gql`
-  mutation AddGridColumn($gridId: String!, $name: String!, $displayName: String!, $dataType: String!) {
+  mutation AddGridColumn(
+    $gridId: String!
+    $name: String!
+    $displayName: String!
+    $dataType: String!
+  ) {
     addGridColumn(gridId: $gridId, name: $name, displayName: $displayName, dataType: $dataType) {
       columnId
     }
@@ -89,8 +94,8 @@ export function GridConfigurator({
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
 
-  const { data: templatesData } = useQuery(GET_GRID_TEMPLATES);
-  const [createGrid, { loading: creating }] = useMutation(CREATE_EXTRACTION_GRID);
+  const { data: templatesData } = useQuery<any>(GET_GRID_TEMPLATES);
+  const [createGrid, { loading: creating }] = useMutation<any>(CREATE_EXTRACTION_GRID);
   const [addColumn] = useMutation(ADD_GRID_COLUMN);
   const [renameColumn] = useMutation(RENAME_GRID_COLUMN);
   const [removeColumn] = useMutation(REMOVE_GRID_COLUMN);
@@ -240,7 +245,10 @@ export function GridConfigurator({
       </div>
 
       {showAddColumn && (
-        <div className="rounded border border-blue-200 bg-blue-50 p-3 space-y-2" data-testid="add-column-form">
+        <div
+          className="rounded border border-blue-200 bg-blue-50 p-3 space-y-2"
+          data-testid="add-column-form"
+        >
           <input
             type="text"
             value={newColName}
@@ -256,7 +264,9 @@ export function GridConfigurator({
             data-testid="new-column-type"
           >
             {DATA_TYPES.map((dt) => (
-              <option key={dt.value} value={dt.value}>{dt.label}</option>
+              <option key={dt.value} value={dt.value}>
+                {dt.label}
+              </option>
             ))}
           </select>
           <div className="flex gap-2">

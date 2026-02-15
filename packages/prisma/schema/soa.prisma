@@ -7,12 +7,16 @@ enum SoaStatus {
 
 enum ThematicSectionStatus {
   DRAFT
+  IN_PROGRESS
   LOCKED
+  FINALIZED
 }
 
 enum GridCellValidationStatus {
   PENDING
   VALIDATED
+  CORRECTED
+  FLAGGED
   REJECTED
 }
 
@@ -30,16 +34,18 @@ enum DataContributionLevel {
 // --- Model 1: SoaAnalysis (root aggregate) ---
 
 model SoaAnalysis {
-  id          String    @id @default(uuid())
-  projectId   String
-  name        String
-  type        String
-  status      SoaStatus @default(DRAFT)
-  description String?
-  createdById String
-  lockedAt    DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id               String    @id @default(uuid())
+  projectId        String
+  name             String
+  type             String
+  status           SoaStatus @default(DRAFT)
+  description      String?
+  createdById      String
+  lockedAt         DateTime?
+  lockedById       String?
+  clinicalBenefits Json?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   slsLinks           SoaSlsLink[]
   thematicSections   ThematicSection[]
@@ -55,9 +61,10 @@ model SoaAnalysis {
 // --- Model 2: SoaSlsLink ---
 
 model SoaSlsLink {
-  id            String @id @default(uuid())
+  id            String   @id @default(uuid())
   soaAnalysisId String
   slsSessionId  String
+  createdAt     DateTime @default(now())
 
   soaAnalysis SoaAnalysis @relation(fields: [soaAnalysisId], references: [id])
 
@@ -68,12 +75,14 @@ model SoaSlsLink {
 // --- Model 3: ThematicSection ---
 
 model ThematicSection {
-  id            String                 @id @default(uuid())
-  soaAnalysisId String
-  sectionKey    String
-  title         String
-  orderIndex    Int
-  status        ThematicSectionStatus  @default(DRAFT)
+  id               String                @id @default(uuid())
+  soaAnalysisId    String
+  sectionKey       String
+  title            String
+  orderIndex       Int
+  status           ThematicSectionStatus @default(DRAFT)
+  narrativeContent Json?
+  updatedById      String?
 
   soaAnalysis SoaAnalysis @relation(fields: [soaAnalysisId], references: [id])
 
@@ -102,13 +111,14 @@ model SimilarDevice {
 // --- Model 5: Benchmark ---
 
 model Benchmark {
-  id                String  @id @default(uuid())
+  id                String   @id @default(uuid())
   similarDeviceId   String
   metricName        String
   metricValue       String
   unit              String
   sourceArticleId   String?
   sourceDescription String?
+  createdAt         DateTime @default(now())
 
   similarDevice SimilarDevice @relation(fields: [similarDeviceId], references: [id])
 
@@ -125,8 +135,8 @@ model Claim {
   createdById       String
   createdAt         DateTime @default(now())
 
-  soaAnalysis  SoaAnalysis       @relation(fields: [soaAnalysisId], references: [id])
-  articleLinks ClaimArticleLink[]
+  soaAnalysis       SoaAnalysis        @relation(fields: [soaAnalysisId], references: [id])
+  claimArticleLinks ClaimArticleLink[]
 
   @@index([soaAnalysisId])
 }
@@ -134,23 +144,27 @@ model Claim {
 // --- Model 7: ClaimArticleLink ---
 
 model ClaimArticleLink {
-  id          String  @id @default(uuid())
+  id          String   @id @default(uuid())
   claimId     String
   articleId   String
   sourceQuote String?
+  createdAt   DateTime @default(now())
 
-  claim Claim @relation(fields: [claimId], references: [id])
+  claim   Claim   @relation(fields: [claimId], references: [id])
+  article Article @relation(fields: [articleId], references: [id])
 
   @@index([claimId])
+  @@index([articleId])
 }
 
 // --- Model 8: ExtractionGrid ---
 
 model ExtractionGrid {
-  id                String  @id @default(uuid())
+  id                String   @id @default(uuid())
   soaAnalysisId     String
   thematicSectionId String?
   name              String
+  createdAt         DateTime @default(now())
 
   soaAnalysis SoaAnalysis  @relation(fields: [soaAnalysisId], references: [id])
   columns     GridColumn[]
@@ -185,6 +199,9 @@ model GridCell {
   gridColumnId     String
   value            String?
   validationStatus GridCellValidationStatus @default(PENDING)
+  validatedById    String?
+  validatedAt      DateTime?
+  createdAt        DateTime                 @default(now())
 
   extractionGrid ExtractionGrid @relation(fields: [extractionGridId], references: [id])
   gridColumn     GridColumn     @relation(fields: [gridColumnId], references: [id])
@@ -233,8 +250,10 @@ model SoaBenchmark {
 model SoaOpenQuestion {
   id            String   @id @default(uuid())
   soaAnalysisId String?
+  cerVersionId  String?
   description   String?
   createdAt     DateTime @default(now())
 
   @@index([soaAnalysisId])
+  @@index([cerVersionId])
 }

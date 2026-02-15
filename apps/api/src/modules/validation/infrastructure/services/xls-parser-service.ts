@@ -83,14 +83,18 @@ export function validateXlsData(
   }
 
   // Validate row data types
-  const columnTypeMap = new Map(schema.columns.map((c) => [c.name, c]));
+  const _columnTypeMap = new Map(schema.columns.map((c) => [c.name, c]));
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
+    if (!row) continue;
     for (const col of schema.columns) {
       if (!col.required && (row[col.name] === undefined || row[col.name] === null)) {
         continue;
       }
-      if (col.required && (row[col.name] === undefined || row[col.name] === null || row[col.name] === '')) {
+      if (
+        col.required &&
+        (row[col.name] === undefined || row[col.name] === null || row[col.name] === '')
+      ) {
         errors.push(`Row ${i + 1}: missing required value for column "${col.name}"`);
         continue;
       }
@@ -112,16 +116,13 @@ export function validateXlsData(
   };
 }
 
-export function parseXlsContent(
-  headers: string[],
-  rawRows: unknown[][],
-): XlsParsedData {
+export function parseXlsContent(headers: string[], rawRows: unknown[][]): XlsParsedData {
   const rows: Array<Record<string, unknown>> = [];
 
   for (const rawRow of rawRows) {
     const row: Record<string, unknown> = {};
     for (let j = 0; j < headers.length; j++) {
-      row[headers[j]] = rawRow[j] ?? null;
+      row[headers[j]!] = rawRow[j] ?? null;
     }
     rows.push(row);
   }

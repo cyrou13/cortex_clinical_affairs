@@ -1,4 +1,4 @@
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, EvaluatorRole as PrismaEvaluatorRole } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@ export class ManageEvaluatorsUseCase {
       where: {
         cerVersionId: input.cerVersionId,
         sectionId: input.sectionId,
-        role: input.role,
+        role: input.role as PrismaEvaluatorRole,
       },
       select: { id: true, userId: true },
     });
@@ -129,7 +129,7 @@ export class ManageEvaluatorsUseCase {
         cerVersionId: input.cerVersionId,
         sectionId: input.sectionId,
         userId: input.userId,
-        role: input.role,
+        role: input.role as PrismaEvaluatorRole,
         assignedById: input.assignedBy,
       },
     });
@@ -137,7 +137,7 @@ export class ManageEvaluatorsUseCase {
     return {
       id: evaluator.id,
       cerVersionId: evaluator.cerVersionId,
-      sectionId: evaluator.sectionId,
+      sectionId: evaluator.sectionId ?? '',
       userId: evaluator.userId,
       role: evaluator.role,
     };

@@ -1,7 +1,10 @@
 import type { PrismaClient } from '@prisma/client';
 import type { EventBus } from '../../../../shared/events/event-bus.js';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
-import { canTransitionActivity } from '../../domain/value-objects/activity-status.js';
+import {
+  canTransitionActivity,
+  type ActivityStatus,
+} from '../../domain/value-objects/activity-status.js';
 import { createActivityStartedEvent } from '../../domain/events/pms-events.js';
 
 interface ExecuteActivityResult {
@@ -26,7 +29,7 @@ export class ExecuteActivityUseCase {
       throw new NotFoundError('PmcfActivity', activityId);
     }
 
-    if (!canTransitionActivity(activity.status, 'IN_PROGRESS')) {
+    if (!canTransitionActivity(activity.status as ActivityStatus, 'IN_PROGRESS')) {
       throw new ValidationError(`Cannot start activity in ${activity.status} status`);
     }
 
@@ -38,7 +41,12 @@ export class ExecuteActivityUseCase {
     });
 
     const event = createActivityStartedEvent(
-      { activityId, pmsCycleId: activity.pmsCycleId, activityType: activity.activityType, status: 'IN_PROGRESS' },
+      {
+        activityId,
+        pmsCycleId: activity.pmsCycleId,
+        activityType: activity.activityType,
+        status: 'IN_PROGRESS',
+      },
       userId,
       crypto.randomUUID(),
     );

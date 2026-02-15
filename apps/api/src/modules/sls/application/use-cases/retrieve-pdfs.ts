@@ -23,7 +23,7 @@ export class RetrievePdfsUseCase {
       where: {
         sessionId,
         status: { in: ['INCLUDED', 'FINAL_INCLUDED'] },
-        pdfStatus: { in: ['NONE', null] },
+        OR: [{ pdfStatus: 'NONE' }, { pdfStatus: null }],
       },
       select: { id: true },
     });
@@ -39,7 +39,7 @@ export class RetrievePdfsUseCase {
       data: {
         type: 'sls:retrieve-pdfs',
         status: 'PENDING',
-        createdById: userId,
+        createdBy: userId,
         metadata: { sessionId, articleCount: articleIds.length },
       },
     });

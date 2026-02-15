@@ -16,18 +16,20 @@ function makePrisma(overrides?: {
 }) {
   return {
     soaAnalysis: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.soa !== undefined
-          ? overrides.soa
-          : { id: SOA_ID, status: 'IN_PROGRESS' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.soa !== undefined ? overrides.soa : { id: SOA_ID, status: 'IN_PROGRESS' },
+        ),
     },
     thematicSection: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.section !== undefined
-          ? overrides.section
-          : { id: SECTION_ID, soaAnalysisId: SOA_ID },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.section !== undefined
+            ? overrides.section
+            : { id: SECTION_ID, soaAnalysisId: SOA_ID },
+        ),
     },
     claim: {
       create: vi.fn().mockResolvedValue({
@@ -48,20 +50,18 @@ function makePrisma(overrides?: {
           {
             id: CLAIM_ID,
             statementText: 'Device is safe',
-            claimArticleLinks: [
-              { id: 'link-1', article: { id: ARTICLE_ID, title: 'Study 1' } },
-            ],
+            claimArticleLinks: [{ id: 'link-1', article: { id: ARTICLE_ID, title: 'Study 1' } }],
             thematicSection: { id: SECTION_ID, title: 'Safety' },
           },
         ],
       ),
     },
     article: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.article !== undefined
-          ? overrides.article
-          : { id: ARTICLE_ID },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.article !== undefined ? overrides.article : { id: ARTICLE_ID },
+        ),
     },
     claimArticleLink: {
       create: vi.fn().mockResolvedValue({
@@ -168,7 +168,7 @@ describe('ManageClaimsUseCase', () => {
     const result = await useCase.getClaimsForAnalysis(SOA_ID);
 
     expect(result).toHaveLength(1);
-    expect(result[0].claimArticleLinks).toHaveLength(1);
+    expect((result[0] as any)!.claimArticleLinks).toHaveLength(1);
     expect(prisma.claim.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { soaAnalysisId: SOA_ID },

@@ -8,6 +8,7 @@ enum ValidationStudyStatus {
 enum ProtocolStatus {
   DRAFT
   APPROVED
+  AMENDED
 }
 
 enum AcceptanceCriterionMetricType {
@@ -22,6 +23,7 @@ enum GsprMappingStatus {
   COMPLIANT
   PARTIAL
   NOT_APPLICABLE
+  FINALIZED
 }
 
 enum ResultsMappingResult {
@@ -32,21 +34,23 @@ enum ResultsMappingResult {
 // --- Model 1: ValidationStudy (root aggregate) ---
 
 model ValidationStudy {
-  id              String                @id @default(uuid())
-  projectId       String
-  name            String
-  type            String
-  status          ValidationStudyStatus @default(DRAFT)
-  description     String?
-  soaAnalysisId   String?
-  createdById     String
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  id            String                @id @default(uuid())
+  projectId     String
+  name          String
+  type          String
+  status        ValidationStudyStatus @default(DRAFT)
+  description   String?
+  soaAnalysisId String?
+  createdById   String
+  lockedAt      DateTime?
+  lockedById    String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
 
-  protocols           Protocol[]
-  dataImports         DataImport[]
-  acceptanceCriteria  AcceptanceCriterion[]
-  gsprMappings        GsprMapping[]
+  protocols          Protocol[]
+  dataImports        DataImport[]
+  acceptanceCriteria AcceptanceCriterion[]
+  gsprMappings       GsprMapping[]
 
   @@index([projectId, status])
 }
@@ -78,6 +82,8 @@ model ProtocolAmendment {
   id          String         @id @default(uuid())
   protocolId  String
   version     String
+  fromVersion String?
+  toVersion   String?
   status      ProtocolStatus @default(DRAFT)
   reason      String
   changes     Json?
@@ -101,6 +107,7 @@ model DataImport {
   columnCount       Int
   data              Json?
   headers           Json?
+  status            String   @default("PENDING")
   uploadedById      String
   createdAt         DateTime @default(now())
 
@@ -112,15 +119,15 @@ model DataImport {
 // --- Model 5: AcceptanceCriterion ---
 
 model AcceptanceCriterion {
-  id              String                       @id @default(uuid())
+  id                String                         @id @default(uuid())
   validationStudyId String
-  soaBenchmarkId  String?
-  name            String
-  threshold       Float?
-  unit            String?
-  metricType      AcceptanceCriterionMetricType?
+  soaBenchmarkId    String?
+  name              String
+  threshold         Float?
+  unit              String?
+  metricType        AcceptanceCriterionMetricType?
 
-  validationStudy ValidationStudy @relation(fields: [validationStudyId], references: [id])
+  validationStudy ValidationStudy  @relation(fields: [validationStudyId], references: [id])
   resultsMappings ResultsMapping[]
 
   @@index([validationStudyId])
@@ -129,32 +136,38 @@ model AcceptanceCriterion {
 // --- Model 6: GsprMapping ---
 
 model GsprMapping {
-  id                  String            @id @default(uuid())
-  validationStudyId   String
-  gsprId              String
-  status              GsprMappingStatus
-  justification       String?
-  evidenceReferences  Json?
-  createdById         String
-  updatedById         String?
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
+  id                 String            @id @default(uuid())
+  validationStudyId  String
+  cerVersionId       String?
+  gsprId             String
+  status             GsprMappingStatus
+  justification      String?
+  evidenceReferences Json?
+  createdById        String
+  updatedById        String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
 
   validationStudy ValidationStudy @relation(fields: [validationStudyId], references: [id])
 
   @@index([validationStudyId])
+  @@index([cerVersionId])
 }
 
 // --- Model 7: ValidationResult ---
 
 model ValidationResult {
-  id            String   @id @default(uuid())
-  projectId     String
-  parameterName String
-  value         String?
-  createdAt     DateTime @default(now())
+  id                String   @id @default(uuid())
+  projectId         String
+  validationStudyId String?
+  parameterName     String
+  metricType        String?
+  value             String?
+  comparison        String?
+  createdAt         DateTime @default(now())
 
   @@index([projectId])
+  @@index([validationStudyId])
 }
 
 // --- Model 8: ResultsMapping ---

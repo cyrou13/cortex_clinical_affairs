@@ -22,7 +22,11 @@ const mockReportsData = {
         type: 'VALIDATION_REPORT',
         available: true,
         prerequisites: { met: ['Protocol approved', 'Data imported'], missing: [] },
-        lastGenerated: { id: 'rpt-1', generatedAt: '2026-02-14', downloadUrl: '/reports/rpt-1.pdf' },
+        lastGenerated: {
+          id: 'rpt-1',
+          generatedAt: '2026-02-14',
+          downloadUrl: '/reports/rpt-1.pdf',
+        },
         history: [
           { id: 'h-1', generatedAt: '2026-02-14', generatedBy: 'Dr. Smith' },
           { id: 'h-2', generatedAt: '2026-02-10', generatedBy: 'Dr. Jones' },
@@ -130,7 +134,7 @@ describe('ReportGenerator', () => {
     render(<ReportGenerator studyId="study-1" />);
 
     const generateButtons = screen.getAllByTestId('generate-btn');
-    fireEvent.click(generateButtons[0]);
+    fireEvent.click(generateButtons[0]!);
 
     await waitFor(() => {
       expect(mockGenerate).toHaveBeenCalledWith({

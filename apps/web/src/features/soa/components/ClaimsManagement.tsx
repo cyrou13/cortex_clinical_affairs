@@ -63,11 +63,11 @@ export function ClaimsManagement({
   const [linkingClaimId, setLinkingClaimId] = useState<string | null>(null);
   const [articleIdToLink, setArticleIdToLink] = useState('');
 
-  const { data, loading } = useQuery(GET_CLAIMS, {
+  const { data, loading } = useQuery<any>(GET_CLAIMS, {
     variables: { soaAnalysisId },
   });
 
-  const [createClaim] = useMutation(CREATE_CLAIM);
+  const [createClaim] = useMutation<any>(CREATE_CLAIM);
   const [linkArticle] = useMutation(LINK_ARTICLE_TO_CLAIM);
 
   const claims: Claim[] = data?.soaClaims ?? [];
@@ -95,14 +95,20 @@ export function ClaimsManagement({
 
   if (loading) {
     return (
-      <div className="py-6 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="claims-loading">
+      <div
+        className="py-6 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="claims-loading"
+      >
         Loading claims...
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 rounded-lg border border-[var(--cortex-border)] p-4" data-testid="claims-panel">
+    <div
+      className="space-y-4 rounded-lg border border-[var(--cortex-border)] p-4"
+      data-testid="claims-panel"
+    >
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--cortex-text-primary)]">
           <FileCheck size={14} /> Claims Management
@@ -120,7 +126,10 @@ export function ClaimsManagement({
       </div>
 
       {showCreateForm && (
-        <div className="space-y-2 rounded border border-blue-200 bg-blue-50 p-3" data-testid="claim-form">
+        <div
+          className="space-y-2 rounded border border-blue-200 bg-blue-50 p-3"
+          data-testid="claim-form"
+        >
           <textarea
             value={claimText}
             onChange={(e) => setClaimText(e.target.value)}
@@ -159,7 +168,10 @@ export function ClaimsManagement({
               data-testid={`claim-${claim.id}`}
             >
               <div className="mb-2 flex items-start justify-between">
-                <p className="flex-1 text-sm text-[var(--cortex-text-primary)]" data-testid={`claim-statement-${claim.id}`}>
+                <p
+                  className="flex-1 text-sm text-[var(--cortex-text-primary)]"
+                  data-testid={`claim-statement-${claim.id}`}
+                >
                   {claim.statement}
                 </p>
                 <span className="ml-2 shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
@@ -215,7 +227,10 @@ export function ClaimsManagement({
           ))}
         </div>
       ) : (
-        <div className="py-4 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="no-claims">
+        <div
+          className="py-4 text-center text-sm text-[var(--cortex-text-muted)]"
+          data-testid="no-claims"
+        >
           No claims created yet.
         </div>
       )}

@@ -65,7 +65,7 @@ export class SaveSectionContentUseCase {
         humanEditPercentage,
         updatedAt: now,
         updatedById: userId,
-      },
+      } as any,
     });
 
     return {

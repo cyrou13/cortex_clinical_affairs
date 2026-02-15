@@ -70,7 +70,7 @@ export class MaudeClient {
       if (!retryResponse.ok) {
         throw new Error(`MAUDE API error after retry: ${retryResponse.status}`);
       }
-      return this.parseResponse(await retryResponse.json(), deviceName);
+      return this.parseResponse((await retryResponse.json()) as MaudeApiResponse, deviceName);
     }
 
     if (!response.ok) {
@@ -93,10 +93,11 @@ export class MaudeClient {
     return data.results.map((event) => {
       const deviceInfo = event.device?.[0];
       const deviceName = deviceInfo?.brand_name || deviceInfo?.generic_name || searchDeviceName;
-      const description = event.mdr_text
-        ?.map((t) => t.text)
-        .join(' ')
-        .slice(0, 2000) ?? 'No description available';
+      const description =
+        event.mdr_text
+          ?.map((t) => t.text)
+          .join(' ')
+          .slice(0, 2000) ?? 'No description available';
 
       const outcome = this.extractOutcome(event);
       const eventType = this.mapEventType(event.event_type);
@@ -115,9 +116,7 @@ export class MaudeClient {
   }
 
   private extractOutcome(event: MaudeEvent): string {
-    const outcomes = event.patient
-      ?.flatMap((p) => p.sequence_number_outcome ?? [])
-      .filter(Boolean);
+    const outcomes = event.patient?.flatMap((p) => p.sequence_number_outcome ?? []).filter(Boolean);
     return outcomes && outcomes.length > 0 ? outcomes.join(', ') : 'Unknown';
   }
 

@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import type { PrismaClient } from '@prisma/client';
 import { NotFoundError } from '../../../../shared/errors/index.js';
 
@@ -51,7 +52,8 @@ export class ComputeTrendsUseCase {
 
     for (const c of complaints) {
       severityDistribution[c.severity] = (severityDistribution[c.severity] ?? 0) + 1;
-      classificationDistribution[c.classification] = (classificationDistribution[c.classification] ?? 0) + 1;
+      classificationDistribution[c.classification] =
+        (classificationDistribution[c.classification] ?? 0) + 1;
       if (c.isIncident) incidentCount++;
     }
 
@@ -65,13 +67,15 @@ export class ComputeTrendsUseCase {
     const complaintRate = (complaints.length / activeDevices) * 1000;
     const incidentRate = (incidentCount / activeDevices) * 1000;
 
-    const complaintTrends: TrendDataPoint[] = [{
-      period: `${cycle.startDate.toISOString().slice(0, 10)} - ${cycle.endDate.toISOString().slice(0, 10)}`,
-      complaintCount: complaints.length,
-      complaintRate: Math.round(complaintRate * 100) / 100,
-      incidentCount,
-      incidentRate: Math.round(incidentRate * 100) / 100,
-    }];
+    const complaintTrends: TrendDataPoint[] = [
+      {
+        period: `${cycle.startDate.toISOString().slice(0, 10)} - ${cycle.endDate.toISOString().slice(0, 10)}`,
+        complaintCount: complaints.length,
+        complaintRate: Math.round(complaintRate * 100) / 100,
+        incidentCount,
+        incidentRate: Math.round(incidentRate * 100) / 100,
+      },
+    ];
 
     const trendAnalysisId = crypto.randomUUID();
 
@@ -81,10 +85,15 @@ export class ComputeTrendsUseCase {
         pmsCycleId,
         analysisDate: new Date(),
         createdById: userId,
-        installedBase: installedBase ? { activeDevices: installedBase.activeDevices, totalUnitsShipped: installedBase.totalUnitsShipped } : null,
-        complaintTrends,
-        severityDistribution,
-        classificationDistribution,
+        installedBase: installedBase
+          ? ({
+              activeDevices: installedBase.activeDevices,
+              totalUnitsShipped: installedBase.totalUnitsShipped,
+            } as unknown as Prisma.InputJsonValue)
+          : Prisma.DbNull,
+        complaintTrends: complaintTrends as unknown as Prisma.InputJsonValue,
+        severityDistribution: severityDistribution as unknown as Prisma.InputJsonValue,
+        classificationDistribution: classificationDistribution as unknown as Prisma.InputJsonValue,
         significantChanges: [],
         status: 'DRAFT',
       },

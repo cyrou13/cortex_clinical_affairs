@@ -68,7 +68,7 @@ const REPORT_LABELS: Record<string, string> = {
 };
 
 export function ReportGenerator({ studyId }: ReportGeneratorProps) {
-  const { data, loading } = useQuery(GET_REPORT_STATUS, {
+  const { data, loading } = useQuery<any>(GET_REPORT_STATUS, {
     variables: { studyId },
   });
 
@@ -76,7 +76,10 @@ export function ReportGenerator({ studyId }: ReportGeneratorProps) {
 
   if (loading) {
     return (
-      <div className="py-6 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="reports-loading">
+      <div
+        className="py-6 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="reports-loading"
+      >
         Loading reports...
       </div>
     );
@@ -106,7 +109,10 @@ export function ReportGenerator({ studyId }: ReportGeneratorProps) {
       </div>
 
       {filteredReports.length === 0 ? (
-        <p className="py-4 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="no-reports">
+        <p
+          className="py-4 text-center text-sm text-[var(--cortex-text-muted)]"
+          data-testid="no-reports"
+        >
           No report types available.
         </p>
       ) : (
@@ -124,11 +130,17 @@ export function ReportGenerator({ studyId }: ReportGeneratorProps) {
                     {REPORT_LABELS[report.type] ?? report.type}
                   </h4>
                   {allPrereqsMet ? (
-                    <span className="flex items-center gap-1 text-xs text-emerald-600" data-testid="prerequisites-ok">
+                    <span
+                      className="flex items-center gap-1 text-xs text-emerald-600"
+                      data-testid="prerequisites-ok"
+                    >
                       <CheckCircle size={12} /> Ready
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 text-xs text-red-600" data-testid="prerequisites-missing">
+                    <span
+                      className="flex items-center gap-1 text-xs text-red-600"
+                      data-testid="prerequisites-missing"
+                    >
                       <XCircle size={12} /> Prerequisites missing
                     </span>
                   )}
@@ -137,7 +149,9 @@ export function ReportGenerator({ studyId }: ReportGeneratorProps) {
                 {report.prerequisites.missing.length > 0 && (
                   <div className="mb-3 space-y-1">
                     {report.prerequisites.missing.map((item, idx) => (
-                      <p key={idx} className="text-xs text-red-600">- {item}</p>
+                      <p key={idx} className="text-xs text-red-600">
+                        - {item}
+                      </p>
                     ))}
                   </div>
                 )}
@@ -172,7 +186,10 @@ export function ReportGenerator({ studyId }: ReportGeneratorProps) {
                   <div className="mt-3 space-y-1" data-testid="report-history">
                     <p className="text-xs font-medium text-[var(--cortex-text-muted)]">History</p>
                     {report.history.map((h) => (
-                      <div key={h.id} className="flex justify-between text-xs text-[var(--cortex-text-muted)]">
+                      <div
+                        key={h.id}
+                        className="flex justify-between text-xs text-[var(--cortex-text-muted)]"
+                      >
                         <span>{h.generatedAt}</span>
                         <span>{h.generatedBy}</span>
                       </div>

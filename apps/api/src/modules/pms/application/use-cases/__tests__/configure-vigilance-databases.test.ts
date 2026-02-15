@@ -54,10 +54,10 @@ describe('ConfigureVigilanceDatabasesUseCase', () => {
     const result = await useCase.execute(validInput);
 
     expect(result).toHaveLength(2);
-    expect(result[0].databaseName).toBe('EUDAMED');
-    expect(result[0].enabled).toBe(true);
-    expect(result[1].databaseName).toBe('MAUDE');
-    expect(result[1].enabled).toBe(false);
+    expect(result[0]!.databaseName).toBe('EUDAMED');
+    expect(result[0]!.enabled).toBe(true);
+    expect(result[1]!.databaseName).toBe('MAUDE');
+    expect(result[1]!.enabled).toBe(false);
   });
 
   it('deletes existing databases before creating new ones', async () => {
@@ -67,8 +67,10 @@ describe('ConfigureVigilanceDatabasesUseCase', () => {
       where: { pmsPlanId: 'plan-1' },
     });
 
-    const deleteOrder = prisma.pmsPlanVigilanceDb.deleteMany.mock.invocationCallOrder[0];
-    const createOrder = prisma.pmsPlanVigilanceDb.create.mock.invocationCallOrder[0];
+    const deleteOrder =
+      vi.mocked(prisma.pmsPlanVigilanceDb.deleteMany).mock.invocationCallOrder[0] ?? 0;
+    const createOrder =
+      vi.mocked(prisma.pmsPlanVigilanceDb.create).mock.invocationCallOrder[0] ?? 0;
     expect(deleteOrder).toBeLessThan(createOrder);
   });
 
@@ -132,7 +134,7 @@ describe('ConfigureVigilanceDatabasesUseCase', () => {
   it('generates unique IDs for each database record', async () => {
     await useCase.execute(validInput);
 
-    const calls = prisma.pmsPlanVigilanceDb.create.mock.calls;
+    const calls = vi.mocked(prisma.pmsPlanVigilanceDb.create).mock.calls;
     const ids = calls.map((c: any) => c[0].data.id);
 
     expect(ids[0]).toBeDefined();

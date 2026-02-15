@@ -24,44 +24,48 @@ enum ArticleStatus {
 }
 
 model SlsSession {
-  id                       String           @id @default(uuid())
-  projectId                String
-  cepId                    String
-  name                     String
-  type                     SlsSessionType
-  status                   SlsSessionStatus @default(DRAFT)
-  scopeFields              Json?
-  createdById              String
-  lockedAt                 DateTime?
-  likelyRelevantThreshold  Int              @default(75)
-  uncertainLowerThreshold  Int              @default(40)
-  createdAt                DateTime         @default(now())
-  updatedAt                DateTime         @updatedAt
+  id                      String           @id @default(uuid())
+  projectId               String
+  cepId                   String
+  name                    String
+  type                    SlsSessionType
+  status                  SlsSessionStatus @default(DRAFT)
+  scopeFields             Json?
+  createdById             String
+  lockedAt                DateTime?
+  lockedById              String?
+  deduplicationStats      Json?
+  prismaStatistics        Json?
+  likelyRelevantThreshold Int              @default(75)
+  uncertainLowerThreshold Int              @default(40)
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
 
-  queries          SlsQuery[]
-  articles         Article[]
-  exclusionCodes   ExclusionCode[]
-  customAiFilters  CustomAiFilter[]
-  minedReferences  MinedReference[]
+  queries         SlsQuery[]
+  articles        Article[]
+  exclusionCodes  ExclusionCode[]
+  customAiFilters CustomAiFilter[]
+  minedReferences MinedReference[]
 
   @@index([projectId, status])
 }
 
 model SlsQuery {
-  id            String    @id @default(uuid())
+  id            String   @id @default(uuid())
   sessionId     String
   name          String
   queryString   String
-  version       Int       @default(1)
-  isActive      Boolean   @default(true)
+  version       Int      @default(1)
+  isActive      Boolean  @default(true)
   parentQueryId String?
   createdById   String
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  session       SlsSession @relation(fields: [sessionId], references: [id])
-  executions    QueryExecution[]
-  articleLinks  ArticleQueryLink[]
+  session      SlsSession         @relation(fields: [sessionId], references: [id])
+  executions   QueryExecution[]
+  versions     QueryVersion[]
+  articleLinks ArticleQueryLink[]
 
   @@index([sessionId, isActive])
 }
@@ -75,51 +79,68 @@ model QueryVersion {
   createdById String
   createdAt   DateTime @default(now())
 
+  query      SlsQuery         @relation(fields: [queryId], references: [id])
+  executions QueryExecution[]
+
   @@index([queryId, version])
 }
 
 model QueryExecution {
-  id                       String   @id @default(uuid())
+  id                       String    @id @default(uuid())
   queryId                  String
+  queryVersionId           String?
   database                 String
-  status                   String   @default("RUNNING")
-  articlesFound            Int      @default(0)
-  articlesImported         Int      @default(0)
+  status                   String    @default("RUNNING")
+  articlesFound            Int       @default(0)
+  articlesImported         Int       @default(0)
+  resultCount              Int?
   reproducibilityStatement String?
   errorMessage             String?
-  executedAt               DateTime @default(now())
+  executedAt               DateTime  @default(now())
   completedAt              DateTime?
 
-  query        SlsQuery @relation(fields: [queryId], references: [id])
+  query        SlsQuery           @relation(fields: [queryId], references: [id])
+  queryVersion QueryVersion?      @relation(fields: [queryVersionId], references: [id])
   articleLinks ArticleQueryLink[]
 
   @@index([queryId])
 }
 
 model Article {
-  id              String        @id @default(uuid())
-  sessionId       String
-  title           String
-  abstract        String?
-  authors         Json?
-  doi             String?
-  pmid            String?
-  publicationDate DateTime?
-  journal         String?
-  sourceDatabase  String?
-  status          ArticleStatus @default(PENDING)
-  relevanceScore  Float?
-  aiExclusionCode String?
-  aiReasoning     String?
-  aiCategory      String?
-  scoredAt        DateTime?
+  id                String        @id @default(uuid())
+  sessionId         String
+  title             String
+  abstract          String?
+  authors           Json?
+  doi               String?
+  pmid              String?
+  publicationDate   DateTime?
+  publicationYear   Int?
+  year              Int?
+  journal           String?
+  source            String?
+  sourceDatabase    String?
+  pdfStatus              String?
+  pdfStorageKey          String?
+  pdfVerificationResult  Json?
+  volume                 String?
+  query                  String?
+  database               String?
+  status                 ArticleStatus @default(PENDING)
+  relevanceScore    Float?
+  exclusionCodeId   String?
+  aiExclusionCode   String?
+  aiReasoning       String?
+  aiCategory        String?
+  scoredAt          DateTime?
   customFilterScore Float?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
-  session    SlsSession         @relation(fields: [sessionId], references: [id])
-  queryLinks ArticleQueryLink[]
+  session            SlsSession          @relation(fields: [sessionId], references: [id])
+  queryLinks         ArticleQueryLink[]
   screeningDecisions ScreeningDecision[]
+  claimArticleLinks  ClaimArticleLink[]
 
   @@index([sessionId, status])
   @@index([sessionId, relevanceScore])
@@ -128,14 +149,14 @@ model Article {
 }
 
 model ArticleQueryLink {
-  id           String @id @default(uuid())
-  articleId    String
-  queryId      String
-  executionId  String?
+  id             String  @id @default(uuid())
+  articleId      String
+  queryId        String
+  executionId    String?
   sourceDatabase String?
 
-  article   Article        @relation(fields: [articleId], references: [id])
-  query     SlsQuery       @relation(fields: [queryId], references: [id])
+  article   Article         @relation(fields: [articleId], references: [id])
+  query     SlsQuery        @relation(fields: [queryId], references: [id])
   execution QueryExecution? @relation(fields: [executionId], references: [id])
 
   @@index([articleId, queryId])
@@ -207,7 +228,7 @@ model MinedReference {
   journal          String?
   doi              String?
   pmid             String?
-  approvalStatus   MinedReferenceStatus  @default(PENDING)
+  approvalStatus   MinedReferenceStatus @default(PENDING)
   validationStatus String?
   isDuplicate      Boolean              @default(false)
   rejectionReason  String?

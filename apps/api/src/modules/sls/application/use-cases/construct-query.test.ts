@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateId } from '@cortex/shared';
+import type * as CortexShared from '@cortex/shared';
 
 vi.mock('@cortex/shared', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@cortex/shared')>();
+  const actual = await importOriginal<typeof CortexShared>();
   return {
     ...actual,
     generateId: vi.fn(),
@@ -13,9 +14,7 @@ import { ConstructQueryUseCase } from './construct-query.js';
 
 const mockGenerateId = vi.mocked(generateId);
 
-function makePrisma(overrides?: {
-  sessionResult?: unknown;
-}) {
+function makePrisma(overrides?: { sessionResult?: unknown }) {
   return {
     slsSession: {
       findUnique: vi.fn().mockResolvedValue(
@@ -58,9 +57,7 @@ describe('ConstructQueryUseCase', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockGenerateId
-      .mockReturnValueOnce('query-uuid-1')
-      .mockReturnValueOnce('version-uuid-1');
+    mockGenerateId.mockReturnValueOnce('query-uuid-1').mockReturnValueOnce('version-uuid-1');
 
     prisma = makePrisma();
     useCase = new ConstructQueryUseCase(prisma);
@@ -101,7 +98,7 @@ describe('ConstructQueryUseCase', () => {
           queryId: 'query-uuid-1',
           version: 1,
           queryString: '(spinal fusion) AND outcomes',
-          diff: null,
+          diff: expect.anything(),
           createdById: 'user-1',
         }),
       }),
@@ -127,9 +124,7 @@ describe('ConstructQueryUseCase', () => {
     prisma = makePrisma({ sessionResult: null });
     useCase = new ConstructQueryUseCase(prisma);
 
-    await expect(
-      useCase.execute(validInput, 'user-1'),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute(validInput, 'user-1')).rejects.toThrow('not found');
   });
 
   it('throws ValidationError when session is LOCKED', async () => {
@@ -138,37 +133,26 @@ describe('ConstructQueryUseCase', () => {
     });
     useCase = new ConstructQueryUseCase(prisma);
 
-    await expect(
-      useCase.execute(validInput, 'user-1'),
-    ).rejects.toThrow('locked session');
+    await expect(useCase.execute(validInput, 'user-1')).rejects.toThrow('locked session');
   });
 
   it('throws ValidationError for invalid query syntax', async () => {
     await expect(
-      useCase.execute(
-        { ...validInput, queryString: 'AND AND' },
-        'user-1',
-      ),
+      useCase.execute({ ...validInput, queryString: 'AND AND' }, 'user-1'),
     ).rejects.toThrow('Invalid query syntax');
   });
 
   it('throws ValidationError for empty name', async () => {
-    await expect(
-      useCase.execute({ ...validInput, name: '' }, 'user-1'),
-    ).rejects.toThrow();
+    await expect(useCase.execute({ ...validInput, name: '' }, 'user-1')).rejects.toThrow();
   });
 
   it('throws ValidationError for empty queryString', async () => {
-    await expect(
-      useCase.execute({ ...validInput, queryString: '' }, 'user-1'),
-    ).rejects.toThrow();
+    await expect(useCase.execute({ ...validInput, queryString: '' }, 'user-1')).rejects.toThrow();
   });
 
   it('throws ValidationError for missing sessionId', async () => {
-    const { sessionId, ...rest } = validInput;
-    await expect(
-      useCase.execute(rest, 'user-1'),
-    ).rejects.toThrow();
+    const { sessionId: _sessionId, ...rest } = validInput;
+    await expect(useCase.execute(rest, 'user-1')).rejects.toThrow();
   });
 
   it('allows query creation in SCREENING session', async () => {

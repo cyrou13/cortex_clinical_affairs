@@ -122,11 +122,11 @@ describe('PmsDashboard', () => {
     });
     render(<PmsDashboard projectId="proj-1" />);
     expect(mockUseQuery).toHaveBeenCalled();
-    const callArgs = mockUseQuery.mock.calls[0];
+    const callArgs = mockUseQuery.mock.calls[0]!;
     expect(callArgs[1]).toEqual(
       expect.objectContaining({
         variables: expect.objectContaining({ projectId: 'proj-1' }),
-      })
+      }),
     );
   });
 });

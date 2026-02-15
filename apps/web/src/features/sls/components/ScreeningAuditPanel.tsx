@@ -67,13 +67,16 @@ export function ScreeningAuditPanel({ sessionId }: ScreeningAuditPanelProps) {
 
   const filter = decisionFilter !== 'ALL' ? { decision: decisionFilter } : undefined;
 
-  const { data, loading, error } = useQuery(GET_SCREENING_AUDIT_LOG, {
+  const { data, loading, error } = useQuery<any>(GET_SCREENING_AUDIT_LOG, {
     variables: { sessionId, filter },
   });
 
   if (loading) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="audit-loading">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="audit-loading"
+      >
         Loading audit log...
       </div>
     );
@@ -81,7 +84,10 @@ export function ScreeningAuditPanel({ sessionId }: ScreeningAuditPanelProps) {
 
   if (error) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-error)]" data-testid="audit-error">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-error)]"
+        data-testid="audit-error"
+      >
         Failed to load audit log.
       </div>
     );
@@ -90,7 +96,16 @@ export function ScreeningAuditPanel({ sessionId }: ScreeningAuditPanelProps) {
   const entries: AuditEntry[] = data?.screeningAuditLog?.entries ?? [];
 
   const handleExport = () => {
-    const headers = ['Timestamp', 'User', 'Article', 'Decision', 'Exclusion Code', 'Reason', 'Spot-Check', 'AI Override'];
+    const headers = [
+      'Timestamp',
+      'User',
+      'Article',
+      'Decision',
+      'Exclusion Code',
+      'Reason',
+      'Spot-Check',
+      'AI Override',
+    ];
     const rows = entries.map((e) => [
       e.timestamp,
       e.userName,
@@ -162,12 +177,24 @@ export function ScreeningAuditPanel({ sessionId }: ScreeningAuditPanelProps) {
           <table className="w-full text-sm" data-testid="audit-table">
             <thead className="bg-[var(--cortex-bg-muted)]">
               <tr>
-                <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">Timestamp</th>
-                <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">User</th>
-                <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">Article</th>
-                <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">Decision</th>
-                <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">Reason</th>
-                <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">Indicators</th>
+                <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">
+                  Timestamp
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">
+                  User
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">
+                  Article
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">
+                  Decision
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">
+                  Reason
+                </th>
+                <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-muted)]">
+                  Indicators
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--cortex-border)]">
@@ -189,12 +216,18 @@ export function ScreeningAuditPanel({ sessionId }: ScreeningAuditPanelProps) {
                   <td className="px-3 py-2">
                     <div className="flex gap-1">
                       {entry.isSpotCheck && (
-                        <span className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700" data-testid="indicator-spot-check">
+                        <span
+                          className="rounded bg-blue-100 px-1.5 py-0.5 text-xs text-blue-700"
+                          data-testid="indicator-spot-check"
+                        >
                           Spot-check
                         </span>
                       )}
                       {entry.isAiOverride && (
-                        <span className="rounded bg-orange-100 px-1.5 py-0.5 text-xs text-orange-700" data-testid="indicator-ai-override">
+                        <span
+                          className="rounded bg-orange-100 px-1.5 py-0.5 text-xs text-orange-700"
+                          data-testid="indicator-ai-override"
+                        >
                           AI Override
                         </span>
                       )}

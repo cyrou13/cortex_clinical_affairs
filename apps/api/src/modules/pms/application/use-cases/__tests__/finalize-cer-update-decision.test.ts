@@ -86,7 +86,7 @@ describe('FinalizeCerUpdateDecisionUseCase', () => {
 
     const publishCalls = mockEventBus.publish.mock.calls;
     expect(publishCalls).toHaveLength(2);
-    expect(publishCalls[1][0]).toMatchObject({
+    expect(publishCalls[1]![0]).toMatchObject({
       eventType: 'pms.cer-update-required',
     });
   });
@@ -117,8 +117,6 @@ describe('FinalizeCerUpdateDecisionUseCase', () => {
     });
     useCase = new FinalizeCerUpdateDecisionUseCase(prisma, mockEventBus as any);
 
-    await expect(useCase.execute('decision-1', 'user-1')).rejects.toThrow(
-      'already finalized',
-    );
+    await expect(useCase.execute('decision-1', 'user-1')).rejects.toThrow('already finalized');
   });
 });

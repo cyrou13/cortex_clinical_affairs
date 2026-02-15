@@ -19,7 +19,14 @@ const mockVersions = {
   importVersions: [
     { id: 'v-1', version: 1, date: '2026-02-10', status: 'VALID', rowCount: 100, isActive: true },
     { id: 'v-2', version: 2, date: '2026-02-14', status: 'VALID', rowCount: 120, isActive: false },
-    { id: 'v-3', version: 3, date: '2026-02-14', status: 'PROCESSING', rowCount: 0, isActive: false },
+    {
+      id: 'v-3',
+      version: 3,
+      date: '2026-02-14',
+      status: 'PROCESSING',
+      rowCount: 0,
+      isActive: false,
+    },
   ],
 };
 
@@ -81,7 +88,7 @@ describe('ImportVersionList', () => {
     mockUseQuery.mockReturnValue({ data: mockVersions, loading: false });
     render(<ImportVersionList studyId="study-1" />);
 
-    fireEvent.click(screen.getAllByTestId('set-active-btn')[0]);
+    fireEvent.click(screen.getAllByTestId('set-active-btn')[0]!);
 
     await waitFor(() => {
       expect(mockSetActive).toHaveBeenCalledWith({

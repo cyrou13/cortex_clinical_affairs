@@ -8,10 +8,12 @@ model AuditLog {
   after      Json?
   metadata   Json?
   timestamp  DateTime @default(now())
+  createdAt  DateTime @default(now())
 
   @@index([targetType, targetId])
   @@index([userId])
   @@index([timestamp])
+  @@index([createdAt])
 }
 
 model AsyncTask {
@@ -34,14 +36,16 @@ model AsyncTask {
 }
 
 model VersionSnapshot {
-  id         String   @id @default(uuid())
-  entityType String
-  entityId   String
-  version    Int
-  data       Json
-  checksum   String
-  createdBy  String
-  createdAt  DateTime @default(now())
+  id           String   @id @default(uuid())
+  entityType   String
+  entityId     String
+  version      Int
+  data         Json
+  checksum     String
+  moduleType   String?
+  cerVersionId String?
+  createdBy    String
+  createdAt    DateTime @default(now())
 
   @@unique([entityType, entityId, version])
   @@index([entityType, entityId])
@@ -49,11 +53,11 @@ model VersionSnapshot {
 
 model LlmConfig {
   id        String   @id @default(uuid())
-  level     String   // SYSTEM, PROJECT, TASK
+  level     String // SYSTEM, PROJECT, TASK
   projectId String?
-  taskType  String?  // scoring, extraction, drafting, metadata_extraction
-  provider  String   // claude, openai, ollama
-  model     String   // specific model name
+  taskType  String? // scoring, extraction, drafting, metadata_extraction
+  provider  String // claude, openai, ollama
+  model     String // specific model name
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

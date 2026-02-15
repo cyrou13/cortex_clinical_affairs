@@ -10,7 +10,7 @@ export class ValidateExtractionUseCase {
     await this.prisma.gridCell.update({
       where: { id: cell.id },
       data: {
-        validationStatus: 'VALIDATED',
+        validationStatus: 'VALIDATED' as any,
         validatedById: userId,
         validatedAt: new Date().toISOString(),
       },
@@ -32,7 +32,7 @@ export class ValidateExtractionUseCase {
       where: { id: cell.id },
       data: {
         value: newValue,
-        validationStatus: 'CORRECTED',
+        validationStatus: 'CORRECTED' as any,
         validatedById: userId,
         validatedAt: new Date().toISOString(),
       },
@@ -57,7 +57,7 @@ export class ValidateExtractionUseCase {
     await this.prisma.gridCell.update({
       where: { id: cell.id },
       data: {
-        validationStatus: 'FLAGGED',
+        validationStatus: 'FLAGGED' as any,
         validatedById: userId,
         validatedAt: new Date().toISOString(),
       },

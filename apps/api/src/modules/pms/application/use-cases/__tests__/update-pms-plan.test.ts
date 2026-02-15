@@ -76,7 +76,7 @@ describe('UpdatePmsPlanUseCase', () => {
       }),
     );
 
-    const callData = prisma.pmsPlan.update.mock.calls[0][0].data;
+    const callData = vi.mocked(prisma.pmsPlan.update).mock.calls[0]![0]!.data;
     expect(callData).not.toHaveProperty('dataCollectionMethods');
   });
 
@@ -120,9 +120,7 @@ describe('UpdatePmsPlanUseCase', () => {
     });
     useCase = new UpdatePmsPlanUseCase(prisma);
 
-    await expect(useCase.execute(validInput)).rejects.toThrow(
-      'only be updated in DRAFT status',
-    );
+    await expect(useCase.execute(validInput)).rejects.toThrow('only be updated in DRAFT status');
   });
 
   it('throws ValidationError when plan is in ACTIVE status', async () => {
@@ -137,8 +135,6 @@ describe('UpdatePmsPlanUseCase', () => {
     });
     useCase = new UpdatePmsPlanUseCase(prisma);
 
-    await expect(useCase.execute(validInput)).rejects.toThrow(
-      'only be updated in DRAFT status',
-    );
+    await expect(useCase.execute(validInput)).rejects.toThrow('only be updated in DRAFT status');
   });
 });

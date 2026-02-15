@@ -42,13 +42,16 @@ interface ProtocolAmendmentHistoryProps {
 export function ProtocolAmendmentHistory({ studyId }: ProtocolAmendmentHistoryProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const { data, loading } = useQuery(GET_AMENDMENT_HISTORY, {
+  const { data, loading } = useQuery<any>(GET_AMENDMENT_HISTORY, {
     variables: { studyId },
   });
 
   if (loading) {
     return (
-      <div className="py-6 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="amendment-loading">
+      <div
+        className="py-6 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="amendment-loading"
+      >
         Loading amendment history...
       </div>
     );
@@ -66,7 +69,10 @@ export function ProtocolAmendmentHistory({ studyId }: ProtocolAmendmentHistoryPr
       </div>
 
       {amendments.length === 0 ? (
-        <p className="py-4 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="no-amendments">
+        <p
+          className="py-4 text-center text-sm text-[var(--cortex-text-muted)]"
+          data-testid="no-amendments"
+        >
           No amendments recorded.
         </p>
       ) : (
@@ -92,14 +98,21 @@ export function ProtocolAmendmentHistory({ studyId }: ProtocolAmendmentHistoryPr
                     >
                       v{amendment.version}
                     </span>
-                    <span className="text-sm text-[var(--cortex-text-primary)]">{amendment.date}</span>
-                    <span className="text-xs text-[var(--cortex-text-muted)]">by {amendment.author}</span>
+                    <span className="text-sm text-[var(--cortex-text-primary)]">
+                      {amendment.date}
+                    </span>
+                    <span className="text-xs text-[var(--cortex-text-muted)]">
+                      by {amendment.author}
+                    </span>
                   </div>
                   {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </button>
 
                 <div className="border-t border-[var(--cortex-border)] px-4 py-3">
-                  <div className="mb-2 text-sm text-[var(--cortex-text-primary)]" data-testid="amendment-reason">
+                  <div
+                    className="mb-2 text-sm text-[var(--cortex-text-primary)]"
+                    data-testid="amendment-reason"
+                  >
                     <span className="font-medium">Reason:</span> {amendment.reason}
                   </div>
 
@@ -107,7 +120,9 @@ export function ProtocolAmendmentHistory({ studyId }: ProtocolAmendmentHistoryPr
                     <div className="space-y-2" data-testid="amendment-changes">
                       {amendment.changes.map((change, idx) => (
                         <div key={idx} className="rounded bg-[#F8F9FA] p-2 text-xs">
-                          <div className="font-medium text-[var(--cortex-text-primary)]">{change.field}</div>
+                          <div className="font-medium text-[var(--cortex-text-primary)]">
+                            {change.field}
+                          </div>
                           <div className="mt-1 text-red-600 line-through">{change.oldValue}</div>
                           <div className="text-emerald-600">{change.newValue}</div>
                         </div>

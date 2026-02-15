@@ -56,7 +56,10 @@ function VersionStatusBadge({ status }: { status: string }) {
   };
   const c = config[status] ?? { bg: 'bg-gray-100', text: 'text-gray-700', icon: null };
   return (
-    <span className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${c.bg} ${c.text}`} data-testid="version-status">
+    <span
+      className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium ${c.bg} ${c.text}`}
+      data-testid="version-status"
+    >
       {c.icon}
       {status}
     </span>
@@ -66,7 +69,7 @@ function VersionStatusBadge({ status }: { status: string }) {
 export function ImportVersionList({ studyId, onCompare }: ImportVersionListProps) {
   const [compareFrom, setCompareFrom] = useState<string | null>(null);
 
-  const { data, loading } = useQuery(GET_IMPORT_VERSIONS, {
+  const { data, loading } = useQuery<any>(GET_IMPORT_VERSIONS, {
     variables: { studyId },
   });
 
@@ -75,7 +78,10 @@ export function ImportVersionList({ studyId, onCompare }: ImportVersionListProps
 
   if (loading) {
     return (
-      <div className="py-6 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="versions-loading">
+      <div
+        className="py-6 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="versions-loading"
+      >
         Loading import versions...
       </div>
     );
@@ -104,13 +110,14 @@ export function ImportVersionList({ studyId, onCompare }: ImportVersionListProps
     <div className="space-y-4" data-testid="import-version-list">
       <div className="flex items-center gap-2">
         <Database size={16} className="text-[var(--cortex-primary)]" />
-        <h3 className="text-sm font-semibold text-[var(--cortex-text-primary)]">
-          Import Versions
-        </h3>
+        <h3 className="text-sm font-semibold text-[var(--cortex-text-primary)]">Import Versions</h3>
       </div>
 
       {versions.length === 0 ? (
-        <p className="py-4 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="no-versions">
+        <p
+          className="py-4 text-center text-sm text-[var(--cortex-text-muted)]"
+          data-testid="no-versions"
+        >
           No import versions yet.
         </p>
       ) : (

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 import { FileText, AlertTriangle, Plus, Trash2 } from 'lucide-react';
@@ -66,24 +66,25 @@ export function ProtocolEditor({ studyId, onApproved }: ProtocolEditorProps) {
   const [statisticalStrategy, setStatisticalStrategy] = useState('');
   const [initialized, setInitialized] = useState(false);
 
-  const { data, loading } = useQuery(GET_PROTOCOL, {
+  const { data, loading } = useQuery<any>(GET_PROTOCOL, {
     variables: { studyId },
-    onCompleted: (result) => {
-      if (!initialized && result?.validationProtocol) {
-        const p = result.validationProtocol;
-        setSummary(p.summary ?? '');
-        setEndpoints(p.endpoints ?? []);
-        setSampleSize(p.sampleSize ?? '');
-        setStatisticalStrategy(p.statisticalStrategy ?? '');
-        setInitialized(true);
-      }
-    },
   });
 
-  const [saveProtocol, { loading: saving }] = useMutation(SAVE_PROTOCOL);
-  const [approveProtocol, { loading: approving }] = useMutation(APPROVE_PROTOCOL);
+  const [saveProtocol, { loading: saving }] = useMutation<any>(SAVE_PROTOCOL);
+  const [approveProtocol, { loading: approving }] = useMutation<any>(APPROVE_PROTOCOL);
 
   const protocol = data?.validationProtocol;
+
+  useEffect(() => {
+    if (!initialized && data?.validationProtocol) {
+      const p = data.validationProtocol;
+      setSummary(p.summary ?? '');
+      setEndpoints(p.endpoints ?? []);
+      setSampleSize(p.sampleSize ?? '');
+      setStatisticalStrategy(p.statisticalStrategy ?? '');
+      setInitialized(true);
+    }
+  }, [data, initialized]);
   const isApproved = protocol?.status === 'APPROVED';
 
   const handleAddEndpoint = () => {
@@ -98,9 +99,7 @@ export function ProtocolEditor({ studyId, onApproved }: ProtocolEditorProps) {
   };
 
   const handleEndpointChange = (id: string, field: keyof Endpoint, value: string) => {
-    setEndpoints((prev) =>
-      prev.map((ep) => (ep.id === id ? { ...ep, [field]: value } : ep)),
-    );
+    setEndpoints((prev) => prev.map((ep) => (ep.id === id ? { ...ep, [field]: value } : ep)));
   };
 
   const handleSave = async () => {
@@ -134,26 +133,33 @@ export function ProtocolEditor({ studyId, onApproved }: ProtocolEditorProps) {
 
   if (loading) {
     return (
-      <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="protocol-loading">
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="protocol-loading"
+      >
         Loading protocol...
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 rounded-lg border border-[var(--cortex-border)] p-6" data-testid="protocol-editor">
+    <div
+      className="space-y-6 rounded-lg border border-[var(--cortex-border)] p-6"
+      data-testid="protocol-editor"
+    >
       <div className="flex items-center gap-2">
         <FileText size={20} className="text-[var(--cortex-primary)]" />
-        <h2 className="text-lg font-semibold text-[var(--cortex-text-primary)]">
-          Protocol Editor
-        </h2>
+        <h2 className="text-lg font-semibold text-[var(--cortex-text-primary)]">Protocol Editor</h2>
         {protocol?.version && (
           <span className="text-xs text-[var(--cortex-text-muted)]">v{protocol.version}</span>
         )}
       </div>
 
       {isApproved && (
-        <div className="flex items-start gap-2 rounded border border-orange-200 bg-orange-50 p-3" data-testid="amendment-warning">
+        <div
+          className="flex items-start gap-2 rounded border border-orange-200 bg-orange-50 p-3"
+          data-testid="amendment-warning"
+        >
           <AlertTriangle size={16} className="mt-0.5 text-orange-500" />
           <p className="text-sm text-orange-700">
             This protocol is approved. Editing will create a new amendment version.
@@ -182,7 +188,9 @@ export function ProtocolEditor({ studyId, onApproved }: ProtocolEditorProps) {
       <div className="min-h-[200px]">
         {currentStep === 0 && (
           <div data-testid="step-1-content">
-            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">Summary</label>
+            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
+              Summary
+            </label>
             <textarea
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
@@ -197,7 +205,9 @@ export function ProtocolEditor({ studyId, onApproved }: ProtocolEditorProps) {
         {currentStep === 1 && (
           <div data-testid="step-2-content">
             <div className="mb-2 flex items-center justify-between">
-              <label className="text-xs font-medium text-[var(--cortex-text-muted)]">Endpoints</label>
+              <label className="text-xs font-medium text-[var(--cortex-text-muted)]">
+                Endpoints
+              </label>
               <button
                 type="button"
                 onClick={handleAddEndpoint}
@@ -209,7 +219,11 @@ export function ProtocolEditor({ studyId, onApproved }: ProtocolEditorProps) {
             </div>
             <div className="space-y-3" data-testid="endpoint-list">
               {endpoints.map((ep) => (
-                <div key={ep.id} className="flex gap-2 rounded border border-[var(--cortex-border)] p-3" data-testid={`endpoint-${ep.id}`}>
+                <div
+                  key={ep.id}
+                  className="flex gap-2 rounded border border-[var(--cortex-border)] p-3"
+                  data-testid={`endpoint-${ep.id}`}
+                >
                   <input
                     type="text"
                     value={ep.name}
@@ -255,7 +269,10 @@ export function ProtocolEditor({ studyId, onApproved }: ProtocolEditorProps) {
                 </div>
               ))}
               {endpoints.length === 0 && (
-                <p className="py-4 text-center text-xs text-[var(--cortex-text-muted)]" data-testid="no-endpoints">
+                <p
+                  className="py-4 text-center text-xs text-[var(--cortex-text-muted)]"
+                  data-testid="no-endpoints"
+                >
                   No endpoints defined. Click "Add Endpoint" to begin.
                 </p>
               )}
@@ -265,7 +282,9 @@ export function ProtocolEditor({ studyId, onApproved }: ProtocolEditorProps) {
 
         {currentStep === 2 && (
           <div data-testid="step-3-content">
-            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">Sample Size Justification</label>
+            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
+              Sample Size Justification
+            </label>
             <textarea
               value={sampleSize}
               onChange={(e) => setSampleSize(e.target.value)}
@@ -279,7 +298,9 @@ export function ProtocolEditor({ studyId, onApproved }: ProtocolEditorProps) {
 
         {currentStep === 3 && (
           <div data-testid="step-4-content">
-            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">Statistical Strategy</label>
+            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
+              Statistical Strategy
+            </label>
             <textarea
               value={statisticalStrategy}
               onChange={(e) => setStatisticalStrategy(e.target.value)}

@@ -1,4 +1,9 @@
-import type { PrismaClient } from '@prisma/client';
+import type {
+  Prisma,
+  PrismaClient,
+  QualityAssessmentType,
+  DataContributionLevel as PrismaDataContributionLevel,
+} from '@prisma/client';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
 
 const ASSESSMENT_TYPES = ['QUADAS_2', 'INTERNAL_READING_GRID'] as const;
@@ -77,9 +82,9 @@ export class AssessQualityUseCase {
         id: qualityAssessmentId,
         soaAnalysisId: input.soaAnalysisId,
         articleId: input.articleId,
-        assessmentType: input.assessmentType,
-        assessmentData: input.assessmentData,
-        dataContributionLevel: input.dataContributionLevel,
+        assessmentType: input.assessmentType as QualityAssessmentType,
+        assessmentData: input.assessmentData as Prisma.InputJsonValue,
+        dataContributionLevel: input.dataContributionLevel as PrismaDataContributionLevel,
         assessedById: input.userId,
         assessedAt: new Date().toISOString(),
       },

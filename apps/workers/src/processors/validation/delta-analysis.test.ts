@@ -19,7 +19,7 @@ const LOWER_IS_BETTER: DeltaConfig = {
 
 describe('classifyDelta', () => {
   it('classifies improved when patch > parent (higher is better)', () => {
-    expect(classifyDelta(0.90, 0.95, HIGHER_IS_BETTER)).toBe('IMPROVED');
+    expect(classifyDelta(0.9, 0.95, HIGHER_IS_BETTER)).toBe('IMPROVED');
   });
 
   it('classifies degraded when patch < parent (higher is better)', () => {
@@ -31,7 +31,7 @@ describe('classifyDelta', () => {
   });
 
   it('classifies improved when patch < parent (lower is better)', () => {
-    expect(classifyDelta(0.10, 0.05, LOWER_IS_BETTER)).toBe('IMPROVED');
+    expect(classifyDelta(0.1, 0.05, LOWER_IS_BETTER)).toBe('IMPROVED');
   });
 
   it('classifies degraded when patch > parent (lower is better)', () => {
@@ -49,12 +49,12 @@ describe('classifyDelta', () => {
   });
 
   it('uses default config when none provided', () => {
-    const result = classifyDelta(0.90, 0.95);
+    const result = classifyDelta(0.9, 0.95);
     expect(result).toBe('IMPROVED');
   });
 
   it('respects custom unchanged threshold', () => {
-    const config: DeltaConfig = { unchangedThreshold: 0.10, higherIsBetter: true };
+    const config: DeltaConfig = { unchangedThreshold: 0.1, higherIsBetter: true };
     // 5% change with 10% threshold => unchanged
     expect(classifyDelta(1.0, 1.05, config)).toBe('UNCHANGED');
   });
@@ -62,13 +62,13 @@ describe('classifyDelta', () => {
 
 describe('computeSingleDelta', () => {
   it('computes delta for matching metrics', () => {
-    const parent: MetricResult = { metricName: 'AUC', value: 0.90, unit: '' };
+    const parent: MetricResult = { metricName: 'AUC', value: 0.9, unit: '' };
     const patch: MetricResult = { metricName: 'AUC', value: 0.95, unit: '' };
 
     const result = computeSingleDelta(parent, patch);
 
     expect(result.metricName).toBe('AUC');
-    expect(result.parentValue).toBe(0.90);
+    expect(result.parentValue).toBe(0.9);
     expect(result.patchValue).toBe(0.95);
     expect(result.absoluteDelta).toBeCloseTo(0.05);
     expect(result.relativeDeltaPercent).toBeCloseTo(5.56, 1);
@@ -108,7 +108,7 @@ describe('computeSingleDelta', () => {
 describe('computeDelta', () => {
   it('computes delta summary for matching metrics', () => {
     const parentResults: MetricResult[] = [
-      { metricName: 'AUC', value: 0.90, unit: '' },
+      { metricName: 'AUC', value: 0.9, unit: '' },
       { metricName: 'Sensitivity', value: 92.0, unit: '%' },
       { metricName: 'Specificity', value: 95.0, unit: '%' },
     ];
@@ -130,7 +130,7 @@ describe('computeDelta', () => {
 
   it('skips unmatched metrics', () => {
     const parentResults: MetricResult[] = [
-      { metricName: 'AUC', value: 0.90, unit: '' },
+      { metricName: 'AUC', value: 0.9, unit: '' },
       { metricName: 'F1-Score', value: 0.88, unit: '' },
     ];
 
@@ -142,7 +142,7 @@ describe('computeDelta', () => {
     const summary = computeDelta(parentResults, patchResults);
 
     expect(summary.totalMetrics).toBe(1);
-    expect(summary.results[0].metricName).toBe('AUC');
+    expect(summary.results[0]!.metricName).toBe('AUC');
   });
 
   it('matches metrics by name AND subgroup', () => {
@@ -175,10 +175,7 @@ describe('computeDelta', () => {
   });
 
   it('handles empty patch results', () => {
-    const summary = computeDelta(
-      [{ metricName: 'AUC', value: 0.95, unit: '' }],
-      [],
-    );
+    const summary = computeDelta([{ metricName: 'AUC', value: 0.95, unit: '' }], []);
 
     expect(summary.totalMetrics).toBe(0);
     expect(summary.results).toHaveLength(0);
@@ -194,22 +191,18 @@ describe('computeDelta', () => {
   });
 
   it('uses lower-is-better config', () => {
-    const parentResults: MetricResult[] = [
-      { metricName: 'FPR', value: 0.10, unit: '' },
-    ];
-    const patchResults: MetricResult[] = [
-      { metricName: 'FPR', value: 0.05, unit: '' },
-    ];
+    const parentResults: MetricResult[] = [{ metricName: 'FPR', value: 0.1, unit: '' }];
+    const patchResults: MetricResult[] = [{ metricName: 'FPR', value: 0.05, unit: '' }];
 
     const summary = computeDelta(parentResults, patchResults, LOWER_IS_BETTER);
 
     expect(summary.improved).toBe(1);
-    expect(summary.results[0].classification).toBe('IMPROVED');
+    expect(summary.results[0]!.classification).toBe('IMPROVED');
   });
 
   it('correctly counts unchanged metrics', () => {
     const parentResults: MetricResult[] = [
-      { metricName: 'AUC', value: 0.950, unit: '' },
+      { metricName: 'AUC', value: 0.95, unit: '' },
       { metricName: 'Sensitivity', value: 92.0, unit: '%' },
     ];
     const patchResults: MetricResult[] = [

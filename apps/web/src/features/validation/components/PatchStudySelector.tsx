@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { useQuery } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 import { GitBranch, Link } from 'lucide-react';
@@ -34,7 +33,7 @@ export function PatchStudySelector({
   parentStudyId,
   onChange,
 }: PatchStudySelectorProps) {
-  const { data, loading } = useQuery(GET_LOCKED_STUDIES, {
+  const { data, loading } = useQuery<any>(GET_LOCKED_STUDIES, {
     variables: { projectId },
     skip: !isPatch,
   });

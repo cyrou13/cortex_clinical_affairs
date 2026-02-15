@@ -227,9 +227,9 @@ builder.mutationField('extractGridData', (t) =>
       checkPermission(ctx, 'soa', 'write');
 
       const redis = getRedis();
-      const enqueueJob = async (queue: string, data: unknown) => {
+      const enqueueJob = async (queue: string, data: unknown): Promise<string> => {
         await redis.publish('task:enqueued', JSON.stringify(data));
-        return (data as Record<string, string>).taskId;
+        return (data as Record<string, string>).taskId ?? '';
       };
 
       const useCase = new ExtractGridDataUseCase(ctx.prisma, enqueueJob);
@@ -403,9 +403,9 @@ builder.mutationField('draftNarrative', (t) =>
       await checkProjectMembership(ctx, soa.projectId);
 
       const redis = getRedis();
-      const enqueueJob = async (queue: string, data: unknown) => {
+      const enqueueJob = async (queue: string, data: unknown): Promise<string> => {
         await redis.publish('task:enqueued', JSON.stringify(data));
-        return (data as Record<string, string>).taskId;
+        return (data as Record<string, string>).taskId ?? '';
       };
 
       const useCase = new DraftNarrativeUseCase(ctx.prisma, enqueueJob);

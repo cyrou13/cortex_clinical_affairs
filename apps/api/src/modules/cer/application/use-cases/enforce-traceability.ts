@@ -136,8 +136,9 @@ function extractInlineReferences(text: string): string[] {
   const matches: string[] = [];
   let match: RegExpExecArray | null;
   while ((match = regex.exec(text)) !== null) {
-    if (!matches.includes(match[1])) {
-      matches.push(match[1]);
+    const captured = match[1];
+    if (captured && !matches.includes(captured)) {
+      matches.push(captured);
     }
   }
   return matches;

@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import type { PrismaClient } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
 
@@ -46,7 +47,9 @@ export class ManageInstalledBaseUseCase {
         periodEnd: new Date(input.periodEnd),
         totalUnitsShipped: input.totalUnitsShipped,
         activeDevices: input.activeDevices,
-        regionBreakdown: input.regionBreakdown ?? null,
+        regionBreakdown: input.regionBreakdown
+          ? (input.regionBreakdown as unknown as Prisma.InputJsonValue)
+          : Prisma.DbNull,
         source: 'MANUAL',
       },
     });
@@ -66,7 +69,8 @@ export class ManageInstalledBaseUseCase {
     const updateData: Record<string, unknown> = {};
     if (input.periodStart !== undefined) updateData.periodStart = new Date(input.periodStart);
     if (input.periodEnd !== undefined) updateData.periodEnd = new Date(input.periodEnd);
-    if (input.totalUnitsShipped !== undefined) updateData.totalUnitsShipped = input.totalUnitsShipped;
+    if (input.totalUnitsShipped !== undefined)
+      updateData.totalUnitsShipped = input.totalUnitsShipped;
     if (input.activeDevices !== undefined) updateData.activeDevices = input.activeDevices;
     if (input.regionBreakdown !== undefined) updateData.regionBreakdown = input.regionBreakdown;
 

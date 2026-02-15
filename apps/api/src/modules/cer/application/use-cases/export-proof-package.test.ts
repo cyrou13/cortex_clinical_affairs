@@ -102,10 +102,10 @@ describe('ExportProofPackageUseCase', () => {
     expect(result.claimTraceId).toBe(TRACE_ID);
     expect(result.claimText).toBe('Device sensitivity meets threshold');
     expect(result.traceChain).toHaveLength(4);
-    expect(result.traceChain[0].level).toBe(1);
-    expect(result.traceChain[1].level).toBe(2);
-    expect(result.traceChain[2].level).toBe(3);
-    expect(result.traceChain[3].level).toBe(4);
+    expect(result.traceChain[0]!.level).toBe(1);
+    expect(result.traceChain[1]!.level).toBe(2);
+    expect(result.traceChain[2]!.level).toBe(3);
+    expect(result.traceChain[3]!.level).toBe(4);
   });
 
   it('throws NotFoundError when claim trace not found', async () => {
@@ -129,7 +129,7 @@ describe('ExportProofPackageUseCase', () => {
     const result = await useCase.execute({ claimTraceId: TRACE_ID });
 
     expect(result.auditTrail).toHaveLength(1);
-    expect(result.auditTrail[0].action).toBe('created');
+    expect(result.auditTrail[0]!.action).toBe('created');
   });
 
   it('generates proof package with only level 1 when no upstream links', async () => {
@@ -149,7 +149,7 @@ describe('ExportProofPackageUseCase', () => {
     const result = await useCase.execute({ claimTraceId: TRACE_ID });
 
     expect(result.traceChain).toHaveLength(1);
-    expect(result.traceChain[0].label).toBe('CER Claim');
+    expect(result.traceChain[0]!.label).toBe('CER Claim');
   });
 
   it('includes generatedAt timestamp', async () => {

@@ -23,11 +23,16 @@ interface SectionStatusControlProps {
 
 const statusOptions: SectionStatus[] = ['DRAFT', 'REVIEWED', 'FINALIZED'];
 
-export function SectionStatusControl({ sectionId, currentStatus, hasUnresolvedClaims, onStatusChanged }: SectionStatusControlProps) {
+export function SectionStatusControl({
+  sectionId,
+  currentStatus,
+  hasUnresolvedClaims,
+  onStatusChanged,
+}: SectionStatusControlProps) {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingStatus, setPendingStatus] = useState<SectionStatus | null>(null);
 
-  const [updateStatus, { loading }] = useMutation(UPDATE_SECTION_STATUS);
+  const [updateStatus, { loading }] = useMutation<any>(UPDATE_SECTION_STATUS);
 
   const handleChange = (newStatus: SectionStatus) => {
     if (newStatus === 'FINALIZED') {
@@ -80,14 +85,21 @@ export function SectionStatusControl({ sectionId, currentStatus, hasUnresolvedCl
       )}
 
       {showConfirm && (
-        <div className="rounded border border-orange-200 bg-orange-50 p-3" data-testid="confirm-dialog">
+        <div
+          className="rounded border border-orange-200 bg-orange-50 p-3"
+          data-testid="confirm-dialog"
+        >
           <p className="mb-2 text-sm text-orange-800">
-            Are you sure you want to finalize this section? This action marks the section as complete.
+            Are you sure you want to finalize this section? This action marks the section as
+            complete.
           </p>
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => { setShowConfirm(false); setPendingStatus(null); }}
+              onClick={() => {
+                setShowConfirm(false);
+                setPendingStatus(null);
+              }}
               className="rounded border border-gray-300 px-3 py-1 text-xs text-[var(--cortex-text-secondary)]"
             >
               Cancel

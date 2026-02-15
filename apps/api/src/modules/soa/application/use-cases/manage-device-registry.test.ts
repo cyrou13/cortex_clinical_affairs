@@ -12,11 +12,11 @@ function makePrisma(overrides?: {
 }) {
   return {
     soaAnalysis: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.soa !== undefined
-          ? overrides.soa
-          : { id: SOA_ID, status: 'IN_PROGRESS' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.soa !== undefined ? overrides.soa : { id: SOA_ID, status: 'IN_PROGRESS' },
+        ),
     },
     similarDevice: {
       create: vi.fn().mockResolvedValue({ id: DEVICE_ID, deviceName: 'Device A' }),
@@ -154,7 +154,7 @@ describe('ManageDeviceRegistryUseCase', () => {
     const result = await useCase.getDevicesWithBenchmarks(SOA_ID);
 
     expect(result).toHaveLength(1);
-    expect(result[0].benchmarks).toHaveLength(1);
+    expect(result[0]!.benchmarks).toHaveLength(1);
     expect(prisma.similarDevice.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { soaAnalysisId: SOA_ID },

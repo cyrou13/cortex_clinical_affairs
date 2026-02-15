@@ -110,9 +110,6 @@ export class ManageBibliographyUseCase {
         authors: true,
         journal: true,
         year: true,
-        volume: true,
-        issue: true,
-        pages: true,
         doi: true,
       },
     });
@@ -143,9 +140,6 @@ export class ManageBibliographyUseCase {
         authors: parseAuthors(article.authors),
         journal: (article.journal as string) ?? '',
         year: (article.year as number) ?? 0,
-        volume: article.volume as string | undefined,
-        issue: article.issue as string | undefined,
-        pages: article.pages as string | undefined,
         doi: article.doi as string | undefined,
       };
 
@@ -201,8 +195,9 @@ function extractNumericReferences(text: string): string[] {
   const matches: string[] = [];
   let match: RegExpExecArray | null;
   while ((match = regex.exec(text)) !== null) {
-    if (!matches.includes(match[1])) {
-      matches.push(match[1]);
+    const captured = match[1];
+    if (captured && !matches.includes(captured)) {
+      matches.push(captured);
     }
   }
   return matches;

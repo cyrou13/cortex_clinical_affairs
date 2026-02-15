@@ -1,4 +1,4 @@
-import type { Prisma } from '@prisma/client';
+import type { Prisma, ArticleStatus } from '@prisma/client';
 import { builder } from '../../../graphql/builder.js';
 import {
   SlsSessionObjectType,
@@ -416,7 +416,7 @@ builder.mutationField('updateArticleStatus', (t) =>
 
       const updated = await ctx.prisma.article.update({
         where: { id: args.id },
-        data: { status: updateFields.status },
+        data: { status: updateFields.status as ArticleStatus },
       });
 
       // Audit log

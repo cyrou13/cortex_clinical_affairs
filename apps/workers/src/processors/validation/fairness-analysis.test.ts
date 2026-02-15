@@ -159,7 +159,7 @@ describe('computeSubgroupMetrics', () => {
     const metrics = computeSubgroupMetrics(data, 'gender');
 
     expect(metrics).toHaveLength(1);
-    expect(metrics[0].subgroup).toBe('A');
+    expect(metrics[0]!.subgroup).toBe('A');
   });
 
   it('uses custom classification threshold', () => {
@@ -176,9 +176,9 @@ describe('computeSubgroupMetrics', () => {
 
     const metrics = computeSubgroupMetrics(data, 'gender', config);
 
-    expect(metrics[0].truePositives).toBe(1);
-    expect(metrics[0].falseNegatives).toBe(1);
-    expect(metrics[0].sensitivity).toBe(0.5);
+    expect(metrics[0]!.truePositives).toBe(1);
+    expect(metrics[0]!.falseNegatives).toBe(1);
+    expect(metrics[0]!.sensitivity).toBe(0.5);
   });
 
   it('returns metrics sorted by subgroup name', () => {
@@ -201,8 +201,8 @@ describe('computeSubgroupMetrics', () => {
 
     const metrics = computeSubgroupMetrics(data, 'gender');
 
-    expect(metrics[0].sensitivity).toBe(0);
-    expect(metrics[0].ppv).toBe(0);
+    expect(metrics[0]!.sensitivity).toBe(0);
+    expect(metrics[0]!.ppv).toBe(0);
   });
 });
 
@@ -309,9 +309,7 @@ describe('assessFairness', () => {
     const metrics = computeSubgroupMetrics(data, 'gender');
     const assessment = assessFairness(metrics);
 
-    const eqOddsRec = assessment.recommendations.find((r) =>
-      r.includes('Equalized odds'),
-    );
+    const eqOddsRec = assessment.recommendations.find((r) => r.includes('Equalized odds'));
     expect(eqOddsRec).toBeDefined();
   });
 

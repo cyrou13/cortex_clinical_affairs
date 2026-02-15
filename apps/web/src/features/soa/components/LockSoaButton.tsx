@@ -33,11 +33,11 @@ export function LockSoaButton({ soaAnalysisId, onLocked }: LockSoaButtonProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
 
-  const { data } = useQuery(SOA_LOCK_PREFLIGHT, {
+  const { data } = useQuery<any>(SOA_LOCK_PREFLIGHT, {
     variables: { soaAnalysisId },
   });
 
-  const [lockSoa, { loading: locking }] = useMutation(LOCK_SOA_ANALYSIS);
+  const [lockSoa, { loading: locking }] = useMutation<any>(LOCK_SOA_ANALYSIS);
 
   const preflight = data?.soaLockPreflight;
   const isLocked = preflight?.soaStatus === 'LOCKED';
@@ -85,10 +85,16 @@ export function LockSoaButton({ soaAnalysisId, onLocked }: LockSoaButtonProps) {
       </button>
 
       {dialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" data-testid="lock-confirmation-dialog">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          data-testid="lock-confirmation-dialog"
+        >
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => { setDialogOpen(false); setConfirmed(false); }}
+            onClick={() => {
+              setDialogOpen(false);
+              setConfirmed(false);
+            }}
             data-testid="lock-dialog-backdrop"
           />
 
@@ -109,7 +115,10 @@ export function LockSoaButton({ soaAnalysisId, onLocked }: LockSoaButtonProps) {
               </p>
             </div>
 
-            <div className="mb-4 space-y-1 rounded border border-[var(--cortex-border)] p-3" data-testid="lock-recap">
+            <div
+              className="mb-4 space-y-1 rounded border border-[var(--cortex-border)] p-3"
+              data-testid="lock-recap"
+            >
               <div className="flex justify-between text-sm">
                 <span className="text-[var(--cortex-text-muted)]">Total sections</span>
                 <span className="font-medium" data-testid="recap-total-sections">
@@ -118,7 +127,10 @@ export function LockSoaButton({ soaAnalysisId, onLocked }: LockSoaButtonProps) {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-[var(--cortex-text-muted)]">Finalized sections</span>
-                <span className="font-medium text-emerald-600" data-testid="recap-finalized-sections">
+                <span
+                  className="font-medium text-emerald-600"
+                  data-testid="recap-finalized-sections"
+                >
                   {preflight?.finalizedSections ?? 0}
                 </span>
               </div>
@@ -133,14 +145,18 @@ export function LockSoaButton({ soaAnalysisId, onLocked }: LockSoaButtonProps) {
                 data-testid="lock-checkbox"
               />
               <span className="text-[var(--cortex-text-secondary)]">
-                I understand this action is irreversible and the SOA analysis cannot be modified after locking
+                I understand this action is irreversible and the SOA analysis cannot be modified
+                after locking
               </span>
             </label>
 
             <div className="flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => { setDialogOpen(false); setConfirmed(false); }}
+                onClick={() => {
+                  setDialogOpen(false);
+                  setConfirmed(false);
+                }}
                 className="rounded border border-[var(--cortex-border)] px-4 py-2 text-sm text-[var(--cortex-text-secondary)] hover:bg-[var(--cortex-bg-hover)]"
                 data-testid="lock-cancel-btn"
               >

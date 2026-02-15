@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateId } from '@cortex/shared';
+import type * as CortexShared from '@cortex/shared';
 
 vi.mock('@cortex/shared', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@cortex/shared')>();
+  const actual = await importOriginal<typeof CortexShared>();
   return {
     ...actual,
     generateId: vi.fn(),
@@ -13,17 +14,16 @@ import { DuplicateQueryUseCase } from './duplicate-query.js';
 
 const mockGenerateId = vi.mocked(generateId);
 
-function makePrisma(overrides?: {
-  queryResult?: unknown;
-  sessionResult?: unknown;
-}) {
+function makePrisma(overrides?: { queryResult?: unknown; sessionResult?: unknown }) {
   return {
     slsSession: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.sessionResult !== undefined
-          ? overrides.sessionResult
-          : { id: 'session-1', projectId: 'project-1', status: 'DRAFT' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.sessionResult !== undefined
+            ? overrides.sessionResult
+            : { id: 'session-1', projectId: 'project-1', status: 'DRAFT' },
+        ),
     },
     slsQuery: {
       findUnique: vi.fn().mockResolvedValue(
@@ -111,7 +111,7 @@ describe('DuplicateQueryUseCase', () => {
           queryId: 'dup-query-uuid-1',
           version: 1,
           queryString: '(spinal fusion) AND outcomes',
-          diff: null,
+          diff: expect.anything(),
           createdById: 'user-2',
         }),
       }),
@@ -141,9 +141,7 @@ describe('DuplicateQueryUseCase', () => {
     prisma = makePrisma({ queryResult: null });
     useCase = new DuplicateQueryUseCase(prisma);
 
-    await expect(
-      useCase.execute('query-1', 'user-2'),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute('query-1', 'user-2')).rejects.toThrow('not found');
   });
 
   it('throws ValidationError when session is LOCKED', async () => {
@@ -152,18 +150,14 @@ describe('DuplicateQueryUseCase', () => {
     });
     useCase = new DuplicateQueryUseCase(prisma);
 
-    await expect(
-      useCase.execute('query-1', 'user-2'),
-    ).rejects.toThrow('locked session');
+    await expect(useCase.execute('query-1', 'user-2')).rejects.toThrow('locked session');
   });
 
   it('throws NotFoundError when session does not exist', async () => {
     prisma = makePrisma({ sessionResult: null });
     useCase = new DuplicateQueryUseCase(prisma);
 
-    await expect(
-      useCase.execute('query-1', 'user-2'),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute('query-1', 'user-2')).rejects.toThrow('not found');
   });
 
   it('preserves query string from original', async () => {

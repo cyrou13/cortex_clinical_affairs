@@ -35,7 +35,7 @@ export function ManualArticleAddForm({ sessionId, onAdded }: ManualArticleAddFor
     pmid: '',
   });
 
-  const [addArticle, { loading: adding }] = useMutation(ADD_MANUAL_ARTICLE);
+  const [addArticle, { loading: adding }] = useMutation<any>(ADD_MANUAL_ARTICLE);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -96,11 +96,24 @@ export function ManualArticleAddForm({ sessionId, onAdded }: ManualArticleAddFor
 
   if (step === 'done') {
     return (
-      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-6 text-center" data-testid="manual-add-done">
+      <div
+        className="rounded-lg border border-emerald-200 bg-emerald-50 p-6 text-center"
+        data-testid="manual-add-done"
+      >
         <p className="text-sm font-medium text-emerald-700">Article added successfully!</p>
         <button
           type="button"
-          onClick={() => { setStep('upload'); setMetadata({ title: '', authors: [{ firstName: '', lastName: '' }], year: '', journal: '', doi: '', pmid: '' }); }}
+          onClick={() => {
+            setStep('upload');
+            setMetadata({
+              title: '',
+              authors: [{ firstName: '', lastName: '' }],
+              year: '',
+              journal: '',
+              doi: '',
+              pmid: '',
+            });
+          }}
           className="mt-3 text-sm text-emerald-600 underline"
           data-testid="add-another-btn"
         >
@@ -155,7 +168,9 @@ export function ManualArticleAddForm({ sessionId, onAdded }: ManualArticleAddFor
 
       <div className="space-y-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">Title</label>
+          <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
+            Title
+          </label>
           <input
             type="text"
             value={metadata.title}
@@ -166,7 +181,9 @@ export function ManualArticleAddForm({ sessionId, onAdded }: ManualArticleAddFor
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">Authors</label>
+          <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
+            Authors
+          </label>
           {metadata.authors.map((author, i) => (
             <div key={i} className="mb-2 flex gap-2" data-testid={`author-row-${i}`}>
               <input
@@ -184,20 +201,32 @@ export function ManualArticleAddForm({ sessionId, onAdded }: ManualArticleAddFor
                 className="flex-1 rounded border border-[var(--cortex-border)] px-3 py-1.5 text-sm"
               />
               {metadata.authors.length > 1 && (
-                <button type="button" onClick={() => removeAuthor(i)} className="text-red-500" data-testid={`remove-author-${i}`}>
+                <button
+                  type="button"
+                  onClick={() => removeAuthor(i)}
+                  className="text-red-500"
+                  data-testid={`remove-author-${i}`}
+                >
                   <Trash2 size={16} />
                 </button>
               )}
             </div>
           ))}
-          <button type="button" onClick={addAuthor} className="inline-flex items-center gap-1 text-xs text-blue-600" data-testid="add-author-btn">
+          <button
+            type="button"
+            onClick={addAuthor}
+            className="inline-flex items-center gap-1 text-xs text-blue-600"
+            data-testid="add-author-btn"
+          >
             <Plus size={12} /> Add author
           </button>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">Year</label>
+            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
+              Year
+            </label>
             <input
               type="text"
               value={metadata.year}
@@ -207,7 +236,9 @@ export function ManualArticleAddForm({ sessionId, onAdded }: ManualArticleAddFor
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">Journal</label>
+            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
+              Journal
+            </label>
             <input
               type="text"
               value={metadata.journal}
@@ -220,7 +251,9 @@ export function ManualArticleAddForm({ sessionId, onAdded }: ManualArticleAddFor
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">DOI</label>
+            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
+              DOI
+            </label>
             <input
               type="text"
               value={metadata.doi}
@@ -230,7 +263,9 @@ export function ManualArticleAddForm({ sessionId, onAdded }: ManualArticleAddFor
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">PMID</label>
+            <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
+              PMID
+            </label>
             <input
               type="text"
               value={metadata.pmid}

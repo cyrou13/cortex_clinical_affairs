@@ -90,10 +90,10 @@ export class DraftSectionUseCase {
       where: { id: cerSectionId },
       data: {
         content: llmResult.content,
-        status: 'DRAFTED',
+        status: 'DRAFT',
         wordCount,
         draftedAt: new Date().toISOString(),
-      },
+      } as any,
     });
 
     return {

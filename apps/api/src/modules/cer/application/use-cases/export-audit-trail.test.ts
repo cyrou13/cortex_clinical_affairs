@@ -10,16 +10,16 @@ function makePrisma(overrides?: {
 }) {
   return {
     cerVersion: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.cerVersion !== undefined
-          ? overrides.cerVersion
-          : { id: VERSION_ID },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.cerVersion !== undefined ? overrides.cerVersion : { id: VERSION_ID },
+        ),
     },
     cerSection: {
-      findMany: vi.fn().mockResolvedValue(
-        overrides?.sections ?? [{ id: 'sec-1' }, { id: 'sec-2' }],
-      ),
+      findMany: vi
+        .fn()
+        .mockResolvedValue(overrides?.sections ?? [{ id: 'sec-1' }, { id: 'sec-2' }]),
     },
     auditLog: {
       findMany: vi.fn().mockResolvedValue(
@@ -69,19 +69,17 @@ describe('ExportAuditTrailUseCase', () => {
 
     const result = await useCase.execute({ cerVersionId: VERSION_ID });
 
-    expect(result.entries[0].who).toBe('user-1');
-    expect(result.entries[0].what).toBe('cer.section.status-changed');
-    expect(result.entries[0].when).toBe('2026-01-15T10:00:00Z');
-    expect(result.entries[0].why).toContain('REVIEWED');
+    expect(result.entries[0]!.who).toBe('user-1');
+    expect(result.entries[0]!.what).toBe('cer.section.status-changed');
+    expect(result.entries[0]!.when).toBe('2026-01-15T10:00:00Z');
+    expect(result.entries[0]!.why).toContain('REVIEWED');
   });
 
   it('throws NotFoundError when CER version not found', async () => {
     const prisma = makePrisma({ cerVersion: null });
     const useCase = new ExportAuditTrailUseCase(prisma);
 
-    await expect(
-      useCase.execute({ cerVersionId: 'missing' }),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute({ cerVersionId: 'missing' })).rejects.toThrow('not found');
   });
 
   it('generates CSV data when format is CSV', async () => {
@@ -145,7 +143,14 @@ describe('ExportAuditTrailUseCase', () => {
 describe('generateCsv', () => {
   it('generates CSV with header and rows', () => {
     const entries = [
-      { who: 'user-1', what: 'action', when: '2026-01-01', why: 'reason', targetType: 'cerSection', targetId: 'sec-1' },
+      {
+        who: 'user-1',
+        what: 'action',
+        when: '2026-01-01',
+        why: 'reason',
+        targetType: 'cerSection',
+        targetId: 'sec-1',
+      },
     ];
     const csv = generateCsv(entries);
     expect(csv).toContain('WHO,WHAT,WHEN,WHY');
@@ -154,7 +159,14 @@ describe('generateCsv', () => {
 
   it('escapes fields containing commas', () => {
     const entries = [
-      { who: 'user,1', what: 'action', when: '2026-01-01', why: 'reason', targetType: 't', targetId: 'id' },
+      {
+        who: 'user,1',
+        what: 'action',
+        when: '2026-01-01',
+        why: 'reason',
+        targetType: 't',
+        targetId: 'id',
+      },
     ];
     const csv = generateCsv(entries);
     expect(csv).toContain('"user,1"');

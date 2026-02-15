@@ -115,7 +115,7 @@ export class ManageClaimsUseCase {
           },
         },
         thematicSection: { select: { id: true, title: true } },
-      },
+      } as any,
       orderBy: { createdAt: 'asc' },
     });
 

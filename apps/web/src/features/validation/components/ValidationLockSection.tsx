@@ -41,11 +41,11 @@ export function ValidationLockSection({ studyId, onLocked }: ValidationLockSecti
   const [dialogOpen, setDialogOpen] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
 
-  const { data } = useQuery(VALIDATION_LOCK_PREFLIGHT, {
+  const { data } = useQuery<any>(VALIDATION_LOCK_PREFLIGHT, {
     variables: { studyId },
   });
 
-  const [lockValidation, { loading: locking }] = useMutation(LOCK_VALIDATION);
+  const [lockValidation, { loading: locking }] = useMutation<any>(LOCK_VALIDATION);
 
   const preflight = data?.validationLockPreflight;
   const isLocked = preflight?.studyStatus === 'LOCKED';
@@ -94,7 +94,13 @@ export function ValidationLockSection({ studyId, onLocked }: ValidationLockSecti
                 ) : (
                   <XCircle size={14} className="text-red-400" />
                 )}
-                <span className={check.met ? 'text-[var(--cortex-text-primary)]' : 'text-[var(--cortex-text-muted)]'}>
+                <span
+                  className={
+                    check.met
+                      ? 'text-[var(--cortex-text-primary)]'
+                      : 'text-[var(--cortex-text-muted)]'
+                  }
+                >
                   {check.label}
                 </span>
               </div>
@@ -115,10 +121,16 @@ export function ValidationLockSection({ studyId, onLocked }: ValidationLockSecti
       </div>
 
       {dialogOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" data-testid="lock-confirmation-dialog">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          data-testid="lock-confirmation-dialog"
+        >
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => { setDialogOpen(false); setConfirmed(false); }}
+            onClick={() => {
+              setDialogOpen(false);
+              setConfirmed(false);
+            }}
           />
 
           <div className="relative w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
@@ -138,11 +150,18 @@ export function ValidationLockSection({ studyId, onLocked }: ValidationLockSecti
               </p>
             </div>
 
-            <div className="mb-4 space-y-1 rounded border border-[var(--cortex-border)] p-3" data-testid="lock-summary-dialog">
+            <div
+              className="mb-4 space-y-1 rounded border border-[var(--cortex-border)] p-3"
+              data-testid="lock-summary-dialog"
+            >
               {checks.map((check) => (
                 <div key={check.label} className="flex items-center justify-between text-sm">
                   <span className="text-[var(--cortex-text-muted)]">{check.label}</span>
-                  <span className={check.met ? 'font-medium text-emerald-600' : 'font-medium text-red-500'}>
+                  <span
+                    className={
+                      check.met ? 'font-medium text-emerald-600' : 'font-medium text-red-500'
+                    }
+                  >
                     {check.met ? 'Yes' : 'No'}
                   </span>
                 </div>
@@ -158,14 +177,18 @@ export function ValidationLockSection({ studyId, onLocked }: ValidationLockSecti
                 data-testid="lock-checkbox"
               />
               <span className="text-[var(--cortex-text-secondary)]">
-                I understand this action is irreversible and the validation study cannot be modified after locking
+                I understand this action is irreversible and the validation study cannot be modified
+                after locking
               </span>
             </label>
 
             <div className="flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => { setDialogOpen(false); setConfirmed(false); }}
+                onClick={() => {
+                  setDialogOpen(false);
+                  setConfirmed(false);
+                }}
                 className="rounded border border-[var(--cortex-border)] px-4 py-2 text-sm text-[var(--cortex-text-secondary)] hover:bg-[var(--cortex-bg-hover)]"
                 data-testid="lock-cancel-btn"
               >

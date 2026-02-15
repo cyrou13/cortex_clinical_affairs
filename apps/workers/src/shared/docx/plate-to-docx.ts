@@ -11,11 +11,7 @@
  * - inline references
  */
 
-import {
-  DocxBuilder,
-  type DocxElement,
-  type DocxDocument,
-} from './docx-builder.js';
+import { DocxBuilder, type DocxDocument } from './docx-builder.js';
 
 // ── Plate AST Node Types ───────────────────────────────────────────────
 
@@ -180,7 +176,7 @@ export class PlateToDocx {
 
     // First row becomes headers, rest are data rows
     if (rows.length > 0) {
-      const headers = rows[0];
+      const headers = rows[0] ?? [];
       const dataRows = rows.slice(1);
       this.builder.createTable(headers, dataRows);
     }

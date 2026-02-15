@@ -1,4 +1,4 @@
-import type { PrismaClient, Prisma } from '@prisma/client';
+import type { PrismaClient, Prisma, DeviationSignificance } from '@prisma/client';
 import { NotFoundError } from '../../../../shared/errors/index.js';
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -70,7 +70,7 @@ export class DetectDeviationsUseCase {
         const significance = this.computeSignificance(
           criteria.expectedValue,
           matchingResult.value,
-          criteria.tolerance,
+          criteria.tolerance ?? undefined,
         );
         detected.push({
           pccpSection: criteria.section,
@@ -97,7 +97,7 @@ export class DetectDeviationsUseCase {
         const significance = this.computeSignificance(
           criteria.expectedValue,
           matchingBenchmark.benchmarkValue,
-          criteria.tolerance,
+          criteria.tolerance ?? undefined,
         );
         detected.push({
           pccpSection: criteria.section,
@@ -124,7 +124,7 @@ export class DetectDeviationsUseCase {
           description: deviation.description,
           expectedValue: deviation.expectedValue,
           actualValue: deviation.actualValue,
-          significance: deviation.significance,
+          significance: deviation.significance as DeviationSignificance,
           impactedSections: [] as unknown as Prisma.InputJsonValue,
           status: 'IDENTIFIED',
           exceedsThreshold,

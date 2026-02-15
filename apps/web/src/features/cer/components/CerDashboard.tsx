@@ -1,6 +1,6 @@
 import { useQuery } from '@apollo/client/react';
 import { gql } from '@apollo/client';
-import { Lock, FileText, CheckCircle, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Lock, FileText, AlertTriangle, ExternalLink } from 'lucide-react';
 
 export const GET_CER_DETAILS = gql`
   query GetCerDetails($cerId: String!) {
@@ -72,26 +72,47 @@ function StatusBadge({ status }: { status: string }) {
   };
   const c = config[status] ?? { bg: 'bg-gray-100', text: 'text-gray-700' };
   return (
-    <span className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${c.bg} ${c.text}`} data-testid="status-badge">
+    <span
+      className={`inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ${c.bg} ${c.text}`}
+      data-testid="status-badge"
+    >
       {status}
     </span>
   );
 }
 
 export function CerDashboard({ cerId }: CerDashboardProps) {
-  const { data, loading, error } = useQuery(GET_CER_DETAILS, { variables: { cerId } });
+  const { data, loading, error } = useQuery<any>(GET_CER_DETAILS, { variables: { cerId } });
 
   if (loading) {
-    return <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="cer-loading">Loading CER...</div>;
+    return (
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="cer-loading"
+      >
+        Loading CER...
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="py-8 text-center text-sm text-[var(--cortex-error)]" data-testid="cer-error">Failed to load CER.</div>;
+    return (
+      <div className="py-8 text-center text-sm text-[var(--cortex-error)]" data-testid="cer-error">
+        Failed to load CER.
+      </div>
+    );
   }
 
   const cer = data?.cerReport;
   if (!cer) {
-    return <div className="py-8 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="cer-not-found">CER not found.</div>;
+    return (
+      <div
+        className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="cer-not-found"
+      >
+        CER not found.
+      </div>
+    );
   }
 
   const sections: CerSection[] = cer.sections ?? [];
@@ -104,14 +125,21 @@ export function CerDashboard({ cerId }: CerDashboardProps) {
     <div className="space-y-6" data-testid="cer-dashboard">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-[var(--cortex-text-primary)]">CER v{cer.version}</h2>
+          <h2 className="text-xl font-semibold text-[var(--cortex-text-primary)]">
+            CER v{cer.version}
+          </h2>
           <div className="mt-1 flex items-center gap-2">
             <StatusBadge status={cer.status} />
-            <span className="text-xs text-[var(--cortex-text-muted)]">{cer.regulatoryContext?.replace('_', ' ')}</span>
+            <span className="text-xs text-[var(--cortex-text-muted)]">
+              {cer.regulatoryContext?.replace('_', ' ')}
+            </span>
           </div>
         </div>
         {mismatchCount > 0 && (
-          <div className="flex items-center gap-2 rounded border border-orange-200 bg-orange-50 px-3 py-1.5 text-sm text-orange-700" data-testid="mismatch-warning">
+          <div
+            className="flex items-center gap-2 rounded border border-orange-200 bg-orange-50 px-3 py-1.5 text-sm text-orange-700"
+            data-testid="mismatch-warning"
+          >
             <AlertTriangle size={14} />
             {mismatchCount} version mismatch{mismatchCount > 1 ? 'es' : ''}
           </div>
@@ -119,13 +147,20 @@ export function CerDashboard({ cerId }: CerDashboardProps) {
       </div>
 
       {/* Upstream Modules */}
-      <div className="rounded-lg border border-[var(--cortex-border)] p-4" data-testid="upstream-modules-section">
+      <div
+        className="rounded-lg border border-[var(--cortex-border)] p-4"
+        data-testid="upstream-modules-section"
+      >
         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--cortex-text-primary)]">
           <Lock size={14} /> Linked Upstream Modules
         </h3>
         <div className="space-y-2">
           {modules.map((mod) => (
-            <div key={mod.id} className="flex items-center justify-between rounded border border-[var(--cortex-border)] p-2 text-sm" data-testid={`module-${mod.id}`}>
+            <div
+              key={mod.id}
+              className="flex items-center justify-between rounded border border-[var(--cortex-border)] p-2 text-sm"
+              data-testid={`module-${mod.id}`}
+            >
               <div className="flex items-center gap-2">
                 <Lock size={12} className="text-emerald-500" />
                 <span className="text-[var(--cortex-text-primary)]">{mod.name}</span>
@@ -137,9 +172,13 @@ export function CerDashboard({ cerId }: CerDashboardProps) {
       </div>
 
       {/* Section Completion Grid */}
-      <div className="rounded-lg border border-[var(--cortex-border)] p-4" data-testid="section-completion-grid">
+      <div
+        className="rounded-lg border border-[var(--cortex-border)] p-4"
+        data-testid="section-completion-grid"
+      >
         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--cortex-text-primary)]">
-          <FileText size={14} /> CER Sections ({sections.filter((s) => s.status === 'FINALIZED').length}/{sections.length} finalized)
+          <FileText size={14} /> CER Sections (
+          {sections.filter((s) => s.status === 'FINALIZED').length}/{sections.length} finalized)
         </h3>
         <div className="grid grid-cols-7 gap-2">
           {sections.map((section) => (
@@ -162,8 +201,13 @@ export function CerDashboard({ cerId }: CerDashboardProps) {
       </div>
 
       {/* Traceability Coverage */}
-      <div className="rounded-lg border border-[var(--cortex-border)] p-4" data-testid="traceability-coverage">
-        <h3 className="mb-2 text-sm font-semibold text-[var(--cortex-text-primary)]">Traceability Coverage</h3>
+      <div
+        className="rounded-lg border border-[var(--cortex-border)] p-4"
+        data-testid="traceability-coverage"
+      >
+        <h3 className="mb-2 text-sm font-semibold text-[var(--cortex-text-primary)]">
+          Traceability Coverage
+        </h3>
         <div className="flex items-center gap-3">
           <div className="h-3 flex-1 overflow-hidden rounded-full bg-gray-200">
             <div
@@ -171,12 +215,17 @@ export function CerDashboard({ cerId }: CerDashboardProps) {
               style={{ width: `${traceability}%` }}
             />
           </div>
-          <span className="text-sm font-semibold text-[var(--cortex-text-primary)]">{traceability}%</span>
+          <span className="text-sm font-semibold text-[var(--cortex-text-primary)]">
+            {traceability}%
+          </span>
         </div>
       </div>
 
       {/* External Documents */}
-      <div className="rounded-lg border border-[var(--cortex-border)] p-4" data-testid="external-docs-section">
+      <div
+        className="rounded-lg border border-[var(--cortex-border)] p-4"
+        data-testid="external-docs-section"
+      >
         <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--cortex-text-primary)]">
           <ExternalLink size={14} /> External Documents
         </h3>

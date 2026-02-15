@@ -81,7 +81,7 @@ export function DeviceRegistryPanel({
   const [benchmarkValue, setBenchmarkValue] = useState('');
   const [benchmarkUnit, setBenchmarkUnit] = useState('');
 
-  const { data, loading } = useQuery(GET_SIMILAR_DEVICES, {
+  const { data, loading } = useQuery<any>(GET_SIMILAR_DEVICES, {
     variables: { soaAnalysisId },
   });
 
@@ -125,14 +125,20 @@ export function DeviceRegistryPanel({
 
   if (loading) {
     return (
-      <div className="py-6 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="device-registry-loading">
+      <div
+        className="py-6 text-center text-sm text-[var(--cortex-text-muted)]"
+        data-testid="device-registry-loading"
+      >
         Loading device registry...
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 rounded-lg border border-[var(--cortex-border)] p-4" data-testid="device-registry">
+    <div
+      className="space-y-4 rounded-lg border border-[var(--cortex-border)] p-4"
+      data-testid="device-registry"
+    >
       <div className="flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--cortex-text-primary)]">
           <Cpu size={14} /> Similar Devices Registry
@@ -150,7 +156,10 @@ export function DeviceRegistryPanel({
       </div>
 
       {showDeviceForm && (
-        <div className="space-y-2 rounded border border-blue-200 bg-blue-50 p-3" data-testid="device-form">
+        <div
+          className="space-y-2 rounded border border-blue-200 bg-blue-50 p-3"
+          data-testid="device-form"
+        >
           <input
             type="text"
             value={deviceName}
@@ -218,7 +227,9 @@ export function DeviceRegistryPanel({
                   <td className="px-3 py-2 font-medium">{device.name}</td>
                   <td className="px-3 py-2">{device.manufacturer}</td>
                   <td className="px-3 py-2">
-                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">{device.classification}</span>
+                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs">
+                      {device.classification}
+                    </span>
                   </td>
                   <td className="px-3 py-2">
                     <div className="space-y-1" data-testid="benchmark-list">
@@ -239,7 +250,10 @@ export function DeviceRegistryPanel({
                       )}
                     </div>
                     {showBenchmarkForm === device.id && (
-                      <div className="mt-2 space-y-1 rounded border bg-gray-50 p-2" data-testid="benchmark-form">
+                      <div
+                        className="mt-2 space-y-1 rounded border bg-gray-50 p-2"
+                        data-testid="benchmark-form"
+                      >
                         <input
                           type="text"
                           value={benchmarkParam}
@@ -283,7 +297,10 @@ export function DeviceRegistryPanel({
           </table>
         </div>
       ) : (
-        <div className="py-4 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="no-devices">
+        <div
+          className="py-4 text-center text-sm text-[var(--cortex-text-muted)]"
+          data-testid="no-devices"
+        >
           No similar devices registered yet.
         </div>
       )}
