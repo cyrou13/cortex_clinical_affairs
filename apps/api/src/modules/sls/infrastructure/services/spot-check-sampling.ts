@@ -20,7 +20,7 @@ export class SpotCheckSamplingService {
     category: 'likely_relevant' | 'likely_irrelevant',
     count: number,
   ): Promise<SampledArticle[]> {
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
     });
 
@@ -38,7 +38,7 @@ export class SpotCheckSamplingService {
         : { lt: uncertainLowerThreshold };
 
     // Get articles in category that haven't been spot-checked
-    const spotCheckedArticleIds = await (this.prisma as any).screeningDecision
+    const spotCheckedArticleIds = await this.prisma.screeningDecision
       .findMany({
         where: {
           article: { sessionId },
@@ -50,7 +50,7 @@ export class SpotCheckSamplingService {
         decisions.map((d) => d.articleId),
       );
 
-    const eligibleArticles = await (this.prisma as any).article.findMany({
+    const eligibleArticles = await this.prisma.article.findMany({
       where: {
         sessionId,
         relevanceScore: scoreFilter,

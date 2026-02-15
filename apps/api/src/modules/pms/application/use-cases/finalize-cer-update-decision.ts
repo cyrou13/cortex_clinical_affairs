@@ -18,7 +18,7 @@ export class FinalizeCerUpdateDecisionUseCase {
   ) {}
 
   async execute(decisionId: string, userId: string): Promise<FinalizeDecisionResult> {
-    const decision = await (this.prisma as any).cerUpdateDecision.findUnique({
+    const decision = await this.prisma.cerUpdateDecision.findUnique({
       where: { id: decisionId },
     });
 
@@ -32,17 +32,17 @@ export class FinalizeCerUpdateDecisionUseCase {
 
     const now = new Date();
 
-    await (this.prisma as any).cerUpdateDecision.update({
+    await this.prisma.cerUpdateDecision.update({
       where: { id: decisionId },
       data: { status: 'FINALIZED', decidedAt: now },
     });
 
-    const cycle = await (this.prisma as any).pmsCycle.findUnique({
+    const cycle = await this.prisma.pmsCycle.findUnique({
       where: { id: decision.pmsCycleId },
       select: { pmsPlanId: true },
     });
 
-    const plan = cycle ? await (this.prisma as any).pmsPlan.findUnique({
+    const plan = cycle ? await this.prisma.pmsPlan.findUnique({
       where: { id: cycle.pmsPlanId },
       select: { projectId: true },
     }) : null;

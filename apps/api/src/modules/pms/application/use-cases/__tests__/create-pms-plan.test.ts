@@ -58,7 +58,7 @@ describe('CreatePmsPlanUseCase', () => {
   it('calls prisma.pmsPlan.create with correct data', async () => {
     await useCase.execute(validInput);
 
-    expect((prisma as any).pmsPlan.create).toHaveBeenCalledWith(
+    expect(prisma.pmsPlan.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           projectId: 'project-1',
@@ -148,7 +148,7 @@ describe('CreatePmsPlanUseCase', () => {
   it('trims updateFrequency before saving', async () => {
     await useCase.execute({ ...validInput, updateFrequency: '  ANNUALLY  ' });
 
-    expect((prisma as any).pmsPlan.create).toHaveBeenCalledWith(
+    expect(prisma.pmsPlan.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           updateFrequency: 'ANNUALLY',

@@ -15,7 +15,7 @@ export class LockDatasetUseCase {
     const { sessionId, userId } = input;
 
     // Fetch session
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
     });
 
@@ -29,7 +29,7 @@ export class LockDatasetUseCase {
     }
 
     // Check no PENDING articles
-    const pendingCount = await (this.prisma as any).article.count({
+    const pendingCount = await this.prisma.article.count({
       where: {
         sessionId,
         status: { in: ['PENDING', 'SCORED'] },
@@ -62,7 +62,7 @@ export class LockDatasetUseCase {
 
     // Lock the session
     const now = new Date();
-    await (this.prisma as any).slsSession.update({
+    await this.prisma.slsSession.update({
       where: { id: sessionId },
       data: {
         status: 'LOCKED',
@@ -73,7 +73,7 @@ export class LockDatasetUseCase {
     });
 
     // Count articles for event
-    const articleCounts = await (this.prisma as any).article.groupBy({
+    const articleCounts = await this.prisma.article.groupBy({
       by: ['status'],
       where: { sessionId },
       _count: true,
@@ -103,7 +103,7 @@ export class LockDatasetUseCase {
     void this.eventBus.publish(event);
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.dataset.locked',

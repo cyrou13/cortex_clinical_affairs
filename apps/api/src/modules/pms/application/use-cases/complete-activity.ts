@@ -26,7 +26,7 @@ export class CompleteActivityUseCase {
   ) {}
 
   async execute(input: CompleteActivityInput): Promise<CompleteActivityResult> {
-    const activity = await (this.prisma as any).pmcfActivity.findUnique({
+    const activity = await this.prisma.pmcfActivity.findUnique({
       where: { id: input.activityId },
     });
 
@@ -48,7 +48,7 @@ export class CompleteActivityUseCase {
 
     const now = new Date();
 
-    await (this.prisma as any).pmcfActivity.update({
+    await this.prisma.pmcfActivity.update({
       where: { id: input.activityId },
       data: {
         status: 'COMPLETED',

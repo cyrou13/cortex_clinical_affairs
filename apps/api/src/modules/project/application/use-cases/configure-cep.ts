@@ -45,7 +45,7 @@ export class ConfigureCepUseCase {
     });
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'cep.configured',

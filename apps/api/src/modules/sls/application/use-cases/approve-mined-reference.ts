@@ -20,7 +20,7 @@ export class ApproveMinedReferenceUseCase {
     }
 
     // Create article from reference
-    const article = await (this.prisma as any).article.create({
+    const article = await this.prisma.article.create({
       data: {
         sessionId: reference.sessionId,
         title: reference.title,

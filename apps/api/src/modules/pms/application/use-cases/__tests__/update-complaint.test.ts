@@ -39,7 +39,7 @@ describe('UpdateComplaintUseCase', () => {
 
     expect(result.id).toBe('complaint-1');
     expect(result.updatedFields).toEqual(['description', 'severity']);
-    expect((prisma as any).complaint.update).toHaveBeenCalledWith(
+    expect(prisma.complaint.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: { description: 'Updated description', severity: 'CRITICAL' },
       }),
@@ -102,7 +102,7 @@ describe('UpdateComplaintUseCase', () => {
       userId: 'user-1',
     });
 
-    expect((prisma as any).complaint.update).toHaveBeenCalledWith(
+    expect(prisma.complaint.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           status: 'RESOLVED',

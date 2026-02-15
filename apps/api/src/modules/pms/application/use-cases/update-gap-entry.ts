@@ -31,7 +31,7 @@ export class UpdateGapEntryUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async execute(input: UpdateGapEntryInput): Promise<GapEntryResult> {
-    const gap = await (this.prisma as any).gapRegistryEntry.findUnique({
+    const gap = await this.prisma.gapRegistryEntry.findUnique({
       where: { id: input.gapEntryId },
     });
 
@@ -60,7 +60,7 @@ export class UpdateGapEntryUseCase {
       }
     }
 
-    const updated = await (this.prisma as any).gapRegistryEntry.update({
+    const updated = await this.prisma.gapRegistryEntry.update({
       where: { id: input.gapEntryId },
       data: updateData,
     });
@@ -79,7 +79,7 @@ export class UpdateGapEntryUseCase {
       throw new ValidationError(`Invalid gap severity: ${input.severity}`);
     }
 
-    const gap = await (this.prisma as any).gapRegistryEntry.create({
+    const gap = await this.prisma.gapRegistryEntry.create({
       data: {
         id: crypto.randomUUID(),
         pmsPlanId: input.pmsPlanId,

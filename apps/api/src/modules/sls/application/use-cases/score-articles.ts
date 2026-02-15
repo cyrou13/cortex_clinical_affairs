@@ -15,7 +15,7 @@ export class ScoreArticlesUseCase {
 
   async execute(sessionId: string, userId: string): Promise<{ taskId: string }> {
     // Validate session exists
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
     });
 
@@ -29,7 +29,7 @@ export class ScoreArticlesUseCase {
     }
 
     // Fetch all articles with status PENDING in the session
-    const pendingArticles = await (this.prisma as any).article.findMany({
+    const pendingArticles = await this.prisma.article.findMany({
       where: {
         sessionId,
         status: 'PENDING',
@@ -42,7 +42,7 @@ export class ScoreArticlesUseCase {
     }
 
     // Fetch exclusion codes for the session
-    const exclusionCodes = await (this.prisma as any).exclusionCode.findMany({
+    const exclusionCodes = await this.prisma.exclusionCode.findMany({
       where: { sessionId },
       select: { code: true, label: true, shortCode: true },
     });

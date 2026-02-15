@@ -8,7 +8,7 @@ export class DuplicateQueryUseCase {
 
   async execute(queryId: string, userId: string) {
     // 1. Find existing query
-    const existing = await (this.prisma as any).slsQuery.findUnique({
+    const existing = await this.prisma.slsQuery.findUnique({
       where: { id: queryId },
     });
 
@@ -17,7 +17,7 @@ export class DuplicateQueryUseCase {
     }
 
     // 2. Check session is not LOCKED
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: existing.sessionId },
     });
 
@@ -35,7 +35,7 @@ export class DuplicateQueryUseCase {
     const duplicateData = entity.duplicate(newId, userId);
 
     // 4. Create duplicated query
-    const duplicated = await (this.prisma as any).slsQuery.create({
+    const duplicated = await this.prisma.slsQuery.create({
       data: {
         id: duplicateData.id,
         sessionId: duplicateData.sessionId,
@@ -50,7 +50,7 @@ export class DuplicateQueryUseCase {
 
     // 5. Create initial version for the duplicate
     const versionId = generateId();
-    await (this.prisma as any).queryVersion.create({
+    await this.prisma.queryVersion.create({
       data: {
         id: versionId,
         queryId: newId,
@@ -62,7 +62,7 @@ export class DuplicateQueryUseCase {
     });
 
     // 6. Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.query.duplicated',

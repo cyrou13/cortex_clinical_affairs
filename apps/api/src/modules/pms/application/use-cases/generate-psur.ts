@@ -18,7 +18,7 @@ export class GeneratePsurUseCase {
   ) {}
 
   async execute(pmsCycleId: string, userId: string): Promise<GeneratePsurResult> {
-    const cycle = await (this.prisma as any).pmsCycle.findUnique({
+    const cycle = await this.prisma.pmsCycle.findUnique({
       where: { id: pmsCycleId },
       select: { id: true, status: true },
     });

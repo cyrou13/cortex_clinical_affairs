@@ -23,7 +23,7 @@ export class ConfigureThresholdsUseCase {
     }
 
     // Validate session exists
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
     });
 
@@ -36,7 +36,7 @@ export class ConfigureThresholdsUseCase {
       uncertainLowerThreshold: session.uncertainLowerThreshold,
     };
 
-    const updated = await (this.prisma as any).slsSession.update({
+    const updated = await this.prisma.slsSession.update({
       where: { id: sessionId },
       data: {
         likelyRelevantThreshold: parsed.data.likelyRelevantThreshold,
@@ -45,7 +45,7 @@ export class ConfigureThresholdsUseCase {
     });
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.session.thresholdsConfigured',
@@ -66,7 +66,7 @@ export class ConfigureThresholdsUseCase {
   }
 
   async getThresholds(sessionId: string) {
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
       select: {
         likelyRelevantThreshold: true,

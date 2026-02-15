@@ -63,7 +63,7 @@ export class ManageEvaluatorsUseCase {
     }
 
     // Verify user exists
-    const user = await (this.prisma as any).user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id: input.userId },
       select: { id: true },
     });

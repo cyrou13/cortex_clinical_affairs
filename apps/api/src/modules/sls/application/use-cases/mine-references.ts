@@ -10,7 +10,7 @@ export class MineReferencesUseCase {
   async execute(input: { sessionId: string; articleIds: string[]; userId: string }) {
     const { sessionId, articleIds, userId } = input;
 
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
     });
 
@@ -19,7 +19,7 @@ export class MineReferencesUseCase {
     }
 
     // Validate articles exist and have PDFs
-    const articles = await (this.prisma as any).article.findMany({
+    const articles = await this.prisma.article.findMany({
       where: {
         id: { in: articleIds },
         sessionId,

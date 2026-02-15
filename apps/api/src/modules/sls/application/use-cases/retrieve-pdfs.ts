@@ -10,7 +10,7 @@ export class RetrievePdfsUseCase {
   async execute(input: { sessionId: string; userId: string }) {
     const { sessionId, userId } = input;
 
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
     });
 
@@ -19,7 +19,7 @@ export class RetrievePdfsUseCase {
     }
 
     // Get included articles without PDFs
-    const articles = await (this.prisma as any).article.findMany({
+    const articles = await this.prisma.article.findMany({
       where: {
         sessionId,
         status: { in: ['INCLUDED', 'FINAL_INCLUDED'] },
@@ -53,7 +53,7 @@ export class RetrievePdfsUseCase {
     });
 
     // Update article statuses
-    await (this.prisma as any).article.updateMany({
+    await this.prisma.article.updateMany({
       where: { id: { in: articleIds } },
       data: { pdfStatus: 'RETRIEVING' },
     });

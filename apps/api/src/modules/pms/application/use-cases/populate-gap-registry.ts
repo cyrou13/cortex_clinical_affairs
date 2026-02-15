@@ -12,7 +12,7 @@ export class PopulateGapRegistryUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async execute(pmsPlanId: string, userId: string): Promise<PopulateGapRegistryResult> {
-    const plan = await (this.prisma as any).pmsPlan.findUnique({
+    const plan = await this.prisma.pmsPlan.findUnique({
       where: { id: pmsPlanId },
       select: { id: true, cerVersionId: true },
     });
@@ -24,7 +24,7 @@ export class PopulateGapRegistryUseCase {
     let populated = 0;
     let duplicates = 0;
 
-    const existingGaps = await (this.prisma as any).gapRegistryEntry.findMany({
+    const existingGaps = await this.prisma.gapRegistryEntry.findMany({
       where: { pmsPlanId },
       select: { sourceModule: true, sourceId: true },
     });
@@ -43,7 +43,7 @@ export class PopulateGapRegistryUseCase {
         duplicates++;
         continue;
       }
-      await (this.prisma as any).gapRegistryEntry.create({
+      await this.prisma.gapRegistryEntry.create({
         data: {
           id: crypto.randomUUID(),
           pmsPlanId,
@@ -59,7 +59,7 @@ export class PopulateGapRegistryUseCase {
       populated++;
     }
 
-    const totalGaps = await (this.prisma as any).gapRegistryEntry.count({
+    const totalGaps = await this.prisma.gapRegistryEntry.count({
       where: { pmsPlanId },
     });
 

@@ -15,7 +15,7 @@ export class SpotCheckArticleUseCase {
     const { articleId, userId, agrees, correctedDecision, exclusionCodeId, reason } = input;
 
     // Fetch article
-    const article = await (this.prisma as any).article.findUnique({
+    const article = await this.prisma.article.findUnique({
       where: { id: articleId },
     });
 
@@ -24,7 +24,7 @@ export class SpotCheckArticleUseCase {
     }
 
     // Validate session not locked
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: article.sessionId },
     });
 
@@ -38,7 +38,7 @@ export class SpotCheckArticleUseCase {
 
     if (agrees) {
       // Log agreement — create screening decision with isSpotCheck indicator
-      await (this.prisma as any).screeningDecision.create({
+      await this.prisma.screeningDecision.create({
         data: {
           articleId,
           userId,
@@ -63,13 +63,13 @@ export class SpotCheckArticleUseCase {
     }
 
     // Update article status
-    await (this.prisma as any).article.update({
+    await this.prisma.article.update({
       where: { id: articleId },
       data: { status: correctedDecision },
     });
 
     // Create screening decision with override
-    await (this.prisma as any).screeningDecision.create({
+    await this.prisma.screeningDecision.create({
       data: {
         articleId,
         userId,
@@ -83,7 +83,7 @@ export class SpotCheckArticleUseCase {
     });
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.article.spotCheckOverride',

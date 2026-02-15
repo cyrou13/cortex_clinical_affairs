@@ -27,7 +27,7 @@ export class PopulateGridRowsUseCase {
 
     const sessionIds = links.map((l: { slsSessionId: string }) => l.slsSessionId);
 
-    const articles = await (this.prisma as any).article.findMany({
+    const articles = await this.prisma.article.findMany({
       where: {
         sessionId: { in: sessionIds },
         status: 'FINAL_INCLUDED',

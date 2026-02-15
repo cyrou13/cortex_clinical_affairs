@@ -17,7 +17,7 @@ export class CompleteCycleUseCase {
   ) {}
 
   async execute(cycleId: string, userId: string): Promise<CompleteCycleResult> {
-    const cycle = await (this.prisma as any).pmsCycle.findUnique({
+    const cycle = await this.prisma.pmsCycle.findUnique({
       where: { id: cycleId },
       select: { id: true, status: true, pmsPlanId: true },
     });
@@ -30,7 +30,7 @@ export class CompleteCycleUseCase {
       throw new ValidationError(`Cannot complete cycle in ${cycle.status} status`);
     }
 
-    const incompleteActivities = await (this.prisma as any).pmcfActivity.count({
+    const incompleteActivities = await this.prisma.pmcfActivity.count({
       where: { pmsCycleId: cycleId, status: { not: 'COMPLETED' } },
     });
 
@@ -40,7 +40,7 @@ export class CompleteCycleUseCase {
 
     const now = new Date();
 
-    await (this.prisma as any).pmsCycle.update({
+    await this.prisma.pmsCycle.update({
       where: { id: cycleId },
       data: { status: 'COMPLETED', completedAt: now },
     });

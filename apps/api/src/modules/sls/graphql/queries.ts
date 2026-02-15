@@ -57,7 +57,7 @@ builder.queryField('slsQueries', (t) =>
       checkPermission(ctx, 'sls', 'read');
 
       // Look up session to check project membership
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -67,7 +67,7 @@ builder.queryField('slsQueries', (t) =>
 
       await checkProjectMembership(ctx, session.projectId);
 
-      const queries = await (ctx.prisma as any).slsQuery.findMany({
+      const queries = await ctx.prisma.slsQuery.findMany({
         where: { sessionId: args.sessionId, isActive: true },
         orderBy: { createdAt: 'desc' },
       });
@@ -87,7 +87,7 @@ builder.queryField('queryVersions', (t) =>
       checkPermission(ctx, 'sls', 'read');
 
       // Look up query -> session to check project membership
-      const query = await (ctx.prisma as any).slsQuery.findUnique({
+      const query = await ctx.prisma.slsQuery.findUnique({
         where: { id: args.queryId },
       });
 
@@ -95,7 +95,7 @@ builder.queryField('queryVersions', (t) =>
         throw new NotFoundError('SlsQuery', args.queryId);
       }
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: query.sessionId },
       });
 
@@ -105,7 +105,7 @@ builder.queryField('queryVersions', (t) =>
 
       await checkProjectMembership(ctx, session.projectId);
 
-      const versions = await (ctx.prisma as any).queryVersion.findMany({
+      const versions = await ctx.prisma.queryVersion.findMany({
         where: { queryId: args.queryId },
         orderBy: { version: 'desc' },
       });
@@ -125,7 +125,7 @@ builder.queryField('queryExecutions', (t) =>
       checkPermission(ctx, 'sls', 'read');
 
       // Look up query -> session to check project membership
-      const query = await (ctx.prisma as any).slsQuery.findUnique({
+      const query = await ctx.prisma.slsQuery.findUnique({
         where: { id: args.queryId },
       });
 
@@ -133,7 +133,7 @@ builder.queryField('queryExecutions', (t) =>
         throw new NotFoundError('SlsQuery', args.queryId);
       }
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: query.sessionId },
       });
 
@@ -143,7 +143,7 @@ builder.queryField('queryExecutions', (t) =>
 
       await checkProjectMembership(ctx, session.projectId);
 
-      const executions = await (ctx.prisma as any).queryExecution.findMany({
+      const executions = await ctx.prisma.queryExecution.findMany({
         where: { queryId: args.queryId },
         orderBy: { executedAt: 'desc' },
       });
@@ -168,7 +168,7 @@ builder.queryField('articles', (t) =>
       checkPermission(ctx, 'sls', 'read');
 
       // Look up session to check project membership
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -217,7 +217,7 @@ builder.queryField('article', (t) =>
       }
 
       // Check project membership via article -> session
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: article.sessionId },
       });
 
@@ -242,7 +242,7 @@ builder.queryField('articleCountByStatus', (t) =>
       checkPermission(ctx, 'sls', 'read');
 
       // Look up session to check project membership
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -272,7 +272,7 @@ builder.queryField('aiScoringStats', (t) =>
       checkPermission(ctx, 'sls', 'read');
 
       // Look up session to check project membership
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -283,7 +283,7 @@ builder.queryField('aiScoringStats', (t) =>
       await checkProjectMembership(ctx, session.projectId);
 
       // Get category counts from scored articles
-      const scoredArticles = await (ctx.prisma as any).article.groupBy({
+      const scoredArticles = await ctx.prisma.article.groupBy({
         by: ['aiCategory'],
         where: {
           sessionId: args.sessionId,
@@ -339,7 +339,7 @@ builder.queryField('exclusionCodes', (t) =>
       checkPermission(ctx, 'sls', 'read');
 
       // Look up session to check project membership
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -349,7 +349,7 @@ builder.queryField('exclusionCodes', (t) =>
 
       await checkProjectMembership(ctx, session.projectId);
 
-      const codes = await (ctx.prisma as any).exclusionCode.findMany({
+      const codes = await ctx.prisma.exclusionCode.findMany({
         where: { sessionId: args.sessionId, isHidden: false },
         orderBy: { displayOrder: 'asc' },
       });
@@ -371,7 +371,7 @@ builder.queryField('customAiFilters', (t) =>
       checkPermission(ctx, 'sls', 'read');
 
       // Look up session to check project membership
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -381,7 +381,7 @@ builder.queryField('customAiFilters', (t) =>
 
       await checkProjectMembership(ctx, session.projectId);
 
-      const filters = await (ctx.prisma as any).customAiFilter.findMany({
+      const filters = await ctx.prisma.customAiFilter.findMany({
         where: { sessionId: args.sessionId, isActive: true },
         orderBy: { createdAt: 'asc' },
       });
@@ -403,7 +403,7 @@ builder.queryField('relevanceThresholds', (t) =>
       checkPermission(ctx, 'sls', 'read');
 
       // Look up session to check project membership
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -431,7 +431,7 @@ builder.queryField('screeningDecisions', (t) =>
       checkPermission(ctx, 'sls', 'read');
 
       // Look up article -> session to check project membership
-      const article = await (ctx.prisma as any).article.findUnique({
+      const article = await ctx.prisma.article.findUnique({
         where: { id: args.articleId },
       });
 
@@ -439,7 +439,7 @@ builder.queryField('screeningDecisions', (t) =>
         throw new NotFoundError('Article', args.articleId);
       }
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: article.sessionId },
       });
 
@@ -449,7 +449,7 @@ builder.queryField('screeningDecisions', (t) =>
 
       await checkProjectMembership(ctx, session.projectId);
 
-      const decisions = await (ctx.prisma as any).screeningDecision.findMany({
+      const decisions = await ctx.prisma.screeningDecision.findMany({
         where: { articleId: args.articleId },
         orderBy: { timestamp: 'desc' },
       });
@@ -470,7 +470,7 @@ builder.queryField('reviewGateStatus', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'sls', 'read');
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -499,7 +499,7 @@ builder.queryField('spotCheckSample', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'sls', 'read');
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -534,7 +534,7 @@ builder.queryField('screeningAuditLog', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'sls', 'read');
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -551,7 +551,7 @@ builder.queryField('screeningAuditLog', (t) =>
       if (args.userId) where.userId = args.userId;
       if (args.decision) where.decision = args.decision;
 
-      const decisions = await (ctx.prisma as any).screeningDecision.findMany({
+      const decisions = await ctx.prisma.screeningDecision.findMany({
         where,
         orderBy: { timestamp: 'desc' },
         skip: args.offset ?? 0,
@@ -574,7 +574,7 @@ builder.queryField('lockPreflightCheck', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'sls', 'read');
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -585,7 +585,7 @@ builder.queryField('lockPreflightCheck', (t) =>
       await checkProjectMembership(ctx, session.projectId);
 
       // Count articles by status
-      const articles = await (ctx.prisma as any).article.findMany({
+      const articles = await ctx.prisma.article.findMany({
         where: { sessionId: args.sessionId },
         select: { status: true },
       });
@@ -627,7 +627,7 @@ builder.queryField('prismaStatistics', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'sls', 'read');
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -653,7 +653,7 @@ builder.queryField('pdfRetrievalStats', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'sls', 'read');
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -664,7 +664,7 @@ builder.queryField('pdfRetrievalStats', (t) =>
       await checkProjectMembership(ctx, session.projectId);
 
       // Count included articles (total pool for PDF retrieval)
-      const articles = await (ctx.prisma as any).article.findMany({
+      const articles = await ctx.prisma.article.findMany({
         where: {
           sessionId: args.sessionId,
           status: { in: ['INCLUDED', 'FINAL_INCLUDED'] },
@@ -726,7 +726,7 @@ builder.queryField('minedReferences', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'sls', 'read');
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 

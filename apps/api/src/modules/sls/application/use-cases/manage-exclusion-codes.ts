@@ -16,7 +16,7 @@ export class ManageExclusionCodesUseCase {
     const { code, label, shortCode, description } = parsed.data;
 
     // Validate session exists
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
     });
 
@@ -25,7 +25,7 @@ export class ManageExclusionCodesUseCase {
     }
 
     // Validate code uniqueness within session
-    const existingCode = await (this.prisma as any).exclusionCode.findFirst({
+    const existingCode = await this.prisma.exclusionCode.findFirst({
       where: { sessionId, code },
     });
 
@@ -34,7 +34,7 @@ export class ManageExclusionCodesUseCase {
     }
 
     // Validate shortCode uniqueness within session
-    const existingShortCode = await (this.prisma as any).exclusionCode.findFirst({
+    const existingShortCode = await this.prisma.exclusionCode.findFirst({
       where: { sessionId, shortCode },
     });
 
@@ -43,7 +43,7 @@ export class ManageExclusionCodesUseCase {
     }
 
     // Get max displayOrder
-    const maxOrderResult = await (this.prisma as any).exclusionCode.findFirst({
+    const maxOrderResult = await this.prisma.exclusionCode.findFirst({
       where: { sessionId },
       orderBy: { displayOrder: 'desc' },
       select: { displayOrder: true },
@@ -51,7 +51,7 @@ export class ManageExclusionCodesUseCase {
 
     const displayOrder = (maxOrderResult?.displayOrder ?? -1) + 1;
 
-    const created = await (this.prisma as any).exclusionCode.create({
+    const created = await this.prisma.exclusionCode.create({
       data: {
         sessionId,
         code,
@@ -63,7 +63,7 @@ export class ManageExclusionCodesUseCase {
     });
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.exclusionCode.added',
@@ -87,7 +87,7 @@ export class ManageExclusionCodesUseCase {
     const { label, shortCode } = parsed.data;
 
     // Find existing code
-    const existing = await (this.prisma as any).exclusionCode.findUnique({
+    const existing = await this.prisma.exclusionCode.findUnique({
       where: { id: codeId },
     });
 
@@ -97,7 +97,7 @@ export class ManageExclusionCodesUseCase {
 
     // Validate shortCode uniqueness if changing it
     if (shortCode && shortCode !== existing.shortCode) {
-      const existingShortCode = await (this.prisma as any).exclusionCode.findFirst({
+      const existingShortCode = await this.prisma.exclusionCode.findFirst({
         where: {
           sessionId: existing.sessionId,
           shortCode,
@@ -115,13 +115,13 @@ export class ManageExclusionCodesUseCase {
       updateData.shortCode = shortCode;
     }
 
-    const updated = await (this.prisma as any).exclusionCode.update({
+    const updated = await this.prisma.exclusionCode.update({
       where: { id: codeId },
       data: updateData,
     });
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.exclusionCode.renamed',
@@ -136,7 +136,7 @@ export class ManageExclusionCodesUseCase {
   }
 
   async hideExclusionCode(codeId: string, userId: string) {
-    const existing = await (this.prisma as any).exclusionCode.findUnique({
+    const existing = await this.prisma.exclusionCode.findUnique({
       where: { id: codeId },
     });
 
@@ -144,13 +144,13 @@ export class ManageExclusionCodesUseCase {
       throw new NotFoundError('ExclusionCode', codeId);
     }
 
-    const updated = await (this.prisma as any).exclusionCode.update({
+    const updated = await this.prisma.exclusionCode.update({
       where: { id: codeId },
       data: { isHidden: true },
     });
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.exclusionCode.hidden',
@@ -166,7 +166,7 @@ export class ManageExclusionCodesUseCase {
 
   async reorderExclusionCodes(sessionId: string, orderedIds: string[], userId: string) {
     // Validate session exists
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
     });
 
@@ -175,7 +175,7 @@ export class ManageExclusionCodesUseCase {
     }
 
     // Validate all IDs belong to this session
-    const codes = await (this.prisma as any).exclusionCode.findMany({
+    const codes = await this.prisma.exclusionCode.findMany({
       where: { sessionId, id: { in: orderedIds } },
     });
 
@@ -185,7 +185,7 @@ export class ManageExclusionCodesUseCase {
 
     // Update displayOrder for each code
     const updates = orderedIds.map((id, index) =>
-      (this.prisma as any).exclusionCode.update({
+      this.prisma.exclusionCode.update({
         where: { id },
         data: { displayOrder: index },
       }),
@@ -194,7 +194,7 @@ export class ManageExclusionCodesUseCase {
     await Promise.all(updates);
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.exclusionCodes.reordered',
@@ -205,7 +205,7 @@ export class ManageExclusionCodesUseCase {
     });
 
     // Return updated codes sorted by displayOrder
-    return (this.prisma as any).exclusionCode.findMany({
+    return this.prisma.exclusionCode.findMany({
       where: { sessionId },
       orderBy: { displayOrder: 'asc' },
     });

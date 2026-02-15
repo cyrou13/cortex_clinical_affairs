@@ -23,7 +23,7 @@ export class ScreenArticleUseCase {
     }
 
     // Fetch article
-    const article = await (this.prisma as any).article.findUnique({
+    const article = await this.prisma.article.findUnique({
       where: { id: articleId },
     });
 
@@ -32,7 +32,7 @@ export class ScreenArticleUseCase {
     }
 
     // Validate session is not LOCKED
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: article.sessionId },
     });
 
@@ -58,13 +58,13 @@ export class ScreenArticleUseCase {
     const isAiOverride = this.detectAiOverride(article, decision);
 
     // Update article status
-    const updatedArticle = await (this.prisma as any).article.update({
+    const updatedArticle = await this.prisma.article.update({
       where: { id: articleId },
       data: { status: newStatus },
     });
 
     // Create screening decision record
-    await (this.prisma as any).screeningDecision.create({
+    await this.prisma.screeningDecision.create({
       data: {
         articleId,
         userId,
@@ -78,7 +78,7 @@ export class ScreenArticleUseCase {
     });
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.article.screened',

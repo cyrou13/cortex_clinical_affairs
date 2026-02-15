@@ -34,7 +34,7 @@ export class GeneratePrismaUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async execute(sessionId: string): Promise<PrismaStatistics> {
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
     });
 
@@ -43,7 +43,7 @@ export class GeneratePrismaUseCase {
     }
 
     // Fetch all articles for the session
-    const articles = await (this.prisma as any).article.findMany({
+    const articles = await this.prisma.article.findMany({
       where: { sessionId },
       select: {
         id: true,
@@ -55,13 +55,13 @@ export class GeneratePrismaUseCase {
     });
 
     // Fetch queries for the session
-    const queries = await (this.prisma as any).slsQuery.findMany({
+    const queries = await this.prisma.slsQuery.findMany({
       where: { sessionId },
       select: { id: true, name: true },
     });
 
     // Fetch query executions
-    const queryExecutions = await (this.prisma as any).queryExecution.findMany({
+    const queryExecutions = await this.prisma.queryExecution.findMany({
       where: {
         queryVersion: {
           query: { sessionId },
@@ -110,7 +110,7 @@ export class GeneratePrismaUseCase {
       (a: { relevanceScore: number | null }) => a.relevanceScore !== null,
     ).length;
 
-    const screeningDecisionCount = await (this.prisma as any).screeningDecision.count({
+    const screeningDecisionCount = await this.prisma.screeningDecision.count({
       where: { article: { sessionId } },
     });
 
@@ -122,7 +122,7 @@ export class GeneratePrismaUseCase {
     ).length;
 
     // Exclusion code breakdown
-    const exclusionCodes = await (this.prisma as any).exclusionCode.findMany({
+    const exclusionCodes = await this.prisma.exclusionCode.findMany({
       where: { sessionId },
       select: { id: true, code: true, label: true },
     });

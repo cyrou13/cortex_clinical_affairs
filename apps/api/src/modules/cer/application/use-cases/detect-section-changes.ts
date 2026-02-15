@@ -57,11 +57,11 @@ export class DetectSectionChangesUseCase {
     }
 
     // Load snapshots from both versions
-    const currentSnapshots = await (this.prisma as any).versionSnapshot.findMany({
+    const currentSnapshots = await this.prisma.versionSnapshot.findMany({
       where: { cerVersionId: input.cerVersionId },
     });
 
-    const previousSnapshots = await (this.prisma as any).versionSnapshot.findMany({
+    const previousSnapshots = await this.prisma.versionSnapshot.findMany({
       where: { cerVersionId: input.previousVersionId },
     });
 

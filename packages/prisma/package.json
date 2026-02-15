@@ -5,9 +5,9 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "echo 'prisma build - no-op'",
-    "generate": "prisma generate",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev",
+    "generate": "prisma generate --schema schema/",
+    "db:push": "prisma db push --schema schema/",
+    "db:migrate": "prisma migrate dev --schema schema/",
     "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {

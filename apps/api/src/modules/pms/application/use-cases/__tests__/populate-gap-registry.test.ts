@@ -47,9 +47,9 @@ describe('PopulateGapRegistryUseCase', () => {
   it('creates gap entries with correct data for each open question', async () => {
     await useCase.execute('plan-1', 'user-1');
 
-    expect((prisma as any).gapRegistryEntry.create).toHaveBeenCalledTimes(2);
+    expect(prisma.gapRegistryEntry.create).toHaveBeenCalledTimes(2);
 
-    expect((prisma as any).gapRegistryEntry.create).toHaveBeenCalledWith(
+    expect(prisma.gapRegistryEntry.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           pmsPlanId: 'plan-1',
@@ -64,7 +64,7 @@ describe('PopulateGapRegistryUseCase', () => {
       }),
     );
 
-    expect((prisma as any).gapRegistryEntry.create).toHaveBeenCalledWith(
+    expect(prisma.gapRegistryEntry.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           pmsPlanId: 'plan-1',
@@ -92,7 +92,7 @@ describe('PopulateGapRegistryUseCase', () => {
 
     expect(result.populated).toBe(1);
     expect(result.duplicates).toBe(1);
-    expect((prisma as any).gapRegistryEntry.create).toHaveBeenCalledTimes(1);
+    expect(prisma.gapRegistryEntry.create).toHaveBeenCalledTimes(1);
   });
 
   it('handles case where all entries are duplicates', async () => {
@@ -112,7 +112,7 @@ describe('PopulateGapRegistryUseCase', () => {
 
     expect(result.populated).toBe(0);
     expect(result.duplicates).toBe(2);
-    expect((prisma as any).gapRegistryEntry.create).not.toHaveBeenCalled();
+    expect(prisma.gapRegistryEntry.create).not.toHaveBeenCalled();
   });
 
   it('handles case where no SOA open questions exist', async () => {
@@ -152,7 +152,7 @@ describe('PopulateGapRegistryUseCase', () => {
 
     await useCase.execute('plan-1', 'user-1');
 
-    expect((prisma as any).gapRegistryEntry.create).toHaveBeenCalledWith(
+    expect(prisma.gapRegistryEntry.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           description: 'SOA open question',
@@ -174,7 +174,7 @@ describe('PopulateGapRegistryUseCase', () => {
     const result = await useCase.execute('plan-1', 'user-1');
 
     expect(result.totalGaps).toBe(15);
-    expect((prisma as any).gapRegistryEntry.count).toHaveBeenCalledWith({
+    expect(prisma.gapRegistryEntry.count).toHaveBeenCalledWith({
       where: { pmsPlanId: 'plan-1' },
     });
   });

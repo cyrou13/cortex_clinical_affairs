@@ -50,7 +50,7 @@ describe('UpdatePmsPlanUseCase', () => {
   it('calls prisma.pmsPlan.update with correct fields', async () => {
     await useCase.execute(validInput);
 
-    expect((prisma as any).pmsPlan.update).toHaveBeenCalledWith(
+    expect(prisma.pmsPlan.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'plan-1' },
         data: expect.objectContaining({
@@ -68,7 +68,7 @@ describe('UpdatePmsPlanUseCase', () => {
       userId: 'user-1',
     });
 
-    expect((prisma as any).pmsPlan.update).toHaveBeenCalledWith(
+    expect(prisma.pmsPlan.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           updateFrequency: 'MONTHLY',
@@ -76,7 +76,7 @@ describe('UpdatePmsPlanUseCase', () => {
       }),
     );
 
-    const callData = (prisma as any).pmsPlan.update.mock.calls[0][0].data;
+    const callData = prisma.pmsPlan.update.mock.calls[0][0].data;
     expect(callData).not.toHaveProperty('dataCollectionMethods');
   });
 
@@ -87,7 +87,7 @@ describe('UpdatePmsPlanUseCase', () => {
       userId: 'user-1',
     });
 
-    expect((prisma as any).pmsPlan.update).toHaveBeenCalledWith(
+    expect(prisma.pmsPlan.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           updateFrequency: 'QUARTERLY',

@@ -35,7 +35,7 @@ export class UpdateQueryUseCase {
     const { queryString: newQueryString } = parsed.data;
 
     // 1. Find existing query
-    const existing = await (this.prisma as any).slsQuery.findUnique({
+    const existing = await this.prisma.slsQuery.findUnique({
       where: { id: queryId },
     });
 
@@ -44,7 +44,7 @@ export class UpdateQueryUseCase {
     }
 
     // 2. Check session is not LOCKED
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: existing.sessionId },
     });
 
@@ -76,7 +76,7 @@ export class UpdateQueryUseCase {
     );
 
     // 5. Save QueryVersion
-    await (this.prisma as any).queryVersion.create({
+    await this.prisma.queryVersion.create({
       data: {
         id: versionData.id,
         queryId: versionData.queryId,
@@ -88,7 +88,7 @@ export class UpdateQueryUseCase {
     });
 
     // 6. Update query with new version and queryString
-    const updated = await (this.prisma as any).slsQuery.update({
+    const updated = await this.prisma.slsQuery.update({
       where: { id: queryId },
       data: {
         queryString: newQueryString,
@@ -97,7 +97,7 @@ export class UpdateQueryUseCase {
     });
 
     // 7. Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.query.updated',

@@ -73,7 +73,7 @@ describe('UpdateGapEntryUseCase', () => {
       });
 
       expect(result.id).toBe('gap-1');
-      expect((prisma as any).gapRegistryEntry.update).toHaveBeenCalledWith(
+      expect(prisma.gapRegistryEntry.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'gap-1' },
           data: expect.objectContaining({
@@ -90,7 +90,7 @@ describe('UpdateGapEntryUseCase', () => {
         userId: 'user-1',
       });
 
-      expect((prisma as any).gapRegistryEntry.update).toHaveBeenCalledWith(
+      expect(prisma.gapRegistryEntry.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             severity: 'HIGH',
@@ -106,7 +106,7 @@ describe('UpdateGapEntryUseCase', () => {
         userId: 'user-1',
       });
 
-      expect((prisma as any).gapRegistryEntry.update).toHaveBeenCalledWith(
+      expect(prisma.gapRegistryEntry.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             recommendedActivity: 'VIGILANCE_MONITORING',
@@ -122,7 +122,7 @@ describe('UpdateGapEntryUseCase', () => {
         userId: 'user-1',
       });
 
-      expect((prisma as any).gapRegistryEntry.update).toHaveBeenCalledWith(
+      expect(prisma.gapRegistryEntry.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             status: 'IN_PROGRESS',
@@ -162,7 +162,7 @@ describe('UpdateGapEntryUseCase', () => {
         userId: 'user-1',
       });
 
-      const callData = (prisma as any).gapRegistryEntry.update.mock.calls[0][0].data;
+      const callData = prisma.gapRegistryEntry.update.mock.calls[0][0].data;
       expect(callData.status).toBe('RESOLVED');
       expect(callData.resolvedAt).toBeInstanceOf(Date);
       expect(callData.resolvedBy).toBe('user-1');
@@ -190,7 +190,7 @@ describe('UpdateGapEntryUseCase', () => {
         userId: 'user-1',
       });
 
-      const callData = (prisma as any).gapRegistryEntry.update.mock.calls[0][0].data;
+      const callData = prisma.gapRegistryEntry.update.mock.calls[0][0].data;
       expect(callData.resolutionNotes).toBeNull();
     });
 
@@ -201,7 +201,7 @@ describe('UpdateGapEntryUseCase', () => {
         userId: 'user-1',
       });
 
-      const callData = (prisma as any).gapRegistryEntry.update.mock.calls[0][0].data;
+      const callData = prisma.gapRegistryEntry.update.mock.calls[0][0].data;
       expect(callData).toHaveProperty('description');
       expect(callData).not.toHaveProperty('severity');
       expect(callData).not.toHaveProperty('status');
@@ -261,7 +261,7 @@ describe('UpdateGapEntryUseCase', () => {
           userId: 'user-1',
         });
 
-        expect((prisma as any).gapRegistryEntry.update).toHaveBeenCalledWith(
+        expect(prisma.gapRegistryEntry.update).toHaveBeenCalledWith(
           expect.objectContaining({
             data: expect.objectContaining({ severity }),
           }),
@@ -291,7 +291,7 @@ describe('UpdateGapEntryUseCase', () => {
     it('creates gap entry with correct data', async () => {
       await useCase.addManual(validManualInput);
 
-      expect((prisma as any).gapRegistryEntry.create).toHaveBeenCalledWith(
+      expect(prisma.gapRegistryEntry.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             pmsPlanId: 'plan-1',
@@ -309,7 +309,7 @@ describe('UpdateGapEntryUseCase', () => {
     it('generates unique IDs for manual entries', async () => {
       await useCase.addManual(validManualInput);
 
-      const callData = (prisma as any).gapRegistryEntry.create.mock.calls[0][0].data;
+      const callData = prisma.gapRegistryEntry.create.mock.calls[0][0].data;
       expect(callData.id).toBeDefined();
       expect(callData.sourceId).toBeDefined();
     });

@@ -25,7 +25,7 @@ export class ManageInstalledBaseUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async create(input: InstalledBaseInput): Promise<InstalledBaseResult> {
-    const cycle = await (this.prisma as any).pmsCycle.findUnique({
+    const cycle = await this.prisma.pmsCycle.findUnique({
       where: { id: input.pmsCycleId },
       select: { id: true },
     });
@@ -38,7 +38,7 @@ export class ManageInstalledBaseUseCase {
       throw new ValidationError('Unit counts must be non-negative');
     }
 
-    const entry = await (this.prisma as any).installedBaseEntry.create({
+    const entry = await this.prisma.installedBaseEntry.create({
       data: {
         id: crypto.randomUUID(),
         pmsCycleId: input.pmsCycleId,
@@ -55,7 +55,7 @@ export class ManageInstalledBaseUseCase {
   }
 
   async update(entryId: string, input: Partial<InstalledBaseInput>): Promise<InstalledBaseResult> {
-    const entry = await (this.prisma as any).installedBaseEntry.findUnique({
+    const entry = await this.prisma.installedBaseEntry.findUnique({
       where: { id: entryId },
     });
 
@@ -70,21 +70,21 @@ export class ManageInstalledBaseUseCase {
     if (input.activeDevices !== undefined) updateData.activeDevices = input.activeDevices;
     if (input.regionBreakdown !== undefined) updateData.regionBreakdown = input.regionBreakdown;
 
-    return (this.prisma as any).installedBaseEntry.update({
+    return this.prisma.installedBaseEntry.update({
       where: { id: entryId },
       data: updateData,
     });
   }
 
   async delete(entryId: string): Promise<{ deleted: boolean }> {
-    await (this.prisma as any).installedBaseEntry.delete({
+    await this.prisma.installedBaseEntry.delete({
       where: { id: entryId },
     });
     return { deleted: true };
   }
 
   async list(pmsCycleId: string): Promise<InstalledBaseResult[]> {
-    return (this.prisma as any).installedBaseEntry.findMany({
+    return this.prisma.installedBaseEntry.findMany({
       where: { pmsCycleId },
       orderBy: { periodStart: 'asc' },
     });

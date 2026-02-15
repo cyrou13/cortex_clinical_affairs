@@ -59,7 +59,7 @@ export class CreateSlsSessionUseCase {
     });
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.session.created',

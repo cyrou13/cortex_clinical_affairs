@@ -46,7 +46,7 @@ export class CreateUpstreamSnapshotsUseCase {
     const projectId = cerVersion.projectId;
 
     // Snapshot SLS data
-    const slsData = await (this.prisma as any).slsSession.findMany({
+    const slsData = await this.prisma.slsSession.findMany({
       where: { projectId },
     });
     if (slsData.length > 0) {
@@ -109,7 +109,7 @@ export class CreateUpstreamSnapshotsUseCase {
   }
 
   async verifySnapshot(snapshotId: string): Promise<{ valid: boolean; moduleType: string }> {
-    const snapshot = await (this.prisma as any).versionSnapshot.findUnique({
+    const snapshot = await this.prisma.versionSnapshot.findUnique({
       where: { id: snapshotId },
     });
 
@@ -134,7 +134,7 @@ export class CreateUpstreamSnapshotsUseCase {
 
     const snapshotId = crypto.randomUUID();
 
-    const created = await (this.prisma as any).versionSnapshot.create({
+    const created = await this.prisma.versionSnapshot.create({
       data: {
         id: snapshotId,
         cerVersionId,

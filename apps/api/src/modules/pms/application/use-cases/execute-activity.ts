@@ -18,7 +18,7 @@ export class ExecuteActivityUseCase {
   ) {}
 
   async execute(activityId: string, userId: string): Promise<ExecuteActivityResult> {
-    const activity = await (this.prisma as any).pmcfActivity.findUnique({
+    const activity = await this.prisma.pmcfActivity.findUnique({
       where: { id: activityId },
     });
 
@@ -32,7 +32,7 @@ export class ExecuteActivityUseCase {
 
     const now = new Date();
 
-    await (this.prisma as any).pmcfActivity.update({
+    await this.prisma.pmcfActivity.update({
       where: { id: activityId },
       data: { status: 'IN_PROGRESS', startedAt: now },
     });

@@ -61,7 +61,7 @@ builder.mutationField('updateSlsSession', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Find the session first to check project membership
-      const existing = await (ctx.prisma as any).slsSession.findUnique({
+      const existing = await ctx.prisma.slsSession.findUnique({
         where: { id: args.id },
       });
 
@@ -89,7 +89,7 @@ builder.mutationField('updateSlsSession', (t) =>
         data.scopeFields = parsed.data.scopeFields as Prisma.InputJsonValue;
       }
 
-      const updated = await (ctx.prisma as any).slsSession.update({
+      const updated = await ctx.prisma.slsSession.update({
         where: { id: args.id },
         data,
         include: {
@@ -100,7 +100,7 @@ builder.mutationField('updateSlsSession', (t) =>
       });
 
       // Audit log
-      void ctx.prisma.auditLog.create({
+      await ctx.prisma.auditLog.create({
         data: {
           userId: ctx.user!.id,
           action: 'sls.session.updated',
@@ -130,7 +130,7 @@ builder.mutationField('createQuery', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via session
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -157,7 +157,7 @@ builder.mutationField('updateQuery', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via query -> session
-      const query = await (ctx.prisma as any).slsQuery.findUnique({
+      const query = await ctx.prisma.slsQuery.findUnique({
         where: { id: args.id },
       });
 
@@ -165,7 +165,7 @@ builder.mutationField('updateQuery', (t) =>
         throw new NotFoundError('SlsQuery', args.id);
       }
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: query.sessionId },
       });
 
@@ -191,7 +191,7 @@ builder.mutationField('duplicateQuery', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via query -> session
-      const query = await (ctx.prisma as any).slsQuery.findUnique({
+      const query = await ctx.prisma.slsQuery.findUnique({
         where: { id: args.id },
       });
 
@@ -199,7 +199,7 @@ builder.mutationField('duplicateQuery', (t) =>
         throw new NotFoundError('SlsQuery', args.id);
       }
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: query.sessionId },
       });
 
@@ -225,7 +225,7 @@ builder.mutationField('deleteQuery', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via query -> session
-      const query = await (ctx.prisma as any).slsQuery.findUnique({
+      const query = await ctx.prisma.slsQuery.findUnique({
         where: { id: args.id },
       });
 
@@ -233,7 +233,7 @@ builder.mutationField('deleteQuery', (t) =>
         throw new NotFoundError('SlsQuery', args.id);
       }
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: query.sessionId },
       });
 
@@ -248,13 +248,13 @@ builder.mutationField('deleteQuery', (t) =>
       await checkProjectMembership(ctx, session.projectId);
 
       // Soft-delete: set isActive to false
-      const deleted = await (ctx.prisma as any).slsQuery.update({
+      const deleted = await ctx.prisma.slsQuery.update({
         where: { id: args.id },
         data: { isActive: false },
       });
 
       // Audit log
-      void ctx.prisma.auditLog.create({
+      await ctx.prisma.auditLog.create({
         data: {
           userId: ctx.user!.id,
           action: 'sls.query.deleted',
@@ -284,7 +284,7 @@ builder.mutationField('executeQuery', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via session
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -318,7 +318,7 @@ builder.mutationField('importArticles', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via session
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -354,7 +354,7 @@ builder.mutationField('updateArticleStatus', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Find the article
-      const article = await (ctx.prisma as any).article.findUnique({
+      const article = await ctx.prisma.article.findUnique({
         where: { id: args.id },
       });
 
@@ -363,7 +363,7 @@ builder.mutationField('updateArticleStatus', (t) =>
       }
 
       // Check project membership via article -> session
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: article.sessionId },
       });
 
@@ -388,13 +388,13 @@ builder.mutationField('updateArticleStatus', (t) =>
         args.reason ?? undefined,
       );
 
-      const updated = await (ctx.prisma as any).article.update({
+      const updated = await ctx.prisma.article.update({
         where: { id: args.id },
         data: { status: updateFields.status },
       });
 
       // Audit log
-      void ctx.prisma.auditLog.create({
+      await ctx.prisma.auditLog.create({
         data: {
           userId: ctx.user!.id,
           action: 'sls.article.statusUpdated',
@@ -422,7 +422,7 @@ builder.mutationField('launchAiScoring', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via session
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -480,7 +480,7 @@ builder.mutationField('addExclusionCode', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via session
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -517,7 +517,7 @@ builder.mutationField('renameExclusionCode', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Look up code -> session to check project membership
-      const code = await (ctx.prisma as any).exclusionCode.findUnique({
+      const code = await ctx.prisma.exclusionCode.findUnique({
         where: { id: args.id },
       });
 
@@ -525,7 +525,7 @@ builder.mutationField('renameExclusionCode', (t) =>
         throw new NotFoundError('ExclusionCode', args.id);
       }
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: code.sessionId },
       });
 
@@ -558,7 +558,7 @@ builder.mutationField('hideExclusionCode', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Look up code -> session to check project membership
-      const code = await (ctx.prisma as any).exclusionCode.findUnique({
+      const code = await ctx.prisma.exclusionCode.findUnique({
         where: { id: args.id },
       });
 
@@ -566,7 +566,7 @@ builder.mutationField('hideExclusionCode', (t) =>
         throw new NotFoundError('ExclusionCode', args.id);
       }
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: code.sessionId },
       });
 
@@ -593,7 +593,7 @@ builder.mutationField('reorderExclusionCodes', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via session
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -627,7 +627,7 @@ builder.mutationField('configureRelevanceThresholds', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via session
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -662,7 +662,7 @@ builder.mutationField('createCustomAiFilter', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via session
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -695,7 +695,7 @@ builder.mutationField('updateCustomAiFilter', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Look up filter -> session to check project membership
-      const filter = await (ctx.prisma as any).customAiFilter.findUnique({
+      const filter = await ctx.prisma.customAiFilter.findUnique({
         where: { id: args.id },
       });
 
@@ -703,7 +703,7 @@ builder.mutationField('updateCustomAiFilter', (t) =>
         throw new NotFoundError('CustomAiFilter', args.id);
       }
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: filter.sessionId },
       });
 
@@ -734,7 +734,7 @@ builder.mutationField('deleteCustomAiFilter', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Look up filter -> session to check project membership
-      const filter = await (ctx.prisma as any).customAiFilter.findUnique({
+      const filter = await ctx.prisma.customAiFilter.findUnique({
         where: { id: args.id },
       });
 
@@ -742,7 +742,7 @@ builder.mutationField('deleteCustomAiFilter', (t) =>
         throw new NotFoundError('CustomAiFilter', args.id);
       }
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: filter.sessionId },
       });
 
@@ -769,7 +769,7 @@ builder.mutationField('launchCustomFilterScoring', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via session
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -804,7 +804,7 @@ builder.mutationField('screenArticle', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via article -> session
-      const article = await (ctx.prisma as any).article.findUnique({
+      const article = await ctx.prisma.article.findUnique({
         where: { id: args.articleId },
       });
 
@@ -812,7 +812,7 @@ builder.mutationField('screenArticle', (t) =>
         throw new NotFoundError('Article', args.articleId);
       }
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: article.sessionId },
       });
 
@@ -850,7 +850,7 @@ builder.mutationField('bulkScreenArticles', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via session
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -891,7 +891,7 @@ builder.mutationField('spotCheckArticle', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via article -> session
-      const article = await (ctx.prisma as any).article.findUnique({
+      const article = await ctx.prisma.article.findUnique({
         where: { id: args.articleId },
       });
 
@@ -899,7 +899,7 @@ builder.mutationField('spotCheckArticle', (t) =>
         throw new NotFoundError('Article', args.articleId);
       }
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: article.sessionId },
       });
 
@@ -933,7 +933,7 @@ builder.mutationField('lockSlsDataset', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'sls', 'write');
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -963,7 +963,7 @@ builder.mutationField('launchPdfRetrieval', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'sls', 'write');
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -1002,7 +1002,7 @@ builder.mutationField('resolvePdfMismatch', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via article -> session
-      const article = await (ctx.prisma as any).article.findUnique({
+      const article = await ctx.prisma.article.findUnique({
         where: { id: args.articleId },
       });
 
@@ -1010,7 +1010,7 @@ builder.mutationField('resolvePdfMismatch', (t) =>
         throw new NotFoundError('Article', args.articleId);
       }
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: article.sessionId },
       });
 
@@ -1057,7 +1057,7 @@ builder.mutationField('addManualArticle', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'sls', 'write');
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -1095,7 +1095,7 @@ builder.mutationField('launchReferenceMining', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'sls', 'write');
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: args.sessionId },
       });
 
@@ -1142,7 +1142,7 @@ builder.mutationField('approveMinedReference', (t) =>
         throw new NotFoundError('MinedReference', args.referenceId);
       }
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: reference.sessionId },
       });
 
@@ -1180,7 +1180,7 @@ builder.mutationField('rejectMinedReference', (t) =>
         throw new NotFoundError('MinedReference', args.referenceId);
       }
 
-      const session = await (ctx.prisma as any).slsSession.findUnique({
+      const session = await ctx.prisma.slsSession.findUnique({
         where: { id: reference.sessionId },
       });
 
@@ -1209,32 +1209,41 @@ builder.mutationField('bulkApproveMinedReferences', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'sls', 'write');
 
+      // Batch-fetch all references and their sessions to avoid N+1 queries
+      const references = await (ctx.prisma as any).minedReference.findMany({
+        where: { id: { in: args.referenceIds } },
+      });
+
+      if (references.length === 0) {
+        return { approvedCount: 0, totalRequested: args.referenceIds.length } as any;
+      }
+
+      const sessionIds = [...new Set(references.map((r: any) => r.sessionId))] as string[];
+      const sessions = await ctx.prisma.slsSession.findMany({
+        where: { id: { in: sessionIds } },
+      });
+      const sessionMap = new Map(sessions.map((s) => [s.id, s]));
+
+      // Validate project membership once per unique project
+      const projectIds = [...new Set(sessions.map((s) => s.projectId))];
+      for (const projectId of projectIds) {
+        await checkProjectMembership(ctx, projectId);
+      }
+
       const useCase = new ApproveMinedReferenceUseCase(ctx.prisma);
       let approvedCount = 0;
 
-      for (const referenceId of args.referenceIds) {
+      for (const reference of references) {
+        const session = sessionMap.get(reference.sessionId);
+        if (!session) continue;
+
         try {
-          // Check project membership for the first reference to validate access
-          const reference = await (ctx.prisma as any).minedReference.findUnique({
-            where: { id: referenceId },
-          });
-
-          if (!reference) continue;
-
-          const session = await (ctx.prisma as any).slsSession.findUnique({
-            where: { id: reference.sessionId },
-          });
-
-          if (!session) continue;
-
-          await checkProjectMembership(ctx, session.projectId);
-
-          await useCase.approve({ referenceId, userId: ctx.user!.id });
+          await useCase.approve({ referenceId: reference.id, userId: ctx.user!.id });
           approvedCount++;
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
           const { logger } = await import('../../../shared/utils/logger.js');
-          logger.warn({ referenceId, error: msg }, 'Failed to approve mined reference');
+          logger.warn({ referenceId: reference.id, error: msg }, 'Failed to approve mined reference');
         }
       }
 

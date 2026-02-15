@@ -17,7 +17,7 @@ export class ActivateCycleUseCase {
   ) {}
 
   async execute(cycleId: string, userId: string): Promise<ActivateCycleResult> {
-    const cycle = await (this.prisma as any).pmsCycle.findUnique({
+    const cycle = await this.prisma.pmsCycle.findUnique({
       where: { id: cycleId },
       select: { id: true, status: true, pmsPlanId: true },
     });
@@ -30,7 +30,7 @@ export class ActivateCycleUseCase {
       throw new ValidationError(`Cannot activate cycle in ${cycle.status} status`);
     }
 
-    const activityCount = await (this.prisma as any).pmcfActivity.count({
+    const activityCount = await this.prisma.pmcfActivity.count({
       where: { pmsCycleId: cycleId },
     });
 
@@ -40,7 +40,7 @@ export class ActivateCycleUseCase {
 
     const now = new Date();
 
-    await (this.prisma as any).pmsCycle.update({
+    await this.prisma.pmsCycle.update({
       where: { id: cycleId },
       data: { status: 'ACTIVE', activatedAt: now },
     });

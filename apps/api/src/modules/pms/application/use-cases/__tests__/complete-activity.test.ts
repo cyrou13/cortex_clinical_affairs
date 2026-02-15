@@ -46,7 +46,7 @@ describe('CompleteActivityUseCase', () => {
     expect(result.status).toBe('COMPLETED');
     expect(result.activityType).toBe('COMPLAINTS');
     expect(result.completedAt).toBeDefined();
-    expect((prisma as any).pmcfActivity.update).toHaveBeenCalledWith(
+    expect(prisma.pmcfActivity.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           status: 'COMPLETED',

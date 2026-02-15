@@ -73,7 +73,7 @@ describe('ManageResponsibilitiesUseCase', () => {
     it('creates responsibility with correct data in prisma', async () => {
       await useCase.add(validInput);
 
-      expect((prisma as any).pmsResponsibility.create).toHaveBeenCalledWith(
+      expect(prisma.pmsResponsibility.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             pmsPlanId: 'plan-1',
@@ -92,7 +92,7 @@ describe('ManageResponsibilitiesUseCase', () => {
         description: 'Lead reviewer for literature updates',
       });
 
-      expect((prisma as any).pmsResponsibility.create).toHaveBeenCalledWith(
+      expect(prisma.pmsResponsibility.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             description: 'Lead reviewer for literature updates',
@@ -104,7 +104,7 @@ describe('ManageResponsibilitiesUseCase', () => {
     it('sets description to null when not provided', async () => {
       await useCase.add(validInput);
 
-      const callData = (prisma as any).pmsResponsibility.create.mock.calls[0][0].data;
+      const callData = prisma.pmsResponsibility.create.mock.calls[0][0].data;
       expect(callData.description).toBeNull();
     });
 
@@ -150,7 +150,7 @@ describe('ManageResponsibilitiesUseCase', () => {
       const result = await useCase.remove('resp-1');
 
       expect(result.deleted).toBe(true);
-      expect((prisma as any).pmsResponsibility.delete).toHaveBeenCalledWith({
+      expect(prisma.pmsResponsibility.delete).toHaveBeenCalledWith({
         where: { id: 'resp-1' },
       });
     });
@@ -161,7 +161,7 @@ describe('ManageResponsibilitiesUseCase', () => {
       const result = await useCase.list('plan-1');
 
       expect(result).toHaveLength(2);
-      expect((prisma as any).pmsResponsibility.findMany).toHaveBeenCalledWith({
+      expect(prisma.pmsResponsibility.findMany).toHaveBeenCalledWith({
         where: { pmsPlanId: 'plan-1' },
         orderBy: { activityType: 'asc' },
       });

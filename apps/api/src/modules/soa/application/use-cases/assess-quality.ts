@@ -58,7 +58,7 @@ export class AssessQualityUseCase {
 
     const sessionIds = links.map((l: { slsSessionId: string }) => l.slsSessionId);
 
-    const article = await (this.prisma as any).article.findFirst({
+    const article = await this.prisma.article.findFirst({
       where: {
         id: input.articleId,
         sessionId: { in: sessionIds },

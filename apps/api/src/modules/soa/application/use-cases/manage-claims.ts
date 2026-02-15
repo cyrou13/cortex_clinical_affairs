@@ -75,7 +75,7 @@ export class ManageClaimsUseCase {
       throw new ValidationError('Cannot link claim on a locked SOA analysis');
     }
 
-    const article = await (this.prisma as any).article.findUnique({
+    const article = await this.prisma.article.findUnique({
       where: { id: input.articleId },
       select: { id: true },
     });

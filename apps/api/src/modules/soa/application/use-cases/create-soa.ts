@@ -34,7 +34,7 @@ export class CreateSoaUseCase {
       throw new ValidationError('At least one locked SLS session must be linked');
     }
 
-    const project = await (this.prisma as any).project.findUnique({
+    const project = await this.prisma.project.findUnique({
       where: { id: input.projectId },
       select: { id: true },
     });
@@ -43,7 +43,7 @@ export class CreateSoaUseCase {
       throw new NotFoundError('Project', input.projectId);
     }
 
-    const sessions = await (this.prisma as any).slsSession.findMany({
+    const sessions = await this.prisma.slsSession.findMany({
       where: {
         id: { in: input.slsSessionIds },
         projectId: input.projectId,

@@ -23,7 +23,7 @@ export class UpdateComplaintUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async execute(input: UpdateComplaintInput): Promise<UpdateComplaintResult> {
-    const complaint = await (this.prisma as any).complaint.findUnique({
+    const complaint = await this.prisma.complaint.findUnique({
       where: { id: input.complaintId },
     });
 
@@ -51,7 +51,7 @@ export class UpdateComplaintUseCase {
     if (input.resolution !== undefined) { updateData.resolution = input.resolution; updatedFields.push('resolution'); }
     if (input.correctiveAction !== undefined) { updateData.correctiveAction = input.correctiveAction; updatedFields.push('correctiveAction'); }
 
-    await (this.prisma as any).complaint.update({
+    await this.prisma.complaint.update({
       where: { id: input.complaintId },
       data: updateData,
     });

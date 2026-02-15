@@ -17,7 +17,7 @@ export class ActivatePmsPlanUseCase {
   ) {}
 
   async execute(pmsPlanId: string, userId: string): Promise<ActivatePmsPlanResult> {
-    const plan = await (this.prisma as any).pmsPlan.findUnique({
+    const plan = await this.prisma.pmsPlan.findUnique({
       where: { id: pmsPlanId },
       select: { id: true, status: true, projectId: true },
     });
@@ -32,7 +32,7 @@ export class ActivatePmsPlanUseCase {
 
     const now = new Date();
 
-    await (this.prisma as any).pmsPlan.update({
+    await this.prisma.pmsPlan.update({
       where: { id: pmsPlanId },
       data: { status: 'ACTIVE', activatedAt: now },
     });

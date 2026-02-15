@@ -24,7 +24,7 @@ export class ResolveLlmConfigUseCase {
   async execute(taskType: string, projectId?: string): Promise<ResolvedConfig | null> {
     // Level 1: Task-level config (most specific)
     if (taskType) {
-      const taskConfig = await (this.prisma as any).llmConfig.findFirst({
+      const taskConfig = await this.prisma.llmConfig.findFirst({
         where: {
           level: 'TASK',
           taskType,
@@ -38,7 +38,7 @@ export class ResolveLlmConfigUseCase {
 
     // Level 2: Project-level config
     if (projectId) {
-      const projectConfig = await (this.prisma as any).llmConfig.findFirst({
+      const projectConfig = await this.prisma.llmConfig.findFirst({
         where: {
           level: 'PROJECT',
           projectId,
@@ -50,7 +50,7 @@ export class ResolveLlmConfigUseCase {
     }
 
     // Level 3: System-level config (default)
-    const systemConfig = await (this.prisma as any).llmConfig.findFirst({
+    const systemConfig = await this.prisma.llmConfig.findFirst({
       where: {
         level: 'SYSTEM',
         isActive: true,

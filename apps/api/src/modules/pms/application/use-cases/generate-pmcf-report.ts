@@ -18,7 +18,7 @@ export class GeneratePmcfReportUseCase {
   ) {}
 
   async execute(pmsCycleId: string, userId: string): Promise<GeneratePmcfReportResult> {
-    const cycle = await (this.prisma as any).pmsCycle.findUnique({
+    const cycle = await this.prisma.pmsCycle.findUnique({
       where: { id: pmsCycleId },
       select: { id: true, status: true },
     });

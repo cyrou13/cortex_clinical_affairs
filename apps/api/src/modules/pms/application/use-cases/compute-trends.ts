@@ -32,7 +32,7 @@ export class ComputeTrendsUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async execute(pmsCycleId: string, userId: string): Promise<ComputeTrendsResult> {
-    const cycle = await (this.prisma as any).pmsCycle.findUnique({
+    const cycle = await this.prisma.pmsCycle.findUnique({
       where: { id: pmsCycleId },
       select: { id: true, startDate: true, endDate: true },
     });
@@ -41,7 +41,7 @@ export class ComputeTrendsUseCase {
       throw new NotFoundError('PmsCycle', pmsCycleId);
     }
 
-    const complaints = await (this.prisma as any).complaint.findMany({
+    const complaints = await this.prisma.complaint.findMany({
       where: { pmsCycleId },
     });
 
@@ -55,7 +55,7 @@ export class ComputeTrendsUseCase {
       if (c.isIncident) incidentCount++;
     }
 
-    const installedBase = await (this.prisma as any).installedBaseEntry.findFirst({
+    const installedBase = await this.prisma.installedBaseEntry.findFirst({
       where: { pmsCycleId },
       orderBy: { periodEnd: 'desc' },
     });
@@ -75,7 +75,7 @@ export class ComputeTrendsUseCase {
 
     const trendAnalysisId = crypto.randomUUID();
 
-    await (this.prisma as any).trendAnalysis.create({
+    await this.prisma.trendAnalysis.create({
       data: {
         id: trendAnalysisId,
         pmsCycleId,

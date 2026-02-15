@@ -45,7 +45,7 @@ describe('CreateCerUpdateDecisionUseCase', () => {
     expect(result.conclusion).toBe('CER_UPDATE_NOT_REQUIRED');
     expect(result.status).toBe('DRAFT');
     expect(result.materialChangesIdentified).toBe(false);
-    expect((prisma as any).cerUpdateDecision.create).toHaveBeenCalledWith(
+    expect(prisma.cerUpdateDecision.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           pmsCycleId: 'cycle-1',

@@ -173,7 +173,7 @@ export class GetClaimTraceUseCase {
     }
 
     // 6. Fetch audit trail entries for this claim trace
-    const auditEntries = await (this.prisma as any).auditLog.findMany({
+    const auditEntries = await this.prisma.auditLog.findMany({
       where: {
         targetType: 'claimTrace',
         targetId: claimTraceId,

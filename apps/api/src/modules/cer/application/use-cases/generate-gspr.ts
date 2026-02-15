@@ -106,7 +106,7 @@ export class GenerateGsprUseCase {
     }
 
     // 7. Audit log
-    void (this.prisma as any).auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'cer.gspr-matrix.generated',

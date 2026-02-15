@@ -53,7 +53,7 @@ describe('CreateComplaintUseCase', () => {
     expect(result.source).toBe('MANUAL');
     expect(result.severity).toBe('HIGH');
     expect(result.pmsCycleId).toBe('cycle-1');
-    expect((prisma as any).complaint.create).toHaveBeenCalledWith(
+    expect(prisma.complaint.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           pmsCycleId: 'cycle-1',
@@ -90,7 +90,7 @@ describe('CreateComplaintUseCase', () => {
   it('sets optional fields to null when not provided', async () => {
     await useCase.execute(validInput);
 
-    expect((prisma as any).complaint.create).toHaveBeenCalledWith(
+    expect(prisma.complaint.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           lotNumber: null,

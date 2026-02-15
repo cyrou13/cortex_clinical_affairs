@@ -103,7 +103,7 @@ export class MapGsprUseCase {
     }
 
     // Audit log
-    void (this.prisma as any).auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: existingMapping ? 'gspr.mapping.updated' : 'gspr.mapping.created',
@@ -165,7 +165,7 @@ export class MapGsprUseCase {
     });
 
     // Audit log
-    void (this.prisma as any).auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'gspr.mapping.deleted',

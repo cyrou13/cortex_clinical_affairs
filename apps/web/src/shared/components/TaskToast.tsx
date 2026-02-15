@@ -74,7 +74,9 @@ export function TaskToastContainer() {
   return (
     <div
       className="fixed right-4 top-4 z-50 flex w-80 flex-col gap-2"
+      role="region"
       aria-label="Notifications"
+      aria-live="polite"
       data-testid="toast-container"
     >
       {toasts.map((toast) => (

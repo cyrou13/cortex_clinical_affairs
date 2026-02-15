@@ -60,7 +60,7 @@ export class ExtractGridDataUseCase {
       articleFilter.id = { in: input.articleIds };
     }
 
-    const articles = await (this.prisma as any).article.findMany({
+    const articles = await this.prisma.article.findMany({
       where: articleFilter,
       select: { id: true, title: true },
     });
@@ -69,7 +69,7 @@ export class ExtractGridDataUseCase {
       throw new ValidationError('No articles with PDFs found for extraction');
     }
 
-    const task = await (this.prisma as any).asyncTask.create({
+    const task = await this.prisma.asyncTask.create({
       data: {
         id: crypto.randomUUID(),
         type: 'SOA_GRID_EXTRACTION',

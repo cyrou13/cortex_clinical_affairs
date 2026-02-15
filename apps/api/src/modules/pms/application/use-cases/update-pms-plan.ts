@@ -19,7 +19,7 @@ export class UpdatePmsPlanUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async execute(input: UpdatePmsPlanInput): Promise<UpdatePmsPlanResult> {
-    const plan = await (this.prisma as any).pmsPlan.findUnique({
+    const plan = await this.prisma.pmsPlan.findUnique({
       where: { id: input.pmsPlanId },
     });
 
@@ -31,7 +31,7 @@ export class UpdatePmsPlanUseCase {
       throw new ValidationError('PMS plan can only be updated in DRAFT status');
     }
 
-    const updated = await (this.prisma as any).pmsPlan.update({
+    const updated = await this.prisma.pmsPlan.update({
       where: { id: input.pmsPlanId },
       data: {
         ...(input.updateFrequency !== undefined && { updateFrequency: input.updateFrequency.trim() }),

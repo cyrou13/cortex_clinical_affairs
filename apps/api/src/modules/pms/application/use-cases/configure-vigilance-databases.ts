@@ -23,7 +23,7 @@ export class ConfigureVigilanceDatabasesUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async execute(input: ConfigureVigilanceDbInput): Promise<VigilanceDbResult[]> {
-    const plan = await (this.prisma as any).pmsPlan.findUnique({
+    const plan = await this.prisma.pmsPlan.findUnique({
       where: { id: input.pmsPlanId },
       select: { id: true },
     });
@@ -32,14 +32,14 @@ export class ConfigureVigilanceDatabasesUseCase {
       throw new NotFoundError('PmsPlan', input.pmsPlanId);
     }
 
-    await (this.prisma as any).pmsPlanVigilanceDb.deleteMany({
+    await this.prisma.pmsPlanVigilanceDb.deleteMany({
       where: { pmsPlanId: input.pmsPlanId },
     });
 
     const results: VigilanceDbResult[] = [];
 
     for (const db of input.databases) {
-      const record = await (this.prisma as any).pmsPlanVigilanceDb.create({
+      const record = await this.prisma.pmsPlanVigilanceDb.create({
         data: {
           id: crypto.randomUUID(),
           pmsPlanId: input.pmsPlanId,

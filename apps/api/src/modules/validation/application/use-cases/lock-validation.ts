@@ -93,7 +93,7 @@ export class LockValidationUseCase {
     });
 
     // 5. Audit log
-    void (this.prisma as any).auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'validation.study.locked',

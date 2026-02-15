@@ -27,7 +27,7 @@ export class CreateCycleUseCase {
   ) {}
 
   async execute(input: CreateCycleInput): Promise<CreateCycleResult> {
-    const plan = await (this.prisma as any).pmsPlan.findUnique({
+    const plan = await this.prisma.pmsPlan.findUnique({
       where: { id: input.pmsPlanId },
       select: { id: true, status: true, projectId: true },
     });
@@ -49,7 +49,7 @@ export class CreateCycleUseCase {
 
     const cycleId = crypto.randomUUID();
 
-    await (this.prisma as any).pmsCycle.create({
+    await this.prisma.pmsCycle.create({
       data: {
         id: cycleId,
         pmsPlanId: input.pmsPlanId,
@@ -62,12 +62,12 @@ export class CreateCycleUseCase {
       },
     });
 
-    const responsibilities = await (this.prisma as any).pmsResponsibility.findMany({
+    const responsibilities = await this.prisma.pmsResponsibility.findMany({
       where: { pmsPlanId: input.pmsPlanId },
     });
 
     for (const resp of responsibilities) {
-      await (this.prisma as any).pmcfActivity.create({
+      await this.prisma.pmcfActivity.create({
         data: {
           id: crypto.randomUUID(),
           pmsCycleId: cycleId,

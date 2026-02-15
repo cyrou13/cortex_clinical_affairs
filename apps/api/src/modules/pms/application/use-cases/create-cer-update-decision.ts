@@ -37,7 +37,7 @@ export class CreateCerUpdateDecisionUseCase {
       throw new ValidationError('Benefit-risk re-assessment is required');
     }
 
-    const cycle = await (this.prisma as any).pmsCycle.findUnique({
+    const cycle = await this.prisma.pmsCycle.findUnique({
       where: { id: input.pmsCycleId },
       select: { id: true },
     });
@@ -48,7 +48,7 @@ export class CreateCerUpdateDecisionUseCase {
 
     const decisionId = crypto.randomUUID();
 
-    await (this.prisma as any).cerUpdateDecision.create({
+    await this.prisma.cerUpdateDecision.create({
       data: {
         id: decisionId,
         pmsCycleId: input.pmsCycleId,

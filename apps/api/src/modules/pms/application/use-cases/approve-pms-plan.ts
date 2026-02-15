@@ -17,7 +17,7 @@ export class ApprovePmsPlanUseCase {
   ) {}
 
   async execute(pmsPlanId: string, userId: string): Promise<ApprovePmsPlanResult> {
-    const plan = await (this.prisma as any).pmsPlan.findUnique({
+    const plan = await this.prisma.pmsPlan.findUnique({
       where: { id: pmsPlanId },
       select: { id: true, status: true, projectId: true },
     });
@@ -32,7 +32,7 @@ export class ApprovePmsPlanUseCase {
 
     const now = new Date();
 
-    await (this.prisma as any).pmsPlan.update({
+    await this.prisma.pmsPlan.update({
       where: { id: pmsPlanId },
       data: { status: 'APPROVED', approvedAt: now, approvedById: userId },
     });

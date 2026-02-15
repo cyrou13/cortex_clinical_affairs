@@ -33,7 +33,7 @@ export class ImportComplaintsUseCase {
   ) {}
 
   async execute(input: ImportComplaintsInput): Promise<ImportComplaintsResult> {
-    const cycle = await (this.prisma as any).pmsCycle.findUnique({
+    const cycle = await this.prisma.pmsCycle.findUnique({
       where: { id: input.pmsCycleId },
       select: { id: true },
     });
@@ -50,7 +50,7 @@ export class ImportComplaintsUseCase {
       const complaint = input.complaints[i];
 
       if (complaint.externalId) {
-        const existing = await (this.prisma as any).complaint.findFirst({
+        const existing = await this.prisma.complaint.findFirst({
           where: { pmsCycleId: input.pmsCycleId, externalId: complaint.externalId },
         });
         if (existing) {
@@ -60,7 +60,7 @@ export class ImportComplaintsUseCase {
       }
 
       try {
-        await (this.prisma as any).complaint.create({
+        await this.prisma.complaint.create({
           data: {
             id: crypto.randomUUID(),
             pmsCycleId: input.pmsCycleId,

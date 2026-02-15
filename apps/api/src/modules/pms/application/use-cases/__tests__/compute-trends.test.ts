@@ -63,7 +63,7 @@ describe('ComputeTrendsUseCase', () => {
   it('creates a trendAnalysis record in DRAFT status', async () => {
     await useCase.execute('cycle-1', 'user-1');
 
-    expect((prisma as any).trendAnalysis.create).toHaveBeenCalledWith(
+    expect(prisma.trendAnalysis.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           pmsCycleId: 'cycle-1',

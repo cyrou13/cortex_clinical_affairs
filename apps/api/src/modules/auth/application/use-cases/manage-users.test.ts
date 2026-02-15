@@ -35,8 +35,8 @@ describe('ManageUsersUseCase', () => {
 
   describe('createUser', () => {
     it('creates a user with valid input', async () => {
-      (prisma as any).user.findUnique.mockResolvedValue(null);
-      (prisma as any).user.create.mockResolvedValue({
+      prisma.user.findUnique.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({
         id: 'u-new',
         email: 'new@example.com',
         name: 'New User',
@@ -49,11 +49,11 @@ describe('ManageUsersUseCase', () => {
       );
 
       expect(result.email).toBe('new@example.com');
-      expect((prisma as any).auditLog.create).toHaveBeenCalled();
+      expect(prisma.auditLog.create).toHaveBeenCalled();
     });
 
     it('throws when email already exists', async () => {
-      (prisma as any).user.findUnique.mockResolvedValue({ id: 'existing' });
+      prisma.user.findUnique.mockResolvedValue({ id: 'existing' });
 
       await expect(
         useCase.createUser(
@@ -66,12 +66,12 @@ describe('ManageUsersUseCase', () => {
 
   describe('updateUser', () => {
     it('updates user name and role', async () => {
-      (prisma as any).user.findUnique.mockResolvedValue({
+      prisma.user.findUnique.mockResolvedValue({
         id: 'u-1',
         name: 'Old Name',
         role: 'AUDITOR',
       });
-      (prisma as any).user.update.mockResolvedValue({
+      prisma.user.update.mockResolvedValue({
         id: 'u-1',
         name: 'New Name',
         role: 'EXECUTIVE',
@@ -82,7 +82,7 @@ describe('ManageUsersUseCase', () => {
     });
 
     it('throws when user not found', async () => {
-      (prisma as any).user.findUnique.mockResolvedValue(null);
+      prisma.user.findUnique.mockResolvedValue(null);
       await expect(useCase.updateUser('missing', { name: 'X' }, 'admin-1')).rejects.toThrow(
         NotFoundError,
       );
@@ -91,23 +91,23 @@ describe('ManageUsersUseCase', () => {
 
   describe('deactivateUser', () => {
     it('deactivates user and deletes sessions', async () => {
-      (prisma as any).user.findUnique.mockResolvedValue({
+      prisma.user.findUnique.mockResolvedValue({
         id: 'u-1',
         role: 'CLINICAL_SPECIALIST',
         isActive: true,
       });
-      (prisma as any).user.update.mockResolvedValue({ id: 'u-1', isActive: false });
-      (prisma as any).user.count.mockResolvedValue(2);
+      prisma.user.update.mockResolvedValue({ id: 'u-1', isActive: false });
+      prisma.user.count.mockResolvedValue(2);
 
       const result = await useCase.deactivateUser('u-1', 'admin-1');
       expect(result.isActive).toBe(false);
-      expect((prisma as any).session.deleteMany).toHaveBeenCalledWith({
+      expect(prisma.session.deleteMany).toHaveBeenCalledWith({
         where: { userId: 'u-1' },
       });
     });
 
     it('prevents deactivating self', async () => {
-      (prisma as any).user.findUnique.mockResolvedValue({
+      prisma.user.findUnique.mockResolvedValue({
         id: 'admin-1',
         role: 'ADMIN',
         isActive: true,
@@ -119,12 +119,12 @@ describe('ManageUsersUseCase', () => {
     });
 
     it('prevents deactivating last admin', async () => {
-      (prisma as any).user.findUnique.mockResolvedValue({
+      prisma.user.findUnique.mockResolvedValue({
         id: 'u-1',
         role: 'ADMIN',
         isActive: true,
       });
-      (prisma as any).user.count.mockResolvedValue(1);
+      prisma.user.count.mockResolvedValue(1);
 
       await expect(useCase.deactivateUser('u-1', 'admin-2')).rejects.toThrow(
         'Cannot deactivate the last active Admin',
@@ -134,8 +134,8 @@ describe('ManageUsersUseCase', () => {
 
   describe('reactivateUser', () => {
     it('reactivates an inactive user', async () => {
-      (prisma as any).user.findUnique.mockResolvedValue({ id: 'u-1', isActive: false });
-      (prisma as any).user.update.mockResolvedValue({ id: 'u-1', isActive: true });
+      prisma.user.findUnique.mockResolvedValue({ id: 'u-1', isActive: false });
+      prisma.user.update.mockResolvedValue({ id: 'u-1', isActive: true });
 
       const result = await useCase.reactivateUser('u-1', 'admin-1');
       expect(result.isActive).toBe(true);
@@ -144,11 +144,11 @@ describe('ManageUsersUseCase', () => {
 
   describe('listUsers', () => {
     it('returns paginated user list', async () => {
-      (prisma as any).user.findMany.mockResolvedValue([
+      prisma.user.findMany.mockResolvedValue([
         { id: 'u-1', name: 'User 1' },
         { id: 'u-2', name: 'User 2' },
       ]);
-      (prisma as any).user.count.mockResolvedValue(2);
+      prisma.user.count.mockResolvedValue(2);
 
       const result = await useCase.listUsers({ limit: 10 });
       expect(result.users).toHaveLength(2);
@@ -156,11 +156,11 @@ describe('ManageUsersUseCase', () => {
     });
 
     it('filters by role', async () => {
-      (prisma as any).user.findMany.mockResolvedValue([]);
-      (prisma as any).user.count.mockResolvedValue(0);
+      prisma.user.findMany.mockResolvedValue([]);
+      prisma.user.count.mockResolvedValue(0);
 
       await useCase.listUsers({ role: 'ADMIN' });
-      expect((prisma as any).user.findMany).toHaveBeenCalledWith(
+      expect(prisma.user.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({ role: 'ADMIN' }),
         }),
@@ -168,11 +168,11 @@ describe('ManageUsersUseCase', () => {
     });
 
     it('filters by search query', async () => {
-      (prisma as any).user.findMany.mockResolvedValue([]);
-      (prisma as any).user.count.mockResolvedValue(0);
+      prisma.user.findMany.mockResolvedValue([]);
+      prisma.user.count.mockResolvedValue(0);
 
       await useCase.listUsers({ search: 'john' });
-      expect((prisma as any).user.findMany).toHaveBeenCalledWith(
+      expect(prisma.user.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
             OR: expect.arrayContaining([

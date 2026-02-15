@@ -11,7 +11,7 @@ export class FinalizeTrendAnalysisUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async execute(trendAnalysisId: string, conclusions: string, userId: string): Promise<FinalizeTrendAnalysisResult> {
-    const analysis = await (this.prisma as any).trendAnalysis.findUnique({
+    const analysis = await this.prisma.trendAnalysis.findUnique({
       where: { id: trendAnalysisId },
     });
 
@@ -27,7 +27,7 @@ export class FinalizeTrendAnalysisUseCase {
       throw new ValidationError('Conclusions are required to finalize trend analysis');
     }
 
-    await (this.prisma as any).trendAnalysis.update({
+    await this.prisma.trendAnalysis.update({
       where: { id: trendAnalysisId },
       data: { status: 'FINALIZED', conclusions: conclusions.trim() },
     });

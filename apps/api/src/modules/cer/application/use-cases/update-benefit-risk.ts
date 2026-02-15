@@ -80,7 +80,7 @@ export class UpdateBenefitRiskUseCase {
     });
 
     // Audit log
-    void (this.prisma as any).auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'cer.benefit.updated',
@@ -168,7 +168,7 @@ export class UpdateBenefitRiskUseCase {
     });
 
     // Audit log
-    void (this.prisma as any).auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'cer.risk.updated',

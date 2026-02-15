@@ -35,7 +35,7 @@ describe('ReassignActivityUseCase', () => {
     expect(result.activityId).toBe('activity-1');
     expect(result.previousAssigneeId).toBe('user-old');
     expect(result.newAssigneeId).toBe('user-new');
-    expect((prisma as any).pmcfActivity.update).toHaveBeenCalledWith(
+    expect(prisma.pmcfActivity.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'activity-1' },
         data: { assigneeId: 'user-new' },

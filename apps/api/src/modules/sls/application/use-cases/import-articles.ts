@@ -25,7 +25,7 @@ export class ImportArticlesUseCase {
     const { sessionId, articles, queryId, executionId, userId } = input;
 
     // 1. Validate session exists and is not LOCKED
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
     });
 
@@ -38,7 +38,7 @@ export class ImportArticlesUseCase {
     }
 
     // 2. Fetch existing articles in session (for deduplication)
-    const existingArticles = await (this.prisma as any).article.findMany({
+    const existingArticles = await this.prisma.article.findMany({
       where: { sessionId },
       select: {
         title: true,
@@ -83,7 +83,7 @@ export class ImportArticlesUseCase {
         status: 'PENDING',
       }));
 
-      await (this.prisma as any).article.createMany({
+      await this.prisma.article.createMany({
         data: articleRecords,
       });
 
@@ -96,13 +96,13 @@ export class ImportArticlesUseCase {
         sourceDatabase: article.sourceDatabase,
       }));
 
-      await (this.prisma as any).articleQueryLink.createMany({
+      await this.prisma.articleQueryLink.createMany({
         data: linkRecords,
       });
     }
 
     // 6. Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.articles.imported',

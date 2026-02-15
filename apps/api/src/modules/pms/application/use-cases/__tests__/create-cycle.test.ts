@@ -64,7 +64,7 @@ describe('CreateCycleUseCase', () => {
   it('creates activities from responsibilities', async () => {
     await useCase.execute(validInput);
 
-    expect((prisma as any).pmcfActivity.create).toHaveBeenCalledWith(
+    expect(prisma.pmcfActivity.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           activityType: 'LITERATURE_UPDATE',

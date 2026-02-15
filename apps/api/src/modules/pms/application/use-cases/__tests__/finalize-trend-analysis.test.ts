@@ -35,7 +35,7 @@ describe('FinalizeTrendAnalysisUseCase', () => {
     expect(result.trendAnalysisId).toBe('trend-1');
     expect(result.status).toBe('FINALIZED');
     expect(result.conclusions).toBe('No concerning trends identified');
-    expect((prisma as any).trendAnalysis.update).toHaveBeenCalledWith(
+    expect(prisma.trendAnalysis.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'trend-1' },
         data: { status: 'FINALIZED', conclusions: 'No concerning trends identified' },

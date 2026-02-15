@@ -23,7 +23,7 @@ export class BulkScreenArticlesUseCase {
     }
 
     // Validate session is not LOCKED
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
     });
 
@@ -36,7 +36,7 @@ export class BulkScreenArticlesUseCase {
     }
 
     // Fetch all articles
-    const articles = await (this.prisma as any).article.findMany({
+    const articles = await this.prisma.article.findMany({
       where: {
         id: { in: articleIds },
         sessionId,
@@ -89,17 +89,17 @@ export class BulkScreenArticlesUseCase {
     // Batch update articles + create screening decisions in transaction
     const validArticleIds = screeningDecisions.map((d) => d.articleId);
 
-    await (this.prisma as any).article.updateMany({
+    await this.prisma.article.updateMany({
       where: { id: { in: validArticleIds } },
       data: { status: newStatus },
     });
 
-    await (this.prisma as any).screeningDecision.createMany({
+    await this.prisma.screeningDecision.createMany({
       data: screeningDecisions,
     });
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.articles.bulkScreened',

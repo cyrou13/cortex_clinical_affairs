@@ -40,7 +40,7 @@ describe('CompleteCycleUseCase', () => {
     expect(result.pmsCycleId).toBe('cycle-1');
     expect(result.status).toBe('COMPLETED');
     expect(result.completedAt).toBeDefined();
-    expect((prisma as any).pmsCycle.update).toHaveBeenCalledWith(
+    expect(prisma.pmsCycle.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'cycle-1' },
         data: expect.objectContaining({ status: 'COMPLETED' }),

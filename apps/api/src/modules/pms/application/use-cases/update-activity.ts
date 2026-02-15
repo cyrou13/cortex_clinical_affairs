@@ -22,7 +22,7 @@ export class UpdateActivityUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async execute(input: UpdateActivityInput): Promise<UpdateActivityResult> {
-    const activity = await (this.prisma as any).pmcfActivity.findUnique({
+    const activity = await this.prisma.pmcfActivity.findUnique({
       where: { id: input.activityId },
     });
 
@@ -43,7 +43,7 @@ export class UpdateActivityUseCase {
     if (input.conclusions !== undefined) { updateData.conclusions = input.conclusions; updatedFields.push('conclusions'); }
     if (input.dataCollected !== undefined) { updateData.dataCollected = input.dataCollected; updatedFields.push('dataCollected'); }
 
-    const updated = await (this.prisma as any).pmcfActivity.update({
+    const updated = await this.prisma.pmcfActivity.update({
       where: { id: input.activityId },
       data: updateData,
     });

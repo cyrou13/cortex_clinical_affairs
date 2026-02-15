@@ -15,7 +15,7 @@ export class ConfigureLlmUseCase {
 
     const { level, projectId, taskType, provider, model } = parsed.data;
 
-    const config = await (this.prisma as any).llmConfig.create({
+    const config = await this.prisma.llmConfig.create({
       data: {
         level,
         projectId: projectId ?? null,
@@ -26,7 +26,7 @@ export class ConfigureLlmUseCase {
     });
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'llm_config.created',
@@ -47,7 +47,7 @@ export class ConfigureLlmUseCase {
       );
     }
 
-    const existing = await (this.prisma as any).llmConfig.findUnique({
+    const existing = await this.prisma.llmConfig.findUnique({
       where: { id },
     });
 
@@ -60,13 +60,13 @@ export class ConfigureLlmUseCase {
     if (parsed.data.model !== undefined) data.model = parsed.data.model;
     if (parsed.data.isActive !== undefined) data.isActive = parsed.data.isActive;
 
-    const updated = await (this.prisma as any).llmConfig.update({
+    const updated = await this.prisma.llmConfig.update({
       where: { id },
       data,
     });
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'llm_config.updated',
@@ -81,7 +81,7 @@ export class ConfigureLlmUseCase {
   }
 
   async softDelete(id: string, userId: string) {
-    const existing = await (this.prisma as any).llmConfig.findUnique({
+    const existing = await this.prisma.llmConfig.findUnique({
       where: { id },
     });
 
@@ -89,13 +89,13 @@ export class ConfigureLlmUseCase {
       throw new ValidationError(`LLM config with id '${id}' not found`);
     }
 
-    const deleted = await (this.prisma as any).llmConfig.update({
+    const deleted = await this.prisma.llmConfig.update({
       where: { id },
       data: { isActive: false },
     });
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'llm_config.deleted',

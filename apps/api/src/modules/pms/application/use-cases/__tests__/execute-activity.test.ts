@@ -39,7 +39,7 @@ describe('ExecuteActivityUseCase', () => {
     expect(result.status).toBe('IN_PROGRESS');
     expect(result.activityType).toBe('LITERATURE_UPDATE');
     expect(result.startedAt).toBeDefined();
-    expect((prisma as any).pmcfActivity.update).toHaveBeenCalledWith(
+    expect(prisma.pmcfActivity.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'activity-1' },
         data: expect.objectContaining({ status: 'IN_PROGRESS' }),

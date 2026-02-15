@@ -46,7 +46,7 @@ export class CreateComplaintUseCase {
       throw new ValidationError('Complaint description is required');
     }
 
-    const cycle = await (this.prisma as any).pmsCycle.findUnique({
+    const cycle = await this.prisma.pmsCycle.findUnique({
       where: { id: input.pmsCycleId },
       select: { id: true },
     });
@@ -55,7 +55,7 @@ export class CreateComplaintUseCase {
       throw new NotFoundError('PmsCycle', input.pmsCycleId);
     }
 
-    const complaint = await (this.prisma as any).complaint.create({
+    const complaint = await this.prisma.complaint.create({
       data: {
         id: crypto.randomUUID(),
         pmsCycleId: input.pmsCycleId,

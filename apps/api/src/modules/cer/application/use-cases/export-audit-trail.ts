@@ -85,7 +85,7 @@ export class ExportAuditTrailUseCase {
     }
 
     // 4. Query audit log
-    const rawEntries = await (this.prisma as any).auditLog.findMany({
+    const rawEntries = await this.prisma.auditLog.findMany({
       where,
       select: {
         userId: true,

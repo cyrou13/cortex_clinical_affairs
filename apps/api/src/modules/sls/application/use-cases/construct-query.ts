@@ -20,7 +20,7 @@ export class ConstructQueryUseCase {
     const { sessionId, name, queryString } = parsed.data;
 
     // 1. Check session exists and is not LOCKED
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
     });
 
@@ -42,7 +42,7 @@ export class ConstructQueryUseCase {
 
     // 3. Create query with version 1
     const queryId = generateId();
-    const query = await (this.prisma as any).slsQuery.create({
+    const query = await this.prisma.slsQuery.create({
       data: {
         id: queryId,
         sessionId,
@@ -56,7 +56,7 @@ export class ConstructQueryUseCase {
 
     // 4. Create initial QueryVersion
     const versionId = generateId();
-    await (this.prisma as any).queryVersion.create({
+    await this.prisma.queryVersion.create({
       data: {
         id: versionId,
         queryId,
@@ -68,7 +68,7 @@ export class ConstructQueryUseCase {
     });
 
     // 5. Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.query.created',

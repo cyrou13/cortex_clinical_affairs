@@ -29,7 +29,7 @@ export class CreatePmsPlanUseCase {
       throw new ValidationError('Update frequency is required');
     }
 
-    const project = await (this.prisma as any).project.findUnique({
+    const project = await this.prisma.project.findUnique({
       where: { id: input.projectId },
       select: { id: true },
     });
@@ -57,7 +57,7 @@ export class CreatePmsPlanUseCase {
 
     const planId = crypto.randomUUID();
 
-    await (this.prisma as any).pmsPlan.create({
+    await this.prisma.pmsPlan.create({
       data: {
         id: planId,
         projectId: input.projectId,

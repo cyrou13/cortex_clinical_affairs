@@ -38,7 +38,7 @@ export class GetCostSummaryUseCase {
       };
     }
 
-    const records = await (this.prisma as any).llmCostRecord.findMany({ where });
+    const records = await this.prisma.llmCostRecord.findMany({ where });
 
     let totalCostUsd = 0;
     let totalPromptTokens = 0;

@@ -17,7 +17,7 @@ export class ResolvePdfMismatchUseCase {
   }) {
     const { articleId, userId, resolution } = input;
 
-    const article = await (this.prisma as any).article.findUnique({
+    const article = await this.prisma.article.findUnique({
       where: { id: articleId },
     });
 
@@ -31,7 +31,7 @@ export class ResolvePdfMismatchUseCase {
 
     switch (resolution) {
       case 'ACCEPT_MISMATCH': {
-        await (this.prisma as any).article.update({
+        await this.prisma.article.update({
           where: { id: articleId },
           data: { pdfStatus: 'VERIFIED' },
         });
@@ -42,7 +42,7 @@ export class ResolvePdfMismatchUseCase {
         if (article.pdfStorageKey) {
           await this.storage.deletePdf(article.pdfStorageKey);
         }
-        await (this.prisma as any).article.update({
+        await this.prisma.article.update({
           where: { id: articleId },
           data: {
             pdfStatus: 'NOT_FOUND',
@@ -59,7 +59,7 @@ export class ResolvePdfMismatchUseCase {
         if (article.pdfStorageKey) {
           await this.storage.deletePdf(article.pdfStorageKey);
         }
-        await (this.prisma as any).article.update({
+        await this.prisma.article.update({
           where: { id: articleId },
           data: {
             pdfStatus: 'NONE',

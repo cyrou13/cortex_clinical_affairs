@@ -147,7 +147,7 @@ export class ExportProofPackageUseCase {
     }
 
     // 4. Fetch audit trail
-    const auditEntries = await (this.prisma as any).auditLog.findMany({
+    const auditEntries = await this.prisma.auditLog.findMany({
       where: {
         targetType: 'claimTrace',
         targetId: claimTraceId,

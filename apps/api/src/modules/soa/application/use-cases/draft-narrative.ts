@@ -41,7 +41,7 @@ export class DraftNarrativeUseCase {
       throw new ValidationError('Cannot draft narrative on a finalized section');
     }
 
-    const task = await (this.prisma as any).asyncTask.create({
+    const task = await this.prisma.asyncTask.create({
       data: {
         id: crypto.randomUUID(),
         type: 'SOA_DRAFT_NARRATIVE',

@@ -98,7 +98,7 @@ export class LinkUpstreamUseCase {
   ): Promise<{ id: string; status: string; lockedAt: Date } | null> {
     switch (moduleType) {
       case 'SLS':
-        return (this.prisma as any).slsSession.findUnique({
+        return this.prisma.slsSession.findUnique({
           where: { id: moduleId },
           select: { id: true, status: true, lockedAt: true },
         });

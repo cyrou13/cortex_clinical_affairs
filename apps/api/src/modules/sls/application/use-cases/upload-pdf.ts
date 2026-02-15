@@ -21,7 +21,7 @@ export class UploadPdfUseCase {
     const { articleId, userId, pdfBuffer, pdfText, projectId, sessionId } = input;
 
     // Validate article exists
-    const article = await (this.prisma as any).article.findUnique({
+    const article = await this.prisma.article.findUnique({
       where: { id: articleId },
     });
 
@@ -50,7 +50,7 @@ export class UploadPdfUseCase {
     const pdfStatus = verification.verified ? 'VERIFIED' : 'MISMATCH';
 
     // Update article
-    await (this.prisma as any).article.update({
+    await this.prisma.article.update({
       where: { id: articleId },
       data: {
         pdfStatus,

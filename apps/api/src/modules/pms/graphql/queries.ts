@@ -28,7 +28,7 @@ builder.queryField('pmsPlans', (t) =>
       checkPermission(ctx, 'pms', 'read');
       await checkProjectMembership(ctx, args.projectId);
 
-      const plans = await (ctx.prisma as any).pmsPlan.findMany({
+      const plans = await ctx.prisma.pmsPlan.findMany({
         where: { projectId: args.projectId },
         orderBy: { createdAt: 'desc' },
       });
@@ -48,7 +48,7 @@ builder.queryField('pmsPlan', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'pms', 'read');
 
-      const plan = await (ctx.prisma as any).pmsPlan.findUnique({
+      const plan = await ctx.prisma.pmsPlan.findUnique({
         where: { id: args.id },
       });
 
@@ -72,7 +72,7 @@ builder.queryField('vigilanceDatabases', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'pms', 'read');
 
-      const dbs = await (ctx.prisma as any).pmsPlanVigilanceDb.findMany({
+      const dbs = await ctx.prisma.pmsPlanVigilanceDb.findMany({
         where: { pmsPlanId: args.pmsPlanId },
       });
 
@@ -113,7 +113,7 @@ builder.queryField('gapRegistryEntries', (t) =>
       if (args.status) where.status = args.status;
       if (args.severity) where.severity = args.severity;
 
-      const entries = await (ctx.prisma as any).gapRegistryEntry.findMany({
+      const entries = await ctx.prisma.gapRegistryEntry.findMany({
         where,
         orderBy: { createdAt: 'desc' },
       });
@@ -134,7 +134,7 @@ builder.queryField('pmsCycles', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'pms', 'read');
 
-      const cycles = await (ctx.prisma as any).pmsCycle.findMany({
+      const cycles = await ctx.prisma.pmsCycle.findMany({
         where: { pmsPlanId: args.pmsPlanId },
         orderBy: { startDate: 'desc' },
       });
@@ -154,7 +154,7 @@ builder.queryField('pmsCycle', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'pms', 'read');
 
-      const cycle = await (ctx.prisma as any).pmsCycle.findUnique({
+      const cycle = await ctx.prisma.pmsCycle.findUnique({
         where: { id: args.id },
       });
 
@@ -182,7 +182,7 @@ builder.queryField('pmcfActivities', (t) =>
       const where: Record<string, unknown> = { pmsCycleId: args.cycleId };
       if (args.status) where.status = args.status;
 
-      const activities = await (ctx.prisma as any).pmcfActivity.findMany({
+      const activities = await ctx.prisma.pmcfActivity.findMany({
         where,
         orderBy: { activityType: 'asc' },
       });
@@ -202,7 +202,7 @@ builder.queryField('pmcfActivity', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'pms', 'read');
 
-      const activity = await (ctx.prisma as any).pmcfActivity.findUnique({
+      const activity = await ctx.prisma.pmcfActivity.findUnique({
         where: { id: args.id },
       });
 
@@ -232,7 +232,7 @@ builder.queryField('complaints', (t) =>
       if (args.severity) where.severity = args.severity;
       if (args.status) where.status = args.status;
 
-      const complaints = await (ctx.prisma as any).complaint.findMany({
+      const complaints = await ctx.prisma.complaint.findMany({
         where,
         orderBy: { date: 'desc' },
       });
@@ -252,7 +252,7 @@ builder.queryField('complaint', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'pms', 'read');
 
-      const complaint = await (ctx.prisma as any).complaint.findUnique({
+      const complaint = await ctx.prisma.complaint.findUnique({
         where: { id: args.id },
       });
 
@@ -276,7 +276,7 @@ builder.queryField('trendAnalyses', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'pms', 'read');
 
-      const analyses = await (ctx.prisma as any).trendAnalysis.findMany({
+      const analyses = await ctx.prisma.trendAnalysis.findMany({
         where: { pmsCycleId: args.cycleId },
         orderBy: { analysisDate: 'desc' },
       });
@@ -313,7 +313,7 @@ builder.queryField('cerUpdateDecision', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'pms', 'read');
 
-      const decision = await (ctx.prisma as any).cerUpdateDecision.findFirst({
+      const decision = await ctx.prisma.cerUpdateDecision.findFirst({
         where: { pmsCycleId: args.cycleId },
         orderBy: { createdAt: 'desc' },
       });
@@ -333,21 +333,21 @@ builder.queryField('cerUpdateDecisions', (t) =>
       checkPermission(ctx, 'pms', 'read');
       await checkProjectMembership(ctx, args.projectId);
 
-      const plans = await (ctx.prisma as any).pmsPlan.findMany({
+      const plans = await ctx.prisma.pmsPlan.findMany({
         where: { projectId: args.projectId },
         select: { id: true },
       });
 
       const planIds = plans.map((p: { id: string }) => p.id);
 
-      const cycles = await (ctx.prisma as any).pmsCycle.findMany({
+      const cycles = await ctx.prisma.pmsCycle.findMany({
         where: { pmsPlanId: { in: planIds } },
         select: { id: true },
       });
 
       const cycleIds = cycles.map((c: { id: string }) => c.id);
 
-      const decisions = await (ctx.prisma as any).cerUpdateDecision.findMany({
+      const decisions = await ctx.prisma.cerUpdateDecision.findMany({
         where: { pmsCycleId: { in: cycleIds } },
         orderBy: { createdAt: 'desc' },
       });

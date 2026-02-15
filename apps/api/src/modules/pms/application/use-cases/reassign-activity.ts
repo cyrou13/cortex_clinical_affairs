@@ -11,7 +11,7 @@ export class ReassignActivityUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async execute(activityId: string, newAssigneeId: string, userId: string): Promise<ReassignActivityResult> {
-    const activity = await (this.prisma as any).pmcfActivity.findUnique({
+    const activity = await this.prisma.pmcfActivity.findUnique({
       where: { id: activityId },
       select: { id: true, status: true, assigneeId: true },
     });
@@ -26,7 +26,7 @@ export class ReassignActivityUseCase {
 
     const previousAssigneeId = activity.assigneeId;
 
-    await (this.prisma as any).pmcfActivity.update({
+    await this.prisma.pmcfActivity.update({
       where: { id: activityId },
       data: { assigneeId: newAssigneeId },
     });

@@ -85,7 +85,7 @@ export class UpdateGsprRowUseCase {
     });
 
     // 6. Audit log
-    void (this.prisma as any).auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'cer.gspr-row.updated',

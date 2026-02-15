@@ -25,7 +25,7 @@ export class ConfigureCustomFilterUseCase {
     const { name, criterion } = parsed.data;
 
     // Validate session exists
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
     });
 
@@ -33,7 +33,7 @@ export class ConfigureCustomFilterUseCase {
       throw new NotFoundError('SlsSession', sessionId);
     }
 
-    const created = await (this.prisma as any).customAiFilter.create({
+    const created = await this.prisma.customAiFilter.create({
       data: {
         sessionId,
         name,
@@ -42,7 +42,7 @@ export class ConfigureCustomFilterUseCase {
     });
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.customAiFilter.created',
@@ -63,7 +63,7 @@ export class ConfigureCustomFilterUseCase {
       );
     }
 
-    const existing = await (this.prisma as any).customAiFilter.findUnique({
+    const existing = await this.prisma.customAiFilter.findUnique({
       where: { id: filterId },
     });
 
@@ -76,13 +76,13 @@ export class ConfigureCustomFilterUseCase {
     if (parsed.data.criterion !== undefined) updateData.criterion = parsed.data.criterion;
     if (parsed.data.isActive !== undefined) updateData.isActive = parsed.data.isActive;
 
-    const updated = await (this.prisma as any).customAiFilter.update({
+    const updated = await this.prisma.customAiFilter.update({
       where: { id: filterId },
       data: updateData,
     });
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.customAiFilter.updated',
@@ -97,7 +97,7 @@ export class ConfigureCustomFilterUseCase {
   }
 
   async deleteCustomFilter(filterId: string, userId: string) {
-    const existing = await (this.prisma as any).customAiFilter.findUnique({
+    const existing = await this.prisma.customAiFilter.findUnique({
       where: { id: filterId },
     });
 
@@ -105,12 +105,12 @@ export class ConfigureCustomFilterUseCase {
       throw new NotFoundError('CustomAiFilter', filterId);
     }
 
-    await (this.prisma as any).customAiFilter.delete({
+    await this.prisma.customAiFilter.delete({
       where: { id: filterId },
     });
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.customAiFilter.deleted',
@@ -125,7 +125,7 @@ export class ConfigureCustomFilterUseCase {
 
   async launchCustomFilterScoring(sessionId: string, filterId: string, userId: string) {
     // Validate session exists
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
     });
 
@@ -134,7 +134,7 @@ export class ConfigureCustomFilterUseCase {
     }
 
     // Validate filter exists and belongs to session
-    const filter = await (this.prisma as any).customAiFilter.findUnique({
+    const filter = await this.prisma.customAiFilter.findUnique({
       where: { id: filterId },
     });
 
@@ -159,7 +159,7 @@ export class ConfigureCustomFilterUseCase {
     );
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.customAiFilter.scoringLaunched',

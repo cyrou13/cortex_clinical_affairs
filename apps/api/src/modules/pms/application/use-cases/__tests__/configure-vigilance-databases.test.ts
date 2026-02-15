@@ -63,21 +63,21 @@ describe('ConfigureVigilanceDatabasesUseCase', () => {
   it('deletes existing databases before creating new ones', async () => {
     await useCase.execute(validInput);
 
-    expect((prisma as any).pmsPlanVigilanceDb.deleteMany).toHaveBeenCalledWith({
+    expect(prisma.pmsPlanVigilanceDb.deleteMany).toHaveBeenCalledWith({
       where: { pmsPlanId: 'plan-1' },
     });
 
-    const deleteOrder = (prisma as any).pmsPlanVigilanceDb.deleteMany.mock.invocationCallOrder[0];
-    const createOrder = (prisma as any).pmsPlanVigilanceDb.create.mock.invocationCallOrder[0];
+    const deleteOrder = prisma.pmsPlanVigilanceDb.deleteMany.mock.invocationCallOrder[0];
+    const createOrder = prisma.pmsPlanVigilanceDb.create.mock.invocationCallOrder[0];
     expect(deleteOrder).toBeLessThan(createOrder);
   });
 
   it('creates a record for each database in the input', async () => {
     await useCase.execute(validInput);
 
-    expect((prisma as any).pmsPlanVigilanceDb.create).toHaveBeenCalledTimes(2);
+    expect(prisma.pmsPlanVigilanceDb.create).toHaveBeenCalledTimes(2);
 
-    expect((prisma as any).pmsPlanVigilanceDb.create).toHaveBeenCalledWith(
+    expect(prisma.pmsPlanVigilanceDb.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           pmsPlanId: 'plan-1',
@@ -88,7 +88,7 @@ describe('ConfigureVigilanceDatabasesUseCase', () => {
       }),
     );
 
-    expect((prisma as any).pmsPlanVigilanceDb.create).toHaveBeenCalledWith(
+    expect(prisma.pmsPlanVigilanceDb.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           pmsPlanId: 'plan-1',
@@ -116,8 +116,8 @@ describe('ConfigureVigilanceDatabasesUseCase', () => {
     });
 
     expect(result).toHaveLength(0);
-    expect((prisma as any).pmsPlanVigilanceDb.deleteMany).toHaveBeenCalled();
-    expect((prisma as any).pmsPlanVigilanceDb.create).not.toHaveBeenCalled();
+    expect(prisma.pmsPlanVigilanceDb.deleteMany).toHaveBeenCalled();
+    expect(prisma.pmsPlanVigilanceDb.create).not.toHaveBeenCalled();
   });
 
   it('throws NotFoundError when plan does not exist', async () => {
@@ -132,7 +132,7 @@ describe('ConfigureVigilanceDatabasesUseCase', () => {
   it('generates unique IDs for each database record', async () => {
     await useCase.execute(validInput);
 
-    const calls = (prisma as any).pmsPlanVigilanceDb.create.mock.calls;
+    const calls = prisma.pmsPlanVigilanceDb.create.mock.calls;
     const ids = calls.map((c: any) => c[0].data.id);
 
     expect(ids[0]).toBeDefined();

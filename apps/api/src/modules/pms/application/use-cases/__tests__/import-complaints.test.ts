@@ -59,7 +59,7 @@ describe('ImportComplaintsUseCase', () => {
     expect(result.imported).toBe(2);
     expect(result.skipped).toBe(0);
     expect(result.errors).toHaveLength(0);
-    expect((prisma as any).complaint.create).toHaveBeenCalledTimes(2);
+    expect(prisma.complaint.create).toHaveBeenCalledTimes(2);
   });
 
   it('skips complaints with duplicate externalId', async () => {

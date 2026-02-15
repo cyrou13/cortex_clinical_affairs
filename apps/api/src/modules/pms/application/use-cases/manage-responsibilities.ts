@@ -28,7 +28,7 @@ export class ManageResponsibilitiesUseCase {
       throw new ValidationError(`Invalid activity type: ${input.activityType}`);
     }
 
-    const plan = await (this.prisma as any).pmsPlan.findUnique({
+    const plan = await this.prisma.pmsPlan.findUnique({
       where: { id: input.pmsPlanId },
       select: { id: true },
     });
@@ -37,7 +37,7 @@ export class ManageResponsibilitiesUseCase {
       throw new NotFoundError('PmsPlan', input.pmsPlanId);
     }
 
-    const responsibility = await (this.prisma as any).pmsResponsibility.create({
+    const responsibility = await this.prisma.pmsResponsibility.create({
       data: {
         id: crypto.randomUUID(),
         pmsPlanId: input.pmsPlanId,
@@ -52,14 +52,14 @@ export class ManageResponsibilitiesUseCase {
   }
 
   async remove(responsibilityId: string): Promise<{ deleted: boolean }> {
-    await (this.prisma as any).pmsResponsibility.delete({
+    await this.prisma.pmsResponsibility.delete({
       where: { id: responsibilityId },
     });
     return { deleted: true };
   }
 
   async list(pmsPlanId: string): Promise<ResponsibilityResult[]> {
-    return (this.prisma as any).pmsResponsibility.findMany({
+    return this.prisma.pmsResponsibility.findMany({
       where: { pmsPlanId },
       orderBy: { activityType: 'asc' },
     });

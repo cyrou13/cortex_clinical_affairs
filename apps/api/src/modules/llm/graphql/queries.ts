@@ -18,7 +18,7 @@ builder.queryField('llmConfigs', (t) =>
         where.projectId = args.projectId;
       }
 
-      return (ctx.prisma as any).llmConfig.findMany({
+      return ctx.prisma.llmConfig.findMany({
         where,
         orderBy: { createdAt: 'desc' },
       });

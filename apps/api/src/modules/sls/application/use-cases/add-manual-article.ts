@@ -21,7 +21,7 @@ export class AddManualArticleUseCase {
   }) {
     const { sessionId, userId, metadata, pdfStorageKey } = input;
 
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
     });
 
@@ -30,7 +30,7 @@ export class AddManualArticleUseCase {
     }
 
     // Create article with PENDING status — enters screening funnel
-    const article = await (this.prisma as any).article.create({
+    const article = await this.prisma.article.create({
       data: {
         sessionId,
         title: metadata.title,
@@ -48,7 +48,7 @@ export class AddManualArticleUseCase {
     });
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'sls.article.manualAdd',

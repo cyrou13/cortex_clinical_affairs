@@ -40,7 +40,7 @@ export class CreateCerUseCase {
     }
 
     // Check project exists
-    const project = await (this.prisma as any).project.findUnique({
+    const project = await this.prisma.project.findUnique({
       where: { id: projectId },
       select: { id: true },
     });
@@ -50,7 +50,7 @@ export class CreateCerUseCase {
     }
 
     // Verify upstream modules are locked
-    const slsSessions = await (this.prisma as any).slsSession.findMany({
+    const slsSessions = await this.prisma.slsSession.findMany({
       where: { projectId, status: 'LOCKED' },
       select: { id: true, lockedAt: true },
     });

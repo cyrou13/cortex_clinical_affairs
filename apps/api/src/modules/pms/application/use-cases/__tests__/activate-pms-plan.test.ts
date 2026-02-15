@@ -43,7 +43,7 @@ describe('ActivatePmsPlanUseCase', () => {
   it('updates plan status to ACTIVE with activatedAt', async () => {
     await useCase.execute('plan-1', 'user-1');
 
-    expect((prisma as any).pmsPlan.update).toHaveBeenCalledWith(
+    expect(prisma.pmsPlan.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'plan-1' },
         data: expect.objectContaining({
@@ -52,7 +52,7 @@ describe('ActivatePmsPlanUseCase', () => {
       }),
     );
 
-    const callData = (prisma as any).pmsPlan.update.mock.calls[0][0].data;
+    const callData = prisma.pmsPlan.update.mock.calls[0][0].data;
     expect(callData.activatedAt).toBeInstanceOf(Date);
   });
 

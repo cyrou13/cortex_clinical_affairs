@@ -32,7 +32,7 @@ export class LinkSlsSessionsUseCase {
       throw new ValidationError('Cannot link sessions to a locked SOA analysis');
     }
 
-    const sessions = await (this.prisma as any).slsSession.findMany({
+    const sessions = await this.prisma.slsSession.findMany({
       where: {
         id: { in: input.slsSessionIds },
         projectId: soa.projectId,

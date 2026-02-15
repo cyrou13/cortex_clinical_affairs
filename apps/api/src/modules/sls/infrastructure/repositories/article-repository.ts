@@ -38,26 +38,26 @@ export class ArticleRepository {
     }
 
     const [items, total] = await Promise.all([
-      (this.prisma as any).article.findMany({
+      this.prisma.article.findMany({
         where,
         skip: offset,
         take: limit,
         orderBy: { createdAt: 'desc' },
       }),
-      (this.prisma as any).article.count({ where }),
+      this.prisma.article.count({ where }),
     ]);
 
     return { items, total, offset, limit };
   }
 
   async findById(id: string) {
-    return (this.prisma as any).article.findUnique({
+    return this.prisma.article.findUnique({
       where: { id },
     });
   }
 
   async findByDoi(doi: string, sessionId: string) {
-    return (this.prisma as any).article.findFirst({
+    return this.prisma.article.findFirst({
       where: {
         doi: { equals: doi, mode: 'insensitive' },
         sessionId,
@@ -66,26 +66,26 @@ export class ArticleRepository {
   }
 
   async findByPmid(pmid: string, sessionId: string) {
-    return (this.prisma as any).article.findFirst({
+    return this.prisma.article.findFirst({
       where: { pmid, sessionId },
     });
   }
 
   async createMany(articles: Array<Record<string, unknown>>) {
-    return (this.prisma as any).article.createMany({
+    return this.prisma.article.createMany({
       data: articles,
     });
   }
 
   async updateStatus(id: string, status: string) {
-    return (this.prisma as any).article.update({
+    return this.prisma.article.update({
       where: { id },
       data: { status },
     });
   }
 
   async countByStatus(sessionId: string): Promise<Record<string, number>> {
-    const results = await (this.prisma as any).article.groupBy({
+    const results = await this.prisma.article.groupBy({
       by: ['status'],
       where: { sessionId },
       _count: { status: true },

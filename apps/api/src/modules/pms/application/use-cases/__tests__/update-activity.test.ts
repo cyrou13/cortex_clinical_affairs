@@ -52,7 +52,7 @@ describe('UpdateActivityUseCase', () => {
       userId: 'user-1',
     });
 
-    expect((prisma as any).pmcfActivity.update).toHaveBeenCalledWith(
+    expect(prisma.pmcfActivity.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: { findingsSummary: 'Some findings' },
       }),

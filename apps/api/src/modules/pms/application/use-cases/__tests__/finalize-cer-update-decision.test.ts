@@ -45,7 +45,7 @@ describe('FinalizeCerUpdateDecisionUseCase', () => {
     expect(result.status).toBe('FINALIZED');
     expect(result.conclusion).toBe('CER_UPDATE_NOT_REQUIRED');
     expect(result.decidedAt).toBeDefined();
-    expect((prisma as any).cerUpdateDecision.update).toHaveBeenCalledWith(
+    expect(prisma.cerUpdateDecision.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'decision-1' },
         data: expect.objectContaining({ status: 'FINALIZED' }),

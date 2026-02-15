@@ -60,7 +60,7 @@ describe('ManageInstalledBaseUseCase', () => {
     expect(result.pmsCycleId).toBe('cycle-1');
     expect(result.totalUnitsShipped).toBe(5000);
     expect(result.activeDevices).toBe(3000);
-    expect((prisma as any).installedBaseEntry.create).toHaveBeenCalledWith(
+    expect(prisma.installedBaseEntry.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           pmsCycleId: 'cycle-1',
@@ -91,7 +91,7 @@ describe('ManageInstalledBaseUseCase', () => {
     const result = await useCase.update('ib-1', { totalUnitsShipped: 6000 });
 
     expect(result.totalUnitsShipped).toBe(6000);
-    expect((prisma as any).installedBaseEntry.update).toHaveBeenCalledWith(
+    expect(prisma.installedBaseEntry.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ib-1' },
         data: expect.objectContaining({ totalUnitsShipped: 6000 }),

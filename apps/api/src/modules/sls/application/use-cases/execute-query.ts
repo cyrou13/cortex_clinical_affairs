@@ -25,7 +25,7 @@ export class ExecuteQueryUseCase {
     const { queryId, databases, sessionId } = parsed.data;
 
     // Validate query exists
-    const query = await (this.prisma as any).slsQuery.findUnique({
+    const query = await this.prisma.slsQuery.findUnique({
       where: { id: queryId },
       include: { session: true },
     });
@@ -51,7 +51,7 @@ export class ExecuteQueryUseCase {
 
     for (const database of databases) {
       const executionId = generateId();
-      await (this.prisma as any).queryExecution.create({
+      await this.prisma.queryExecution.create({
         data: {
           id: executionId,
           queryId,

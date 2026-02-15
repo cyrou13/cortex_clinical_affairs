@@ -37,7 +37,7 @@ export class ManageVersionsUseCase {
     }
 
     // Verify project exists
-    const project = await (this.prisma as any).project.findUnique({
+    const project = await this.prisma.project.findUnique({
       where: { id: input.projectId },
       select: { id: true },
     });

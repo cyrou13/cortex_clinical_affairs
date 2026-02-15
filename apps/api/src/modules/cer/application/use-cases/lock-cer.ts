@@ -89,7 +89,7 @@ export class LockCerUseCase {
     });
 
     // 5. Audit log
-    void (this.prisma as any).auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'cer.version.locked',

@@ -9,7 +9,7 @@ export async function ensureSessionNotLocked(
   prisma: PrismaClient,
   sessionId: string,
 ): Promise<void> {
-  const session = await (prisma as any).slsSession.findUnique({
+  const session = await prisma.slsSession.findUnique({
     where: { id: sessionId },
     select: { id: true, status: true },
   });

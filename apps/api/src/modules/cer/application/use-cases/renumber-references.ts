@@ -225,7 +225,7 @@ export class RenumberReferencesUseCase {
     }
 
     // 9. Audit log
-    void (this.prisma as any).auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'cer.references.renumbered',

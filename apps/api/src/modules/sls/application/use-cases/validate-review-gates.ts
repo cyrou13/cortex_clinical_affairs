@@ -18,7 +18,7 @@ export class ValidateReviewGatesUseCase {
       likelyIrrelevantPercentage?: number;
     },
   ): Promise<ReviewGateStatus> {
-    const session = await (this.prisma as any).slsSession.findUnique({
+    const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
     });
 
@@ -30,7 +30,7 @@ export class ValidateReviewGatesUseCase {
     const likelyIrrelevantPct = thresholds?.likelyIrrelevantPercentage ?? 0.05;
 
     // Count articles by status
-    const articles = await (this.prisma as any).article.findMany({
+    const articles = await this.prisma.article.findMany({
       where: { sessionId },
       select: { id: true, status: true, relevanceScore: true },
     });
@@ -58,7 +58,7 @@ export class ValidateReviewGatesUseCase {
     // Count spot-checks for likely relevant
     const likelyRelevantIds = likelyRelevant.map((a: { id: string }) => a.id);
     const likelyRelevantSpotChecks = likelyRelevantIds.length > 0
-      ? await (this.prisma as any).screeningDecision.count({
+      ? await this.prisma.screeningDecision.count({
           where: {
             articleId: { in: likelyRelevantIds },
             decision: { not: 'SKIPPED' },
@@ -82,7 +82,7 @@ export class ValidateReviewGatesUseCase {
 
     const likelyIrrelevantIds = likelyIrrelevant.map((a: { id: string }) => a.id);
     const likelyIrrelevantSpotChecks = likelyIrrelevantIds.length > 0
-      ? await (this.prisma as any).screeningDecision.count({
+      ? await this.prisma.screeningDecision.count({
           where: {
             articleId: { in: likelyIrrelevantIds },
             decision: { not: 'SKIPPED' },

@@ -66,7 +66,7 @@ export class CreateProjectUseCase {
     void this.eventBus.publish(event);
 
     // Audit log
-    void this.prisma.auditLog.create({
+    await this.prisma.auditLog.create({
       data: {
         userId,
         action: 'project.created',
