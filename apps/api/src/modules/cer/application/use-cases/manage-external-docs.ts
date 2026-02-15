@@ -32,7 +32,7 @@ export class ManageExternalDocsUseCase {
 
   async create(input: CreateExternalDocInput) {
     // Check CER version exists and is editable
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: input.cerVersionId },
       select: { id: true, status: true },
     });
@@ -54,7 +54,7 @@ export class ManageExternalDocsUseCase {
       documentType: input.documentType,
     });
 
-    const doc = await (this.prisma as any).cerExternalDocument.create({
+    const doc = await this.prisma.cerExternalDocument.create({
       data: {
         id: crypto.randomUUID(),
         cerVersionId: input.cerVersionId,
@@ -71,7 +71,7 @@ export class ManageExternalDocsUseCase {
   }
 
   async update(input: UpdateExternalDocInput) {
-    const doc = await (this.prisma as any).cerExternalDocument.findUnique({
+    const doc = await this.prisma.cerExternalDocument.findUnique({
       where: { id: input.documentId },
       include: { cerVersion: { select: { id: true, status: true } } },
     });
@@ -94,7 +94,7 @@ export class ManageExternalDocsUseCase {
 
     validateExternalDoc(merged);
 
-    const updated = await (this.prisma as any).cerExternalDocument.update({
+    const updated = await this.prisma.cerExternalDocument.update({
       where: { id: input.documentId },
       data: {
         title: merged.title.trim(),
@@ -109,7 +109,7 @@ export class ManageExternalDocsUseCase {
   }
 
   async delete(input: DeleteExternalDocInput) {
-    const doc = await (this.prisma as any).cerExternalDocument.findUnique({
+    const doc = await this.prisma.cerExternalDocument.findUnique({
       where: { id: input.documentId },
       include: { cerVersion: { select: { id: true, status: true } } },
     });
@@ -122,7 +122,7 @@ export class ManageExternalDocsUseCase {
       throw new ValidationError('Cannot delete external document from a locked CER version');
     }
 
-    await (this.prisma as any).cerExternalDocument.delete({
+    await this.prisma.cerExternalDocument.delete({
       where: { id: input.documentId },
     });
 
@@ -130,7 +130,7 @@ export class ManageExternalDocsUseCase {
   }
 
   async list(cerVersionId: string) {
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: cerVersionId },
       select: { id: true },
     });
@@ -139,7 +139,7 @@ export class ManageExternalDocsUseCase {
       throw new NotFoundError('CerVersion', cerVersionId);
     }
 
-    return (this.prisma as any).cerExternalDocument.findMany({
+    return this.prisma.cerExternalDocument.findMany({
       where: { cerVersionId },
       orderBy: { createdAt: 'asc' },
     });

@@ -1,5 +1,9 @@
-import type { PrismaClient, Prisma } from '@prisma/client';
-import { NotFoundError, ValidationError, LockConflictError } from '../../../../shared/errors/index.js';
+import type { PrismaClient } from '@prisma/client';
+import {
+  NotFoundError,
+  ValidationError,
+  LockConflictError,
+} from '../../../../shared/errors/index.js';
 import type { EventBus } from '../../../../shared/events/event-bus.js';
 import { createCerVersionCreatedEvent } from '../../domain/events/cer-events.js';
 
@@ -51,7 +55,7 @@ export class ManageVersionsUseCase {
 
     if (input.previousVersionId) {
       // Fetch previous version
-      previousVersion = await (this.prisma as any).cerVersion.findUnique({
+      previousVersion = await this.prisma.cerVersion.findUnique({
         where: { id: input.previousVersionId },
         select: { id: true, status: true, versionNumber: true, projectId: true },
       });
@@ -85,7 +89,7 @@ export class ManageVersionsUseCase {
     const cerVersionId = crypto.randomUUID();
 
     // Create new CER version
-    await (this.prisma as any).cerVersion.create({
+    await this.prisma.cerVersion.create({
       data: {
         id: cerVersionId,
         projectId: input.projectId,
@@ -101,10 +105,7 @@ export class ManageVersionsUseCase {
 
     // Duplicate sections and related records from previous version
     if (input.previousVersionId) {
-      duplicatedSections = await this.duplicateSections(
-        input.previousVersionId,
-        cerVersionId,
-      );
+      duplicatedSections = await this.duplicateSections(input.previousVersionId, cerVersionId);
 
       await this.duplicateRelatedRecords(input.previousVersionId, cerVersionId);
     }
@@ -143,17 +144,14 @@ export class ManageVersionsUseCase {
     return `${major}.${minor + 1}`;
   }
 
-  private async duplicateSections(
-    fromVersionId: string,
-    toVersionId: string,
-  ): Promise<number> {
-    const sections = await (this.prisma as any).cerSection.findMany({
+  private async duplicateSections(fromVersionId: string, toVersionId: string): Promise<number> {
+    const sections = await this.prisma.cerSection.findMany({
       where: { cerVersionId: fromVersionId },
       orderBy: { orderIndex: 'asc' },
     });
 
     for (const section of sections) {
-      await (this.prisma as any).cerSection.create({
+      await this.prisma.cerSection.create({
         data: {
           id: crypto.randomUUID(),
           cerVersionId: toVersionId,
@@ -170,17 +168,14 @@ export class ManageVersionsUseCase {
     return sections.length;
   }
 
-  private async duplicateRelatedRecords(
-    fromVersionId: string,
-    toVersionId: string,
-  ): Promise<void> {
+  private async duplicateRelatedRecords(fromVersionId: string, toVersionId: string): Promise<void> {
     // Duplicate ClaimTrace records
-    const claimTraces = await (this.prisma as any).claimTrace.findMany({
+    const claimTraces = await this.prisma.claimTrace.findMany({
       where: { cerVersionId: fromVersionId },
     });
 
     for (const trace of claimTraces) {
-      await (this.prisma as any).claimTrace.create({
+      await this.prisma.claimTrace.create({
         data: {
           id: crypto.randomUUID(),
           cerVersionId: toVersionId,
@@ -193,12 +188,12 @@ export class ManageVersionsUseCase {
     }
 
     // Duplicate CrossReference records
-    const crossRefs = await (this.prisma as any).crossReference.findMany({
+    const crossRefs = await this.prisma.crossReference.findMany({
       where: { cerVersionId: fromVersionId },
     });
 
     for (const ref of crossRefs) {
-      await (this.prisma as any).crossReference.create({
+      await this.prisma.crossReference.create({
         data: {
           id: crypto.randomUUID(),
           cerVersionId: toVersionId,
@@ -210,12 +205,12 @@ export class ManageVersionsUseCase {
     }
 
     // Duplicate BibliographyEntry records
-    const bibEntries = await (this.prisma as any).bibliographyEntry.findMany({
+    const bibEntries = await this.prisma.bibliographyEntry.findMany({
       where: { cerVersionId: fromVersionId },
     });
 
     for (const entry of bibEntries) {
-      await (this.prisma as any).bibliographyEntry.create({
+      await this.prisma.bibliographyEntry.create({
         data: {
           id: crypto.randomUUID(),
           cerVersionId: toVersionId,

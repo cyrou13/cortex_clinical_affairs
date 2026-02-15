@@ -29,37 +29,59 @@ function makePrisma(overrides?: {
       ),
     },
     cerSection: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.section !== undefined
-          ? overrides.section
-          : { id: SECTION_ID, sectionNumber: '3.1', title: 'Clinical Performance' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.section !== undefined
+            ? overrides.section
+            : { id: SECTION_ID, sectionNumber: '3.1', title: 'Clinical Performance' },
+        ),
     },
     soaSource: {
       findUnique: vi.fn().mockResolvedValue(
         overrides?.soaSource !== undefined
           ? overrides.soaSource
-          : { id: 'soa-1', section: 'Results', extractedData: 'Sensitivity 95%', benchmark: '90%' },
+          : {
+              id: 'soa-1',
+              section: 'Results',
+              extractedData: 'Sensitivity 95%',
+              benchmark: '90%',
+            },
       ),
     },
     validationStudy: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.study !== undefined
-          ? overrides.study
-          : { id: 'study-1', name: 'Study A', type: 'STANDALONE', status: 'LOCKED' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.study !== undefined
+            ? overrides.study
+            : { id: 'study-1', name: 'Study A', type: 'STANDALONE', status: 'LOCKED' },
+        ),
     },
-    slsArticle: {
+    article: {
       findUnique: vi.fn().mockResolvedValue(
         overrides?.article !== undefined
           ? overrides.article
-          : { id: 'article-1', title: 'Study Title', doi: '10.1234/x', authors: 'Smith J', journal: 'JAMA', year: 2025 },
+          : {
+              id: 'article-1',
+              title: 'Study Title',
+              doi: '10.1234/x',
+              authors: 'Smith J',
+              journal: 'JAMA',
+              year: 2025,
+            },
       ),
     },
     auditLog: {
       findMany: vi.fn().mockResolvedValue(
         overrides?.auditEntries ?? [
-          { action: 'created', userId: 'user-1', createdAt: '2026-01-01T00:00:00Z', before: null, after: { status: 'CREATED' } },
+          {
+            action: 'created',
+            userId: 'user-1',
+            createdAt: '2026-01-01T00:00:00Z',
+            before: null,
+            after: { status: 'CREATED' },
+          },
         ],
       ),
     },
@@ -90,18 +112,14 @@ describe('ExportProofPackageUseCase', () => {
     const prisma = makePrisma({ trace: null });
     const useCase = new ExportProofPackageUseCase(prisma);
 
-    await expect(
-      useCase.execute({ claimTraceId: 'missing' }),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute({ claimTraceId: 'missing' })).rejects.toThrow('not found');
   });
 
   it('throws NotFoundError when section not found', async () => {
     const prisma = makePrisma({ section: null });
     const useCase = new ExportProofPackageUseCase(prisma);
 
-    await expect(
-      useCase.execute({ claimTraceId: TRACE_ID }),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute({ claimTraceId: TRACE_ID })).rejects.toThrow('not found');
   });
 
   it('includes audit trail in proof package', async () => {

@@ -61,7 +61,7 @@ export class GetClaimTraceUseCase {
     const { claimTraceId } = input;
 
     // 1. Fetch claim trace
-    const trace = await (this.prisma as any).claimTrace.findUnique({
+    const trace = await this.prisma.claimTrace.findUnique({
       where: { id: claimTraceId },
       select: {
         id: true,
@@ -79,7 +79,7 @@ export class GetClaimTraceUseCase {
     }
 
     // 2. Fetch Level 1: CER Claim (section info)
-    const section = await (this.prisma as any).cerSection.findUnique({
+    const section = await this.prisma.cerSection.findUnique({
       where: { id: trace.cerSectionId },
       select: { id: true, sectionNumber: true, title: true },
     });
@@ -121,7 +121,7 @@ export class GetClaimTraceUseCase {
     // 4. Fetch Level 3: Validation Study (cross-module)
     let level3: Level3_ValidationStudy | null = null;
     if (trace.validationStudyId) {
-      const study = await (this.prisma as any).validationStudy.findUnique({
+      const study = await this.prisma.validationStudy.findUnique({
         where: { id: trace.validationStudyId },
         select: {
           id: true,
@@ -131,7 +131,7 @@ export class GetClaimTraceUseCase {
       });
 
       // Fetch results for this study
-      const results = await (this.prisma as any).validationResult.findMany({
+      const results = await this.prisma.validationResult.findMany({
         where: { validationStudyId: trace.validationStudyId },
         select: { metricType: true, value: true, comparison: true },
         take: 1,
@@ -150,7 +150,7 @@ export class GetClaimTraceUseCase {
     // 5. Fetch Level 4: SLS Article (cross-module)
     let level4: Level4_SlsArticle | null = null;
     if (trace.slsArticleId) {
-      const article = await (this.prisma as any).slsArticle.findUnique({
+      const article = await this.prisma.article.findUnique({
         where: { id: trace.slsArticleId },
         select: {
           id: true,

@@ -38,7 +38,13 @@ interface UpdateBenefitRiskResult {
 }
 
 const VALID_SEVERITIES: Severity[] = ['NEGLIGIBLE', 'MINOR', 'SERIOUS', 'CRITICAL', 'CATASTROPHIC'];
-const VALID_PROBABILITIES: Probability[] = ['IMPROBABLE', 'REMOTE', 'OCCASIONAL', 'PROBABLE', 'FREQUENT'];
+const VALID_PROBABILITIES: Probability[] = [
+  'IMPROBABLE',
+  'REMOTE',
+  'OCCASIONAL',
+  'PROBABLE',
+  'FREQUENT',
+];
 
 // ── Use Case ────────────────────────────────────────────────────────────
 
@@ -48,7 +54,7 @@ export class UpdateBenefitRiskUseCase {
   async updateBenefit(input: UpdateBenefitInput): Promise<UpdateBenefitRiskResult> {
     const { benefitRiskItemId, description, evidenceLinks, userId } = input;
 
-    const item = await (this.prisma as any).benefitRiskItem.findUnique({
+    const item = await this.prisma.benefitRiskItem.findUnique({
       where: { id: benefitRiskItemId },
       select: { id: true, itemType: true, description: true },
     });
@@ -74,7 +80,7 @@ export class UpdateBenefitRiskUseCase {
       updatedFields.push('evidenceLinks');
     }
 
-    await (this.prisma as any).benefitRiskItem.update({
+    await this.prisma.benefitRiskItem.update({
       where: { id: benefitRiskItemId },
       data: updateData,
     });
@@ -87,7 +93,10 @@ export class UpdateBenefitRiskUseCase {
         targetType: 'benefitRiskItem',
         targetId: benefitRiskItemId,
         before: { description: item.description } as unknown as Prisma.InputJsonValue,
-        after: { description: description ?? item.description, updatedFields } as unknown as Prisma.InputJsonValue,
+        after: {
+          description: description ?? item.description,
+          updatedFields,
+        } as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -101,7 +110,7 @@ export class UpdateBenefitRiskUseCase {
   async updateRisk(input: UpdateRiskInput): Promise<UpdateBenefitRiskResult> {
     const { benefitRiskItemId, description, severity, probability, evidenceLinks, userId } = input;
 
-    const item = await (this.prisma as any).benefitRiskItem.findUnique({
+    const item = await this.prisma.benefitRiskItem.findUnique({
       where: { id: benefitRiskItemId },
       select: {
         id: true,
@@ -162,7 +171,7 @@ export class UpdateBenefitRiskUseCase {
       updatedFields.push('riskLevel');
     }
 
-    await (this.prisma as any).benefitRiskItem.update({
+    await this.prisma.benefitRiskItem.update({
       where: { id: benefitRiskItemId },
       data: updateData,
     });
@@ -199,7 +208,7 @@ export class UpdateBenefitRiskUseCase {
   async updateMitigation(input: UpdateMitigationInput): Promise<UpdateBenefitRiskResult> {
     const { mitigationId, description, residualRiskLevel, userId } = input;
 
-    const mitigation = await (this.prisma as any).benefitRiskMitigation.findUnique({
+    const mitigation = await this.prisma.benefitRiskMitigation.findUnique({
       where: { id: mitigationId },
       select: { id: true, description: true, residualRiskLevel: true },
     });
@@ -221,7 +230,7 @@ export class UpdateBenefitRiskUseCase {
       updatedFields.push('residualRiskLevel');
     }
 
-    await (this.prisma as any).benefitRiskMitigation.update({
+    await this.prisma.benefitRiskMitigation.update({
       where: { id: mitigationId },
       data: updateData,
     });

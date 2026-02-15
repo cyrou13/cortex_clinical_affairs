@@ -1,6 +1,28 @@
 import { builder } from '../../../graphql/builder.js';
-import { SlsSessionObjectType, SlsQueryObjectType, QueryVersionObjectType, QueryExecutionObjectType, ArticleObjectType, PaginatedArticlesType, ArticleCountByStatusType, ArticleFilterInput, AiScoringStatsType, ExclusionCodeObjectType, CustomAiFilterObjectType, RelevanceThresholdsType, ScreeningDecisionObjectType, ReviewGateStatusType, ScreeningAuditEntryType, LockPreflightCheckType, PdfRetrievalStatsType, MinedReferenceObjectType } from './types.js';
-import { checkPermission, checkProjectMembership } from '../../../shared/middleware/rbac-middleware.js';
+import {
+  SlsSessionObjectType,
+  SlsQueryObjectType,
+  QueryVersionObjectType,
+  QueryExecutionObjectType,
+  ArticleObjectType,
+  PaginatedArticlesType,
+  ArticleCountByStatusType,
+  ArticleFilterInput,
+  AiScoringStatsType,
+  ExclusionCodeObjectType,
+  CustomAiFilterObjectType,
+  RelevanceThresholdsType,
+  ScreeningDecisionObjectType,
+  ReviewGateStatusType,
+  ScreeningAuditEntryType,
+  LockPreflightCheckType,
+  PdfRetrievalStatsType,
+  MinedReferenceObjectType,
+} from './types.js';
+import {
+  checkPermission,
+  checkProjectMembership,
+} from '../../../shared/middleware/rbac-middleware.js';
 import { GetSlsSessionsUseCase } from '../application/use-cases/get-sessions.js';
 import { GetSlsSessionDetailUseCase } from '../application/use-cases/get-session-detail.js';
 import { NotFoundError } from '../../../shared/errors/index.js';
@@ -312,9 +334,8 @@ builder.queryField('aiScoringStats', (t) =>
       }
 
       const totalScored = likelyRelevantCount + uncertainCount + likelyIrrelevantCount;
-      const acceptanceRate = totalScored > 0
-        ? (likelyRelevantCount + uncertainCount) / totalScored
-        : 0;
+      const acceptanceRate =
+        totalScored > 0 ? (likelyRelevantCount + uncertainCount) / totalScored : 0;
 
       return {
         likelyRelevantCount,
@@ -741,7 +762,7 @@ builder.queryField('minedReferences', (t) =>
       if (args.validationStatus) where.validationStatus = args.validationStatus;
       if (args.excludeDuplicates) where.isDuplicate = false;
 
-      const references = await (ctx.prisma as any).minedReference.findMany({
+      const references = await ctx.prisma.minedReference.findMany({
         where,
         orderBy: { createdAt: 'desc' },
       });

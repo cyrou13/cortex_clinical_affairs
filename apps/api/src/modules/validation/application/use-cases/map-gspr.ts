@@ -46,7 +46,7 @@ export class MapGsprUseCase {
     const { validationStudyId, gsprId, status, justification, evidenceReferences, userId } = input;
 
     // Validate study exists and is not locked
-    const study = await (this.prisma as any).validationStudy.findUnique({
+    const study = await this.prisma.validationStudy.findUnique({
       where: { id: validationStudyId },
       select: { id: true, status: true },
     });
@@ -61,13 +61,11 @@ export class MapGsprUseCase {
 
     // Validate justification requirement
     if ((status === 'PARTIAL' || status === 'NOT_APPLICABLE') && !justification) {
-      throw new ValidationError(
-        `Justification is required when status is ${status}`,
-      );
+      throw new ValidationError(`Justification is required when status is ${status}`);
     }
 
     // Upsert: check if mapping already exists
-    const existingMapping = await (this.prisma as any).gsprMapping.findFirst({
+    const existingMapping = await this.prisma.gsprMapping.findFirst({
       where: {
         validationStudyId,
         gsprId,
@@ -77,7 +75,7 @@ export class MapGsprUseCase {
     let mapping;
 
     if (existingMapping) {
-      mapping = await (this.prisma as any).gsprMapping.update({
+      mapping = await this.prisma.gsprMapping.update({
         where: { id: existingMapping.id },
         data: {
           status,
@@ -88,7 +86,7 @@ export class MapGsprUseCase {
         },
       });
     } else {
-      mapping = await (this.prisma as any).gsprMapping.create({
+      mapping = await this.prisma.gsprMapping.create({
         data: {
           id: crypto.randomUUID(),
           validationStudyId,
@@ -139,7 +137,7 @@ export class MapGsprUseCase {
   async delete(input: DeleteGsprMappingInput): Promise<void> {
     const { validationStudyId, gsprId, userId } = input;
 
-    const study = await (this.prisma as any).validationStudy.findUnique({
+    const study = await this.prisma.validationStudy.findUnique({
       where: { id: validationStudyId },
       select: { id: true, status: true },
     });
@@ -152,7 +150,7 @@ export class MapGsprUseCase {
       throw new ValidationError('Cannot modify GSPR mappings on a locked validation study');
     }
 
-    const existingMapping = await (this.prisma as any).gsprMapping.findFirst({
+    const existingMapping = await this.prisma.gsprMapping.findFirst({
       where: { validationStudyId, gsprId },
     });
 
@@ -160,7 +158,7 @@ export class MapGsprUseCase {
       throw new NotFoundError('GsprMapping', gsprId);
     }
 
-    await (this.prisma as any).gsprMapping.delete({
+    await this.prisma.gsprMapping.delete({
       where: { id: existingMapping.id },
     });
 

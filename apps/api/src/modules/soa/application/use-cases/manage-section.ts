@@ -28,7 +28,7 @@ export class ManageSectionUseCase {
     narrativeContent: string,
     userId: string,
   ): Promise<UpdateContentResult> {
-    const section = await (this.prisma as any).thematicSection.findUnique({
+    const section = await this.prisma.thematicSection.findUnique({
       where: { id: sectionId },
       include: { soaAnalysis: { select: { status: true } } },
     });
@@ -47,7 +47,7 @@ export class ManageSectionUseCase {
 
     const updatedAt = new Date().toISOString();
 
-    await (this.prisma as any).thematicSection.update({
+    await this.prisma.thematicSection.update({
       where: { id: sectionId },
       data: {
         narrativeContent,
@@ -64,11 +64,8 @@ export class ManageSectionUseCase {
     };
   }
 
-  async finalizeSection(
-    sectionId: string,
-    userId: string,
-  ): Promise<FinalizeSectionResult> {
-    const section = await (this.prisma as any).thematicSection.findUnique({
+  async finalizeSection(sectionId: string, userId: string): Promise<FinalizeSectionResult> {
+    const section = await this.prisma.thematicSection.findUnique({
       where: { id: sectionId },
       include: { soaAnalysis: { select: { status: true } } },
     });
@@ -87,7 +84,7 @@ export class ManageSectionUseCase {
 
     const finalizedAt = new Date().toISOString();
 
-    await (this.prisma as any).thematicSection.update({
+    await this.prisma.thematicSection.update({
       where: { id: sectionId },
       data: {
         status: 'FINALIZED',
@@ -104,7 +101,7 @@ export class ManageSectionUseCase {
   }
 
   async getProgress(soaAnalysisId: string): Promise<SectionProgressResult> {
-    const soaAnalysis = await (this.prisma as any).soaAnalysis.findUnique({
+    const soaAnalysis = await this.prisma.soaAnalysis.findUnique({
       where: { id: soaAnalysisId },
       select: { id: true },
     });
@@ -113,7 +110,7 @@ export class ManageSectionUseCase {
       throw new NotFoundError('SoaAnalysis', soaAnalysisId);
     }
 
-    const sections = await (this.prisma as any).thematicSection.findMany({
+    const sections = await this.prisma.thematicSection.findMany({
       where: { soaAnalysisId },
       select: { id: true, status: true },
     });
@@ -131,9 +128,8 @@ export class ManageSectionUseCase {
 
     const totalSections = sections.length;
     const finalizedCount = counts.FINALIZED ?? 0;
-    const completionPercentage = totalSections > 0
-      ? Math.round((finalizedCount / totalSections) * 100)
-      : 0;
+    const completionPercentage =
+      totalSections > 0 ? Math.round((finalizedCount / totalSections) * 100) : 0;
 
     return {
       soaAnalysisId,

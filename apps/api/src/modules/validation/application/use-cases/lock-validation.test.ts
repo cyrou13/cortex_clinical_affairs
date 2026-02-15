@@ -36,29 +36,31 @@ function makePrisma(overrides?: {
       ),
       update: vi.fn().mockResolvedValue({ id: STUDY_ID, status: 'LOCKED' }),
     },
-    validationProtocol: {
-      findFirst: vi.fn().mockResolvedValue(
-        overrides?.protocol !== undefined
-          ? overrides.protocol
-          : { id: 'proto-1', status: 'APPROVED' },
-      ),
+    protocol: {
+      findFirst: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.protocol !== undefined
+            ? overrides.protocol
+            : { id: 'proto-1', status: 'APPROVED' },
+        ),
     },
     dataImport: {
-      findFirst: vi.fn().mockResolvedValue(
-        overrides?.activeImport !== undefined
-          ? overrides.activeImport
-          : { id: 'import-1' },
-      ),
+      findFirst: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.activeImport !== undefined ? overrides.activeImport : { id: 'import-1' },
+        ),
     },
     validationResult: {
-      count: vi.fn().mockResolvedValue(
-        overrides?.resultCount !== undefined ? overrides.resultCount : 5,
-      ),
+      count: vi
+        .fn()
+        .mockResolvedValue(overrides?.resultCount !== undefined ? overrides.resultCount : 5),
     },
     generatedReport: {
-      count: vi.fn().mockResolvedValue(
-        overrides?.reportCount !== undefined ? overrides.reportCount : 2,
-      ),
+      count: vi
+        .fn()
+        .mockResolvedValue(overrides?.reportCount !== undefined ? overrides.reportCount : 2),
     },
     validationSnapshot: {
       create: vi.fn().mockResolvedValue({ id: SNAPSHOT_ID }),
@@ -126,9 +128,9 @@ describe('LockValidationUseCase', () => {
     });
     const useCase = new LockValidationUseCase(prisma, eventBus);
 
-    await expect(
-      useCase.execute({ validationStudyId: STUDY_ID, userId: USER_ID }),
-    ).rejects.toThrow('locked');
+    await expect(useCase.execute({ validationStudyId: STUDY_ID, userId: USER_ID })).rejects.toThrow(
+      'locked',
+    );
   });
 
   it('throws ValidationError when protocol is not approved', async () => {
@@ -137,45 +139,45 @@ describe('LockValidationUseCase', () => {
     });
     const useCase = new LockValidationUseCase(prisma, eventBus);
 
-    await expect(
-      useCase.execute({ validationStudyId: STUDY_ID, userId: USER_ID }),
-    ).rejects.toThrow('check(s) failed');
+    await expect(useCase.execute({ validationStudyId: STUDY_ID, userId: USER_ID })).rejects.toThrow(
+      'check(s) failed',
+    );
   });
 
   it('throws ValidationError when no protocol exists', async () => {
     const prisma = makePrisma({ protocol: null });
     const useCase = new LockValidationUseCase(prisma, eventBus);
 
-    await expect(
-      useCase.execute({ validationStudyId: STUDY_ID, userId: USER_ID }),
-    ).rejects.toThrow('Protocol approved');
+    await expect(useCase.execute({ validationStudyId: STUDY_ID, userId: USER_ID })).rejects.toThrow(
+      'Protocol approved',
+    );
   });
 
   it('throws ValidationError when no active import exists', async () => {
     const prisma = makePrisma({ activeImport: null });
     const useCase = new LockValidationUseCase(prisma, eventBus);
 
-    await expect(
-      useCase.execute({ validationStudyId: STUDY_ID, userId: USER_ID }),
-    ).rejects.toThrow('Active data import');
+    await expect(useCase.execute({ validationStudyId: STUDY_ID, userId: USER_ID })).rejects.toThrow(
+      'Active data import',
+    );
   });
 
   it('throws ValidationError when no results mapped', async () => {
     const prisma = makePrisma({ resultCount: 0 });
     const useCase = new LockValidationUseCase(prisma, eventBus);
 
-    await expect(
-      useCase.execute({ validationStudyId: STUDY_ID, userId: USER_ID }),
-    ).rejects.toThrow('Results mapped');
+    await expect(useCase.execute({ validationStudyId: STUDY_ID, userId: USER_ID })).rejects.toThrow(
+      'Results mapped',
+    );
   });
 
   it('throws ValidationError when no reports generated', async () => {
     const prisma = makePrisma({ reportCount: 0 });
     const useCase = new LockValidationUseCase(prisma, eventBus);
 
-    await expect(
-      useCase.execute({ validationStudyId: STUDY_ID, userId: USER_ID }),
-    ).rejects.toThrow('Reports generated');
+    await expect(useCase.execute({ validationStudyId: STUDY_ID, userId: USER_ID })).rejects.toThrow(
+      'Reports generated',
+    );
   });
 
   it('accumulates multiple failed checks in error message', async () => {
@@ -187,9 +189,9 @@ describe('LockValidationUseCase', () => {
     });
     const useCase = new LockValidationUseCase(prisma, eventBus);
 
-    await expect(
-      useCase.execute({ validationStudyId: STUDY_ID, userId: USER_ID }),
-    ).rejects.toThrow('4 check(s) failed');
+    await expect(useCase.execute({ validationStudyId: STUDY_ID, userId: USER_ID })).rejects.toThrow(
+      '4 check(s) failed',
+    );
   });
 
   it('creates snapshot on successful lock', async () => {

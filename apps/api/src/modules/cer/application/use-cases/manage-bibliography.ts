@@ -1,4 +1,4 @@
-import type { PrismaClient, Prisma } from '@prisma/client';
+import type { PrismaClient } from '@prisma/client';
 import { NotFoundError } from '../../../../shared/errors/index.js';
 import {
   CitationFormatterService,
@@ -45,7 +45,7 @@ export class ManageBibliographyUseCase {
     const { cerVersionId, citationStyle, userId } = input;
 
     // 1. Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: cerVersionId },
       select: { id: true },
     });
@@ -55,7 +55,7 @@ export class ManageBibliographyUseCase {
     }
 
     // 2. Fetch all sections
-    const sections = await (this.prisma as any).cerSection.findMany({
+    const sections = await this.prisma.cerSection.findMany({
       where: { cerVersionId },
       select: {
         id: true,
@@ -78,7 +78,7 @@ export class ManageBibliographyUseCase {
 
     // 4. Fetch claim traces to get article links
     const sectionIds = sections.map((s: { id: string }) => s.id);
-    const claimTraces = await (this.prisma as any).claimTrace.findMany({
+    const claimTraces = await this.prisma.claimTrace.findMany({
       where: {
         cerSectionId: { in: sectionIds },
         slsArticleId: { not: null },
@@ -102,7 +102,7 @@ export class ManageBibliographyUseCase {
 
     // 6. Fetch article metadata
     const articleIds = Array.from(articleIdSet);
-    const articles = await (this.prisma as any).slsArticle.findMany({
+    const articles = await this.prisma.article.findMany({
       where: { id: { in: articleIds } },
       select: {
         id: true,
@@ -128,9 +128,7 @@ export class ManageBibliographyUseCase {
     let orderIndex = 1;
 
     // Sort references numerically
-    const sortedRefs = Array.from(allRefNumbers).sort(
-      (a, b) => parseInt(a, 10) - parseInt(b, 10),
-    );
+    const sortedRefs = Array.from(allRefNumbers).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
 
     for (const ref of sortedRefs) {
       const articleId = refToArticleMap.get(ref);
@@ -166,12 +164,14 @@ export class ManageBibliographyUseCase {
 
     // 8. Persist bibliography entries
     // Clear existing entries first
-    await (this.prisma as any).bibliographyEntry.deleteMany({
-      where: { cerVersionId },
-    }).catch(() => {});
+    await this.prisma.bibliographyEntry
+      .deleteMany({
+        where: { cerVersionId },
+      })
+      .catch(() => {});
 
     for (const entry of entries) {
-      await (this.prisma as any).bibliographyEntry.create({
+      await this.prisma.bibliographyEntry.create({
         data: {
           id: entry.id,
           cerVersionId,
@@ -210,6 +210,10 @@ function extractNumericReferences(text: string): string[] {
 
 function parseAuthors(authors: unknown): string[] {
   if (Array.isArray(authors)) return authors.map(String);
-  if (typeof authors === 'string') return authors.split(',').map((a) => a.trim()).filter(Boolean);
+  if (typeof authors === 'string')
+    return authors
+      .split(',')
+      .map((a) => a.trim())
+      .filter(Boolean);
   return [];
 }

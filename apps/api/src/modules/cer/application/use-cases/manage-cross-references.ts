@@ -34,7 +34,7 @@ export class ManageCrossReferencesUseCase {
     const { cerVersionId } = input;
 
     // 1. Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: cerVersionId },
       select: { id: true },
     });
@@ -44,7 +44,7 @@ export class ManageCrossReferencesUseCase {
     }
 
     // 2. Fetch all sections
-    const sections = await (this.prisma as any).cerSection.findMany({
+    const sections = await this.prisma.cerSection.findMany({
       where: { cerVersionId },
       select: {
         id: true,
@@ -85,10 +85,12 @@ export class ManageCrossReferencesUseCase {
     }
 
     // 4. Fetch bibliography entries to check for targets
-    const bibEntries = await (this.prisma as any).bibliographyEntry.findMany({
-      where: { cerVersionId },
-      select: { orderIndex: true },
-    }).catch(() => []);
+    const bibEntries = await this.prisma.bibliographyEntry
+      .findMany({
+        where: { cerVersionId },
+        select: { orderIndex: true },
+      })
+      .catch(() => []);
 
     const bibIndexSet = new Set(
       bibEntries.map((e: { orderIndex: number }) => String(e.orderIndex)),
@@ -100,14 +102,14 @@ export class ManageCrossReferencesUseCase {
     }
 
     // 5. Fetch cross-reference targets for external docs
-    const crossRefs = await (this.prisma as any).crossReference.findMany({
-      where: { cerVersionId, type: 'EXTERNAL_DOC' },
-      select: { refNumber: true },
-    }).catch(() => []);
+    const crossRefs = await this.prisma.crossReference
+      .findMany({
+        where: { cerVersionId, type: 'EXTERNAL_DOC' },
+        select: { refNumber: true },
+      })
+      .catch(() => []);
 
-    const extRefSet = new Set(
-      crossRefs.map((cr: { refNumber: string }) => cr.refNumber),
-    );
+    const extRefSet = new Set(crossRefs.map((cr: { refNumber: string }) => cr.refNumber));
 
     // Resolve external doc references
     for (const ref of externalDocRefs) {

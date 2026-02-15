@@ -34,7 +34,7 @@ export class GenerateDeltaSummaryUseCase {
 
   async execute(input: GenerateDeltaInput): Promise<DeltaSummaryResult> {
     // Verify both versions exist
-    const currentVersion = await (this.prisma as any).cerVersion.findUnique({
+    const currentVersion = await this.prisma.cerVersion.findUnique({
       where: { id: input.currentVersionId },
       select: { id: true, versionNumber: true },
     });
@@ -43,7 +43,7 @@ export class GenerateDeltaSummaryUseCase {
       throw new NotFoundError('CerVersion', input.currentVersionId);
     }
 
-    const previousVersion = await (this.prisma as any).cerVersion.findUnique({
+    const previousVersion = await this.prisma.cerVersion.findUnique({
       where: { id: input.previousVersionId },
       select: { id: true, versionNumber: true },
     });
@@ -53,12 +53,12 @@ export class GenerateDeltaSummaryUseCase {
     }
 
     // Load sections from both versions
-    const currentSections = await (this.prisma as any).cerSection.findMany({
+    const currentSections = await this.prisma.cerSection.findMany({
       where: { cerVersionId: input.currentVersionId },
       orderBy: { orderIndex: 'asc' },
     });
 
-    const previousSections = await (this.prisma as any).cerSection.findMany({
+    const previousSections = await this.prisma.cerSection.findMany({
       where: { cerVersionId: input.previousVersionId },
       orderBy: { orderIndex: 'asc' },
     });
@@ -158,10 +158,7 @@ export class GenerateDeltaSummaryUseCase {
     };
   }
 
-  private computeCharDiff(
-    previous: string,
-    current: string,
-  ): { added: number; removed: number } {
+  private computeCharDiff(previous: string, current: string): { added: number; removed: number } {
     // Simple character-level diff approximation
     const prevLen = previous.length;
     const currLen = current.length;

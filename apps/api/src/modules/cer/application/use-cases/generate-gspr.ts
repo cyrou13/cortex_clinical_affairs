@@ -1,9 +1,6 @@
 import type { PrismaClient, Prisma } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
-import {
-  getGsprForDeviceClass,
-  type GsprRequirement,
-} from '@cortex/shared';
+import { getGsprForDeviceClass, type GsprRequirement } from '@cortex/shared';
 
 // ── Types ───────────────────────────────────────────────────────────────
 
@@ -47,7 +44,7 @@ export class GenerateGsprUseCase {
     }
 
     // 2. Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: cerVersionId },
       select: { id: true, projectId: true },
     });
@@ -57,12 +54,14 @@ export class GenerateGsprUseCase {
     }
 
     // 3. Check for existing GSPR matrix (prevent duplicates)
-    const existingCount = await (this.prisma as any).gsprMatrixRow.count({
+    const existingCount = await this.prisma.gsprMatrixRow.count({
       where: { cerVersionId },
     });
 
     if (existingCount > 0) {
-      throw new ValidationError('GSPR matrix already exists for this CER version. Delete existing matrix first.');
+      throw new ValidationError(
+        'GSPR matrix already exists for this CER version. Delete existing matrix first.',
+      );
     }
 
     // 4. Get applicable GSPR requirements
@@ -79,7 +78,7 @@ export class GenerateGsprUseCase {
       const evidence = evidenceMap.get(req.id) ?? [];
       const status = this.determineInitialStatus(req, evidence);
 
-      await (this.prisma as any).gsprMatrixRow.create({
+      await this.prisma.gsprMatrixRow.create({
         data: {
           id: rowId,
           cerVersionId,
@@ -128,10 +127,7 @@ export class GenerateGsprUseCase {
     };
   }
 
-  private determineInitialStatus(
-    req: GsprRequirement,
-    evidence: string[],
-  ): GsprStatus {
+  private determineInitialStatus(req: GsprRequirement, evidence: string[]): GsprStatus {
     if (evidence.length === 0) return 'PARTIAL';
     // If multiple evidence references, consider it compliant
     if (evidence.length >= 2) return 'COMPLIANT';
@@ -142,15 +138,17 @@ export class GenerateGsprUseCase {
     const evidenceMap = new Map<string, string[]>();
 
     // Gather from validation study GSPR mappings
-    const gsprMappings = await (this.prisma as any).gsprMapping.findMany({
-      where: {
-        validationStudy: { projectId },
-      },
-      select: {
-        gsprId: true,
-        evidenceReferences: true,
-      },
-    }).catch(() => []);
+    const gsprMappings = await this.prisma.gsprMapping
+      .findMany({
+        where: {
+          validationStudy: { projectId },
+        },
+        select: {
+          gsprId: true,
+          evidenceReferences: true,
+        },
+      })
+      .catch(() => []);
 
     for (const mapping of gsprMappings) {
       const refs = Array.isArray(mapping.evidenceReferences)
@@ -161,15 +159,17 @@ export class GenerateGsprUseCase {
     }
 
     // Gather from SOA benchmarks
-    const soaBenchmarks = await (this.prisma as any).soaBenchmark.findMany({
-      where: {
-        soaAnalysis: { projectId },
-      },
-      select: {
-        id: true,
-        name: true,
-      },
-    }).catch(() => []);
+    const soaBenchmarks = await this.prisma.soaBenchmark
+      .findMany({
+        where: {
+          soaAnalysis: { projectId },
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+      })
+      .catch(() => []);
 
     // Map common SOA benchmarks to GSPR requirements
     for (const bm of soaBenchmarks) {

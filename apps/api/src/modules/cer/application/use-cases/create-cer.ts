@@ -1,8 +1,15 @@
 import type { PrismaClient } from '@prisma/client';
-import { NotFoundError, ValidationError, UpstreamNotLockedError } from '../../../../shared/errors/index.js';
+import {
+  NotFoundError,
+  ValidationError,
+  UpstreamNotLockedError,
+} from '../../../../shared/errors/index.js';
 import type { EventBus } from '../../../../shared/events/event-bus.js';
 import { isValidContext } from '../../domain/value-objects/regulatory-context.js';
-import { isValidVersionType, getNextVersionNumber } from '../../domain/value-objects/version-type.js';
+import {
+  isValidVersionType,
+  getNextVersionNumber,
+} from '../../domain/value-objects/version-type.js';
 import type { VersionType } from '../../domain/value-objects/version-type.js';
 import { createCerCreatedEvent } from '../../domain/events/cer-created.js';
 
@@ -59,7 +66,7 @@ export class CreateCerUseCase {
       throw new UpstreamNotLockedError('SLS');
     }
 
-    const soaAnalyses = await (this.prisma as any).soaAnalysis.findMany({
+    const soaAnalyses = await this.prisma.soaAnalysis.findMany({
       where: { projectId, status: 'LOCKED' },
       select: { id: true, lockedAt: true },
     });
@@ -68,7 +75,7 @@ export class CreateCerUseCase {
       throw new UpstreamNotLockedError('SOA');
     }
 
-    const validationStudies = await (this.prisma as any).validationStudy.findMany({
+    const validationStudies = await this.prisma.validationStudy.findMany({
       where: { projectId, status: 'LOCKED' },
       select: { id: true, lockedAt: true },
     });
@@ -85,9 +92,7 @@ export class CreateCerUseCase {
 
     // Create CER version
     const cerVersionId = crypto.randomUUID();
-    const now = new Date().toISOString();
-
-    await (this.prisma as any).cerVersion.create({
+    await this.prisma.cerVersion.create({
       data: {
         id: cerVersionId,
         projectId,
@@ -127,7 +132,7 @@ export class CreateCerUseCase {
     }
 
     for (const link of upstreamLinks) {
-      await (this.prisma as any).cerUpstreamLink.create({
+      await this.prisma.cerUpstreamLink.create({
         data: {
           id: crypto.randomUUID(),
           cerVersionId,

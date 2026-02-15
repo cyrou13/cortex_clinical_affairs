@@ -1,7 +1,6 @@
-import type { PrismaClient, Prisma } from '@prisma/client';
+import type { PrismaClient } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
 import type { EventBus } from '../../../../shared/events/event-bus.js';
-import { validateExternalDoc } from '../../domain/entities/external-document.js';
 
 interface UpdateExternalDocVersionInput {
   documentId: string;
@@ -37,7 +36,7 @@ export class UpdateExternalDocVersionUseCase {
     const { documentId, newVersion, newDate, newSummary, userId } = input;
 
     // Fetch document
-    const doc = await (this.prisma as any).cerExternalDocument.findUnique({
+    const doc = await this.prisma.cerExternalDocument.findUnique({
       where: { id: documentId },
       include: { cerVersion: { select: { id: true, status: true } } },
     });
@@ -62,7 +61,7 @@ export class UpdateExternalDocVersionUseCase {
 
     // Archive current version to history
     const historyId = crypto.randomUUID();
-    await (this.prisma as any).cerExternalDocumentHistory.create({
+    await this.prisma.cerExternalDocumentHistory.create({
       data: {
         id: historyId,
         documentId,
@@ -75,7 +74,7 @@ export class UpdateExternalDocVersionUseCase {
     });
 
     // Update document with new version
-    await (this.prisma as any).cerExternalDocument.update({
+    await this.prisma.cerExternalDocument.update({
       where: { id: documentId },
       data: {
         version: newVersion.trim(),
@@ -85,7 +84,7 @@ export class UpdateExternalDocVersionUseCase {
     });
 
     // Find sections referencing this document
-    const sectionLinks = await (this.prisma as any).cerSectionDocLink.findMany({
+    const sectionLinks = await this.prisma.cerSectionDocLink.findMany({
       where: { externalDocumentId: documentId },
       select: { cerSectionId: true },
     });
@@ -96,7 +95,7 @@ export class UpdateExternalDocVersionUseCase {
 
     // Flag impacted sections with version mismatch warning
     if (impactedSectionIds.length > 0) {
-      await (this.prisma as any).cerSection.updateMany({
+      await this.prisma.cerSection.updateMany({
         where: { id: { in: impactedSectionIds } },
         data: { versionMismatchWarning: true },
       });

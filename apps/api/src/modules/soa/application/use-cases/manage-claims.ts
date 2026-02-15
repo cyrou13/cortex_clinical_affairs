@@ -18,7 +18,7 @@ export class ManageClaimsUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async createClaim(input: CreateClaimInput) {
-    const soa = await (this.prisma as any).soaAnalysis.findUnique({
+    const soa = await this.prisma.soaAnalysis.findUnique({
       where: { id: input.soaAnalysisId },
       select: { id: true, status: true },
     });
@@ -36,7 +36,7 @@ export class ManageClaimsUseCase {
     }
 
     if (input.thematicSectionId) {
-      const section = await (this.prisma as any).thematicSection.findUnique({
+      const section = await this.prisma.thematicSection.findUnique({
         where: { id: input.thematicSectionId },
         select: { id: true, soaAnalysisId: true },
       });
@@ -46,7 +46,7 @@ export class ManageClaimsUseCase {
       }
     }
 
-    const claim = await (this.prisma as any).claim.create({
+    const claim = await this.prisma.claim.create({
       data: {
         id: crypto.randomUUID(),
         soaAnalysisId: input.soaAnalysisId,
@@ -60,7 +60,7 @@ export class ManageClaimsUseCase {
   }
 
   async linkClaimToArticle(input: LinkClaimToArticleInput) {
-    const claim = await (this.prisma as any).claim.findUnique({
+    const claim = await this.prisma.claim.findUnique({
       where: { id: input.claimId },
       include: {
         soaAnalysis: { select: { id: true, status: true } },
@@ -84,7 +84,7 @@ export class ManageClaimsUseCase {
       throw new NotFoundError('Article', input.articleId);
     }
 
-    const link = await (this.prisma as any).claimArticleLink.create({
+    const link = await this.prisma.claimArticleLink.create({
       data: {
         id: crypto.randomUUID(),
         claimId: input.claimId,
@@ -97,7 +97,7 @@ export class ManageClaimsUseCase {
   }
 
   async getClaimsForAnalysis(soaAnalysisId: string) {
-    const soa = await (this.prisma as any).soaAnalysis.findUnique({
+    const soa = await this.prisma.soaAnalysis.findUnique({
       where: { id: soaAnalysisId },
       select: { id: true },
     });
@@ -106,7 +106,7 @@ export class ManageClaimsUseCase {
       throw new NotFoundError('SoaAnalysis', soaAnalysisId);
     }
 
-    const claims = await (this.prisma as any).claim.findMany({
+    const claims = await this.prisma.claim.findMany({
       where: { soaAnalysisId },
       include: {
         claimArticleLinks: {

@@ -1,5 +1,9 @@
 import type { PrismaClient, Prisma } from '@prisma/client';
-import { NotFoundError, ValidationError, LockConflictError } from '../../../../shared/errors/index.js';
+import {
+  NotFoundError,
+  ValidationError,
+  LockConflictError,
+} from '../../../../shared/errors/index.js';
 import type { EventBus } from '../../../../shared/events/event-bus.js';
 import { createCerVersionLockedEvent } from '../../domain/events/cer-events.js';
 import { CreateUpstreamSnapshotsUseCase } from './create-upstream-snapshots.js';
@@ -37,7 +41,7 @@ export class LockCerUseCase {
     const { cerVersionId, userId } = input;
 
     // 1. Fetch CER version
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: cerVersionId },
       select: {
         id: true,
@@ -69,7 +73,7 @@ export class LockCerUseCase {
     // 3. Lock CER version
     const now = new Date();
 
-    await (this.prisma as any).cerVersion.update({
+    await this.prisma.cerVersion.update({
       where: { id: cerVersionId },
       data: {
         status: 'LOCKED',
@@ -79,10 +83,7 @@ export class LockCerUseCase {
     });
 
     // 4. Create upstream snapshots
-    const snapshotUseCase = new CreateUpstreamSnapshotsUseCase(
-      this.prisma,
-      this.checksumService,
-    );
+    const snapshotUseCase = new CreateUpstreamSnapshotsUseCase(this.prisma, this.checksumService);
     const snapshotResult = await snapshotUseCase.execute({
       cerVersionId,
       userId,
@@ -126,7 +127,7 @@ export class LockCerUseCase {
     const checks: PreLockCheck[] = [];
 
     // Check 1: All 14 sections FINALIZED
-    const sections = await (this.prisma as any).cerSection.findMany({
+    const sections = await this.prisma.cerSection.findMany({
       where: { cerVersionId },
       select: { id: true, sectionType: true, status: true },
     });
@@ -144,7 +145,7 @@ export class LockCerUseCase {
     });
 
     // Check 2: 100% traceability coverage
-    const claimTraceCount = await (this.prisma as any).claimTrace.count({
+    const claimTraceCount = await this.prisma.claimTrace.count({
       where: { cerVersionId },
     });
 
@@ -155,7 +156,7 @@ export class LockCerUseCase {
     });
 
     // Check 3: All evaluators assigned with CV + COI
-    const evaluators = await (this.prisma as any).evaluator.findMany({
+    const evaluators = await this.prisma.evaluator.findMany({
       where: { cerVersionId },
       select: {
         id: true,
@@ -199,7 +200,7 @@ export class LockCerUseCase {
     });
 
     // Check 5: GSPR matrix finalized
-    const gsprMatrix = await (this.prisma as any).gsprMapping.findFirst({
+    const gsprMatrix = await this.prisma.gsprMapping.findFirst({
       where: { cerVersionId },
       select: { id: true, status: true },
     });
@@ -207,13 +208,11 @@ export class LockCerUseCase {
     checks.push({
       label: 'GSPR matrix finalized',
       passed: gsprMatrix?.status === 'FINALIZED',
-      detail: gsprMatrix
-        ? `Status: ${gsprMatrix.status}`
-        : 'No GSPR matrix found',
+      detail: gsprMatrix ? `Status: ${gsprMatrix.status}` : 'No GSPR matrix found',
     });
 
     // Check 6: Benefit-risk finalized
-    const benefitRisk = await (this.prisma as any).benefitRiskAssessment.findFirst({
+    const benefitRisk = await this.prisma.benefitRiskAssessment.findFirst({
       where: { cerVersionId },
       select: { id: true, status: true },
     });
@@ -221,9 +220,7 @@ export class LockCerUseCase {
     checks.push({
       label: 'Benefit-risk finalized',
       passed: benefitRisk?.status === 'FINALIZED',
-      detail: benefitRisk
-        ? `Status: ${benefitRisk.status}`
-        : 'No benefit-risk assessment found',
+      detail: benefitRisk ? `Status: ${benefitRisk.status}` : 'No benefit-risk assessment found',
     });
 
     return checks;

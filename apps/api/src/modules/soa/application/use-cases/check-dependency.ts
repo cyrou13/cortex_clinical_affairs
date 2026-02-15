@@ -13,7 +13,7 @@ export class CheckDependencyUseCase {
       return { canProceed: true, warnings: [] };
     }
 
-    const clinicalSoas = await (this.prisma as any).soaAnalysis.findMany({
+    const clinicalSoas = await this.prisma.soaAnalysis.findMany({
       where: {
         projectId,
         type: 'CLINICAL',
@@ -30,7 +30,7 @@ export class CheckDependencyUseCase {
       };
     }
 
-    const section6Finalized = await (this.prisma as any).thematicSection.findFirst({
+    const section6Finalized = await this.prisma.thematicSection.findFirst({
       where: {
         soaAnalysisId: { in: clinicalSoas.map((s: { id: string }) => s.id) },
         sectionKey: 'CLINICAL_6',

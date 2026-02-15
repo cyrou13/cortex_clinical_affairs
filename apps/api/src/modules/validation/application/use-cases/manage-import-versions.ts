@@ -50,13 +50,13 @@ export class ManageImportVersionsUseCase {
     const { validationStudyId, version } = input;
 
     // Find current active version
-    const currentActive = await (this.prisma as any).dataImport.findFirst({
+    const currentActive = await this.prisma.dataImport.findFirst({
       where: { validationStudyId, isActive: true },
       select: { id: true, version: true },
     });
 
     // Find target version
-    const targetImport = await (this.prisma as any).dataImport.findFirst({
+    const targetImport = await this.prisma.dataImport.findFirst({
       where: { validationStudyId, version },
       select: { id: true, version: true },
     });
@@ -66,13 +66,13 @@ export class ManageImportVersionsUseCase {
     }
 
     // Deactivate all
-    await (this.prisma as any).dataImport.updateMany({
+    await this.prisma.dataImport.updateMany({
       where: { validationStudyId, isActive: true },
       data: { isActive: false },
     });
 
     // Activate target
-    await (this.prisma as any).dataImport.update({
+    await this.prisma.dataImport.update({
       where: { id: targetImport.id },
       data: { isActive: true },
     });
@@ -87,7 +87,7 @@ export class ManageImportVersionsUseCase {
   async rollbackToVersion(input: RollbackInput): Promise<RollbackResult> {
     const { validationStudyId, targetVersion } = input;
 
-    const currentActive = await (this.prisma as any).dataImport.findFirst({
+    const currentActive = await this.prisma.dataImport.findFirst({
       where: { validationStudyId, isActive: true },
       select: { id: true, version: true },
     });
@@ -117,7 +117,7 @@ export class ManageImportVersionsUseCase {
   async computeDiff(input: ComputeDiffInput): Promise<ComputeDiffResult> {
     const { validationStudyId, versionA, versionB } = input;
 
-    const importA = await (this.prisma as any).dataImport.findFirst({
+    const importA = await this.prisma.dataImport.findFirst({
       where: { validationStudyId, version: versionA },
       select: { data: true, rowCount: true },
     });
@@ -126,7 +126,7 @@ export class ManageImportVersionsUseCase {
       throw new NotFoundError('DataImport', `version ${versionA}`);
     }
 
-    const importB = await (this.prisma as any).dataImport.findFirst({
+    const importB = await this.prisma.dataImport.findFirst({
       where: { validationStudyId, version: versionB },
       select: { data: true, rowCount: true },
     });

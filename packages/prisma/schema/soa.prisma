@@ -1,1 +1,240 @@
-// SOA Module Schema - To be implemented in Epic 3
+// SOA Module Schema - Epic 3: State of the Art Analysis
+
+enum SoaStatus {
+  DRAFT
+  LOCKED
+}
+
+enum ThematicSectionStatus {
+  DRAFT
+  LOCKED
+}
+
+enum GridCellValidationStatus {
+  PENDING
+  VALIDATED
+  REJECTED
+}
+
+enum QualityAssessmentType {
+  QUADAS_2
+  INTERNAL_READING_GRID
+}
+
+enum DataContributionLevel {
+  PIVOTAL
+  SUPPORTIVE
+  BACKGROUND
+}
+
+// --- Model 1: SoaAnalysis (root aggregate) ---
+
+model SoaAnalysis {
+  id          String    @id @default(uuid())
+  projectId   String
+  name        String
+  type        String
+  status      SoaStatus @default(DRAFT)
+  description String?
+  createdById String
+  lockedAt    DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  slsLinks           SoaSlsLink[]
+  thematicSections   ThematicSection[]
+  similarDevices     SimilarDevice[]
+  claims             Claim[]
+  extractionGrids    ExtractionGrid[]
+  qualityAssessments QualityAssessment[]
+  soaBenchmarks      SoaBenchmark[]
+
+  @@index([projectId, status])
+}
+
+// --- Model 2: SoaSlsLink ---
+
+model SoaSlsLink {
+  id            String @id @default(uuid())
+  soaAnalysisId String
+  slsSessionId  String
+
+  soaAnalysis SoaAnalysis @relation(fields: [soaAnalysisId], references: [id])
+
+  @@unique([soaAnalysisId, slsSessionId])
+  @@index([soaAnalysisId])
+}
+
+// --- Model 3: ThematicSection ---
+
+model ThematicSection {
+  id            String                 @id @default(uuid())
+  soaAnalysisId String
+  sectionKey    String
+  title         String
+  orderIndex    Int
+  status        ThematicSectionStatus  @default(DRAFT)
+
+  soaAnalysis SoaAnalysis @relation(fields: [soaAnalysisId], references: [id])
+
+  @@index([soaAnalysisId])
+}
+
+// --- Model 4: SimilarDevice ---
+
+model SimilarDevice {
+  id               String   @id @default(uuid())
+  soaAnalysisId    String
+  deviceName       String
+  manufacturer     String
+  indication       String
+  regulatoryStatus String
+  metadata         Json?
+  createdById      String
+  createdAt        DateTime @default(now())
+
+  soaAnalysis SoaAnalysis @relation(fields: [soaAnalysisId], references: [id])
+  benchmarks  Benchmark[]
+
+  @@index([soaAnalysisId])
+}
+
+// --- Model 5: Benchmark ---
+
+model Benchmark {
+  id                String  @id @default(uuid())
+  similarDeviceId   String
+  metricName        String
+  metricValue       String
+  unit              String
+  sourceArticleId   String?
+  sourceDescription String?
+
+  similarDevice SimilarDevice @relation(fields: [similarDeviceId], references: [id])
+
+  @@index([similarDeviceId])
+}
+
+// --- Model 6: Claim ---
+
+model Claim {
+  id                String   @id @default(uuid())
+  soaAnalysisId     String
+  statementText     String
+  thematicSectionId String?
+  createdById       String
+  createdAt         DateTime @default(now())
+
+  soaAnalysis  SoaAnalysis       @relation(fields: [soaAnalysisId], references: [id])
+  articleLinks ClaimArticleLink[]
+
+  @@index([soaAnalysisId])
+}
+
+// --- Model 7: ClaimArticleLink ---
+
+model ClaimArticleLink {
+  id          String  @id @default(uuid())
+  claimId     String
+  articleId   String
+  sourceQuote String?
+
+  claim Claim @relation(fields: [claimId], references: [id])
+
+  @@index([claimId])
+}
+
+// --- Model 8: ExtractionGrid ---
+
+model ExtractionGrid {
+  id                String  @id @default(uuid())
+  soaAnalysisId     String
+  thematicSectionId String?
+  name              String
+
+  soaAnalysis SoaAnalysis  @relation(fields: [soaAnalysisId], references: [id])
+  columns     GridColumn[]
+  cells       GridCell[]
+
+  @@index([soaAnalysisId])
+}
+
+// --- Model 9: GridColumn ---
+
+model GridColumn {
+  id               String  @id @default(uuid())
+  extractionGridId String
+  name             String
+  displayName      String
+  dataType         String
+  orderIndex       Int
+  isRequired       Boolean @default(false)
+
+  extractionGrid ExtractionGrid @relation(fields: [extractionGridId], references: [id])
+  cells          GridCell[]
+
+  @@index([extractionGridId])
+}
+
+// --- Model 10: GridCell ---
+
+model GridCell {
+  id               String                   @id @default(uuid())
+  extractionGridId String
+  articleId        String
+  gridColumnId     String
+  value            String?
+  validationStatus GridCellValidationStatus @default(PENDING)
+
+  extractionGrid ExtractionGrid @relation(fields: [extractionGridId], references: [id])
+  gridColumn     GridColumn     @relation(fields: [gridColumnId], references: [id])
+
+  @@index([extractionGridId])
+  @@index([gridColumnId])
+}
+
+// --- Model 11: QualityAssessment ---
+
+model QualityAssessment {
+  id                    String                @id @default(uuid())
+  soaAnalysisId         String
+  articleId             String
+  assessmentType        QualityAssessmentType
+  assessmentData        Json?
+  dataContributionLevel DataContributionLevel
+  assessedById          String
+  assessedAt            DateTime
+
+  soaAnalysis SoaAnalysis @relation(fields: [soaAnalysisId], references: [id])
+
+  @@index([soaAnalysisId])
+}
+
+// --- Model 12: SoaBenchmark ---
+
+model SoaBenchmark {
+  id             String  @id @default(uuid())
+  soaAnalysisId  String
+  projectId      String
+  parameterName  String
+  benchmarkValue String?
+  name           String?
+  threshold      Float?
+  unit           String?
+  metricType     String?
+
+  soaAnalysis SoaAnalysis @relation(fields: [soaAnalysisId], references: [id])
+
+  @@index([soaAnalysisId])
+}
+
+// --- Model 13: SoaOpenQuestion ---
+
+model SoaOpenQuestion {
+  id            String   @id @default(uuid())
+  soaAnalysisId String?
+  description   String?
+  createdAt     DateTime @default(now())
+
+  @@index([soaAnalysisId])
+}

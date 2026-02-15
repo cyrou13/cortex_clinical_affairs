@@ -1,4 +1,4 @@
-import type { PrismaClient, Prisma } from '@prisma/client';
+import type { PrismaClient } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ export class ConfigureDeviationThresholdsUseCase {
     }
 
     // Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: input.cerVersionId },
       select: { id: true },
     });
@@ -42,13 +42,13 @@ export class ConfigureDeviationThresholdsUseCase {
     }
 
     // Upsert config
-    const existing = await (this.prisma as any).pccpDeviationConfig.findFirst({
+    const existing = await this.prisma.pccpDeviationConfig.findFirst({
       where: { cerVersionId: input.cerVersionId },
       select: { id: true },
     });
 
     if (existing) {
-      const updated = await (this.prisma as any).pccpDeviationConfig.update({
+      const updated = await this.prisma.pccpDeviationConfig.update({
         where: { id: existing.id },
         data: {
           mandatoryJustificationLevel: input.mandatoryJustificationLevel,
@@ -65,7 +65,7 @@ export class ConfigureDeviationThresholdsUseCase {
 
     const configId = crypto.randomUUID();
 
-    const created = await (this.prisma as any).pccpDeviationConfig.create({
+    const created = await this.prisma.pccpDeviationConfig.create({
       data: {
         id: configId,
         cerVersionId: input.cerVersionId,

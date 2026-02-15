@@ -40,7 +40,7 @@ export class ExportProofPackageUseCase {
     const { claimTraceId } = input;
 
     // 1. Fetch claim trace
-    const trace = await (this.prisma as any).claimTrace.findUnique({
+    const trace = await this.prisma.claimTrace.findUnique({
       where: { id: claimTraceId },
       select: {
         id: true,
@@ -58,7 +58,7 @@ export class ExportProofPackageUseCase {
     }
 
     // 2. Fetch section info
-    const section = await (this.prisma as any).cerSection.findUnique({
+    const section = await this.prisma.cerSection.findUnique({
       where: { id: trace.cerSectionId },
       select: { id: true, sectionNumber: true, title: true },
     });
@@ -104,7 +104,7 @@ export class ExportProofPackageUseCase {
 
     // Level 3: Validation Study
     if (trace.validationStudyId) {
-      const study = await (this.prisma as any).validationStudy.findUnique({
+      const study = await this.prisma.validationStudy.findUnique({
         where: { id: trace.validationStudyId },
         select: { id: true, name: true, type: true, status: true },
       });
@@ -125,7 +125,7 @@ export class ExportProofPackageUseCase {
 
     // Level 4: SLS Article
     if (trace.slsArticleId) {
-      const article = await (this.prisma as any).slsArticle.findUnique({
+      const article = await this.prisma.article.findUnique({
         where: { id: trace.slsArticleId },
         select: { id: true, title: true, doi: true, authors: true, journal: true, year: true },
       });
@@ -163,7 +163,13 @@ export class ExportProofPackageUseCase {
     });
 
     const auditTrail: AuditEntry[] = auditEntries.map(
-      (e: { action: string; userId: string; createdAt: Date | string; before: unknown; after: unknown }) => ({
+      (e: {
+        action: string;
+        userId: string;
+        createdAt: Date | string;
+        before: unknown;
+        after: unknown;
+      }) => ({
         action: e.action,
         userId: e.userId,
         timestamp: typeof e.createdAt === 'string' ? e.createdAt : e.createdAt.toISOString(),

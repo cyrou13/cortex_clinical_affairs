@@ -31,7 +31,7 @@ export class ESignDocumentUseCase {
 
   async execute(input: ESignInput): Promise<ESignResult> {
     // Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: input.cerVersionId },
       select: { id: true },
     });
@@ -41,7 +41,7 @@ export class ESignDocumentUseCase {
     }
 
     // Find evaluator record for this user and CER version
-    const evaluator = await (this.prisma as any).evaluator.findFirst({
+    const evaluator = await this.prisma.evaluator.findFirst({
       where: {
         cerVersionId: input.cerVersionId,
         userId: input.userId,
@@ -74,7 +74,7 @@ export class ESignDocumentUseCase {
     }
 
     // Compute document hash from all sections
-    const sections = await (this.prisma as any).cerSection.findMany({
+    const sections = await this.prisma.cerSection.findMany({
       where: { cerVersionId: input.cerVersionId },
       select: { content: true },
       orderBy: { orderIndex: 'asc' },
@@ -88,7 +88,7 @@ export class ESignDocumentUseCase {
     const signatureId = crypto.randomUUID();
 
     // Create ESignature record
-    await (this.prisma as any).eSignature.create({
+    await this.prisma.eSignature.create({
       data: {
         id: signatureId,
         cerVersionId: input.cerVersionId,
@@ -100,7 +100,7 @@ export class ESignDocumentUseCase {
     });
 
     // Update evaluator record
-    await (this.prisma as any).evaluator.update({
+    await this.prisma.evaluator.update({
       where: { id: evaluator.id },
       data: {
         signedAt: now,

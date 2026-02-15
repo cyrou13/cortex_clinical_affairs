@@ -1,1 +1,456 @@
-// CER Module Schema - To be implemented in Epic 5
+// CER Module Schema
+
+enum CerVersionStatus {
+  DRAFT
+  LOCKED
+}
+
+enum CerSectionStatus {
+  DRAFT
+  APPROVED
+  LOCKED
+}
+
+enum CerUpstreamModuleType {
+  SLS
+  SOA
+  VALIDATION
+}
+
+enum GsprComplianceStatus {
+  COMPLIANT
+  PARTIAL
+  NOT_APPLICABLE
+}
+
+enum BenefitRiskItemType {
+  BENEFIT
+  RISK
+}
+
+enum RiskSeverity {
+  NEGLIGIBLE
+  MINOR
+  SERIOUS
+  CRITICAL
+  CATASTROPHIC
+}
+
+enum RiskProbability {
+  IMPROBABLE
+  REMOTE
+  OCCASIONAL
+  PROBABLE
+  FREQUENT
+}
+
+enum RiskLevel {
+  ACCEPTABLE
+  ALARP
+  UNACCEPTABLE
+}
+
+enum DeviationSignificance {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum DeviationStatus {
+  IDENTIFIED
+  JUSTIFIED
+  CLOSED
+}
+
+enum DeviationSource {
+  VALIDATION_RESULT
+  SOA_BENCHMARK
+}
+
+enum MandatoryJustificationLevel {
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum EvaluatorRole {
+  WRITTEN_BY
+  VERIFIED_BY
+  APPROVED_BY
+}
+
+enum NamedDeviceSearchStatus {
+  DRAFT
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+// 1. CerVersion - root aggregate
+model CerVersion {
+  id                String           @id @default(uuid())
+  projectId         String
+  regulatoryContext  String
+  versionType       String
+  versionNumber     Int
+  status            CerVersionStatus @default(DRAFT)
+  createdById       String
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  project                 Project                  @relation(fields: [projectId], references: [id])
+  sections                CerSection[]
+  upstreamLinks           CerUpstreamLink[]
+  externalDocuments       CerExternalDocument[]
+  gsprRows                GsprMatrixRow[]
+  benefitRiskItems        BenefitRiskItem[]
+  benefitRiskAssessment   BenefitRiskAssessment?
+  benefitRiskMitigations  BenefitRiskMitigation[]
+  pccpDeviations          PccpDeviation[]
+  pccpDeviationConfig     PccpDeviationConfig?
+  pccpAcceptanceCriteria  PccpAcceptanceCriteria[]
+  evaluators              Evaluator[]
+  bibliographyEntries     BibliographyEntry[]
+  eSignatures             ESignature[]
+  namedDeviceSearches     NamedDeviceSearch[]
+  crossReferences         CrossReference[]
+  generatedReports        GeneratedReport[]
+
+  @@index([projectId])
+}
+
+// 2. CerSection - sections of a CER
+model CerSection {
+  id                     String           @id @default(uuid())
+  cerVersionId           String
+  sectionNumber          String
+  sectionType            String
+  title                  String
+  status                 CerSectionStatus @default(DRAFT)
+  content                Json?
+  humanEditedContent     Json?
+  aiDraftContent         Json?
+  orderIndex             Int
+  createdById            String
+  updatedById            String?
+  versionMismatchWarning Boolean          @default(false)
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @updatedAt
+
+  cerVersion    CerVersion          @relation(fields: [cerVersionId], references: [id])
+  docLinks      CerSectionDocLink[]
+  claimTraces   ClaimTrace[]
+  evaluators    Evaluator[]
+
+  @@index([cerVersionId])
+}
+
+// 3. CerUpstreamLink - links to SLS/SOA/Validation
+model CerUpstreamLink {
+  id           String                @id @default(uuid())
+  cerVersionId String
+  moduleType   CerUpstreamModuleType
+  moduleId     String
+  lockedAt     DateTime?
+
+  cerVersion CerVersion @relation(fields: [cerVersionId], references: [id])
+
+  @@index([cerVersionId])
+}
+
+// 4. CerExternalDocument - external documents
+model CerExternalDocument {
+  id           String   @id @default(uuid())
+  cerVersionId String
+  title        String
+  version      String
+  date         String
+  summary      String
+  documentType String
+  createdById  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  cerVersion CerVersion                 @relation(fields: [cerVersionId], references: [id])
+  history    CerExternalDocumentHistory[]
+  docLinks   CerSectionDocLink[]
+
+  @@index([cerVersionId])
+}
+
+// 5. CerExternalDocumentHistory - version history
+model CerExternalDocumentHistory {
+  id         String   @id @default(uuid())
+  documentId String
+  version    String
+  date       String
+  summary    String
+  archivedAt DateTime
+  archivedById String
+
+  document CerExternalDocument @relation(fields: [documentId], references: [id])
+
+  @@index([documentId])
+}
+
+// 6. CerSectionDocLink - links sections to documents
+model CerSectionDocLink {
+  id                 String   @id @default(uuid())
+  cerSectionId       String
+  externalDocumentId String
+  referenceContext   String?
+  createdById        String
+  createdAt          DateTime @default(now())
+
+  cerSection       CerSection          @relation(fields: [cerSectionId], references: [id])
+  externalDocument CerExternalDocument @relation(fields: [externalDocumentId], references: [id])
+
+  @@index([cerSectionId])
+  @@index([externalDocumentId])
+}
+
+// 7. GsprMatrixRow - GSPR compliance matrix
+model GsprMatrixRow {
+  id                  String               @id @default(uuid())
+  cerVersionId        String
+  gsprId              String
+  title               String
+  description         String
+  chapter             String
+  section             String
+  status              GsprComplianceStatus
+  evidenceReferences  Json?
+  notes               String?
+  createdById         String
+  createdAt           DateTime             @default(now())
+
+  cerVersion CerVersion @relation(fields: [cerVersionId], references: [id])
+
+  @@index([cerVersionId])
+}
+
+// 8. BenefitRiskItem - benefits and risks
+model BenefitRiskItem {
+  id           String             @id @default(uuid())
+  cerVersionId String
+  itemType     BenefitRiskItemType
+  description  String
+  source       String
+  sourceId     String?
+  severity     RiskSeverity?
+  probability  RiskProbability?
+  riskLevel    RiskLevel?
+  createdById  String
+  createdAt    DateTime           @default(now())
+
+  cerVersion  CerVersion              @relation(fields: [cerVersionId], references: [id])
+  mitigations BenefitRiskMitigation[]
+
+  @@index([cerVersionId])
+}
+
+// 9. BenefitRiskMitigation - mitigations for risks
+model BenefitRiskMitigation {
+  id                String    @id @default(uuid())
+  riskId            String
+  cerVersionId      String
+  description       String
+  residualRiskLevel RiskLevel
+  createdById       String
+  createdAt         DateTime  @default(now())
+
+  risk       BenefitRiskItem @relation(fields: [riskId], references: [id])
+  cerVersion CerVersion      @relation(fields: [cerVersionId], references: [id])
+
+  @@index([riskId])
+  @@index([cerVersionId])
+}
+
+// 10. BenefitRiskAssessment - overall B/R assessment
+model BenefitRiskAssessment {
+  id           String   @id @default(uuid())
+  cerVersionId String   @unique
+  conclusion   String
+  rationale    String?
+  createdById  String
+  createdAt    DateTime @default(now())
+
+  cerVersion CerVersion @relation(fields: [cerVersionId], references: [id])
+}
+
+// 11. PccpDeviation - PCCP deviations
+model PccpDeviation {
+  id               String                @id @default(uuid())
+  cerVersionId     String
+  pccpSection      String
+  description      String
+  expectedValue    String
+  actualValue      String
+  significance     DeviationSignificance
+  impactedSections Json?
+  status           DeviationStatus
+  exceedsThreshold Boolean               @default(false)
+  source           DeviationSource
+  justification    String?
+  createdById      String
+  createdAt        DateTime              @default(now())
+
+  cerVersion CerVersion @relation(fields: [cerVersionId], references: [id])
+
+  @@index([cerVersionId])
+}
+
+// 12. PccpDeviationConfig - thresholds config
+model PccpDeviationConfig {
+  id                         String                     @id @default(uuid())
+  cerVersionId               String                     @unique
+  mandatoryJustificationLevel MandatoryJustificationLevel
+  createdById                String
+  updatedById                String
+  createdAt                  DateTime                   @default(now())
+  updatedAt                  DateTime                   @updatedAt
+
+  cerVersion CerVersion @relation(fields: [cerVersionId], references: [id])
+}
+
+// 13. PccpAcceptanceCriteria - acceptance criteria
+model PccpAcceptanceCriteria {
+  id            String  @id @default(uuid())
+  cerVersionId  String
+  section       String
+  parameterName String
+  expectedValue String?
+  tolerance     Float?
+  description   String?
+
+  cerVersion CerVersion @relation(fields: [cerVersionId], references: [id])
+
+  @@index([cerVersionId])
+}
+
+// 14. Evaluator - CER evaluators/reviewers
+model Evaluator {
+  id            String        @id @default(uuid())
+  cerVersionId  String
+  sectionId     String?
+  userId        String
+  role          EvaluatorRole
+  assignedById  String
+  cvFilePath    String?
+  coiDeclaredAt DateTime?
+  signedAt      DateTime?
+  signatureHash String?
+  createdAt     DateTime      @default(now())
+
+  cerVersion CerVersion  @relation(fields: [cerVersionId], references: [id])
+  section    CerSection? @relation(fields: [sectionId], references: [id])
+
+  @@index([cerVersionId])
+  @@index([sectionId])
+}
+
+// 15. BibliographyEntry - reference list
+model BibliographyEntry {
+  id                String   @id @default(uuid())
+  cerVersionId      String
+  orderIndex        Int
+  articleId         String?
+  title             String
+  formattedCitation String
+  citationStyle     String
+  createdById       String
+  createdAt         DateTime @default(now())
+
+  cerVersion CerVersion @relation(fields: [cerVersionId], references: [id])
+
+  @@index([cerVersionId])
+}
+
+// 16. ClaimTrace - traceability links
+model ClaimTrace {
+  id           String   @id @default(uuid())
+  cerSectionId String
+  slsArticleId String?
+  refNumber    String
+  createdAt    DateTime @default(now())
+
+  cerSection CerSection @relation(fields: [cerSectionId], references: [id])
+
+  @@index([cerSectionId])
+}
+
+// 17. CrossReference - cross-references within CER
+model CrossReference {
+  id           String @id @default(uuid())
+  cerVersionId String
+  type         String
+  refNumber    String
+  targetType   String
+  targetId     String?
+
+  cerVersion CerVersion @relation(fields: [cerVersionId], references: [id])
+
+  @@index([cerVersionId])
+}
+
+// 18. ESignature - electronic signatures
+model ESignature {
+  id           String   @id @default(uuid())
+  cerVersionId String
+  userId       String
+  documentHash String
+  action       String
+  signedAt     DateTime
+
+  cerVersion CerVersion @relation(fields: [cerVersionId], references: [id])
+
+  @@index([cerVersionId])
+}
+
+// 19. NamedDeviceSearch - named device searches
+model NamedDeviceSearch {
+  id            String                  @id @default(uuid())
+  cerVersionId  String
+  deviceName    String
+  keywords      Json?
+  databases     Json?
+  status        NamedDeviceSearchStatus @default(DRAFT)
+  totalFindings Int                     @default(0)
+  createdById   String
+  createdAt     DateTime                @default(now())
+
+  cerVersion CerVersion @relation(fields: [cerVersionId], references: [id])
+
+  @@index([cerVersionId])
+}
+
+// 20. RiskEntry - project risk entries
+model RiskEntry {
+  id              String          @id @default(uuid())
+  projectId       String
+  riskDescription String
+  severity        RiskSeverity
+  probability     RiskProbability
+  status          String
+  createdAt       DateTime        @default(now())
+
+  project Project @relation(fields: [projectId], references: [id])
+
+  @@index([projectId])
+}
+
+// 21. GeneratedReport - generated report packages
+model GeneratedReport {
+  id           String   @id @default(uuid())
+  cerVersionId String
+  reportType   String
+  filePath     String?
+  status       String
+  createdById  String
+  createdAt    DateTime @default(now())
+
+  cerVersion CerVersion @relation(fields: [cerVersionId], references: [id])
+
+  @@index([cerVersionId])
+}

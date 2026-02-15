@@ -31,7 +31,7 @@ export class DetectDeviationsUseCase {
 
   async execute(input: DetectDeviationsInput): Promise<DetectDeviationsResult> {
     // Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: input.cerVersionId },
       select: { id: true, projectId: true },
     });
@@ -41,12 +41,12 @@ export class DetectDeviationsUseCase {
     }
 
     // Load PCCP acceptance criteria
-    const pccpCriteria = await (this.prisma as any).pccpAcceptanceCriteria.findMany({
+    const pccpCriteria = await this.prisma.pccpAcceptanceCriteria.findMany({
       where: { cerVersionId: input.cerVersionId },
     });
 
     // Load configured thresholds
-    const config = await (this.prisma as any).pccpDeviationConfig.findFirst({
+    const config = await this.prisma.pccpDeviationConfig.findFirst({
       where: { cerVersionId: input.cerVersionId },
       select: { mandatoryJustificationLevel: true },
     });
@@ -57,7 +57,7 @@ export class DetectDeviationsUseCase {
     const detected: DetectedDeviation[] = [];
 
     // Detect from validation results
-    const validationResults = await (this.prisma as any).validationResult.findMany({
+    const validationResults = await this.prisma.validationResult.findMany({
       where: { projectId: cerVersion.projectId },
     });
 
@@ -84,7 +84,7 @@ export class DetectDeviationsUseCase {
     }
 
     // Detect from SOA benchmark differences
-    const soaBenchmarks = await (this.prisma as any).soaBenchmark.findMany({
+    const soaBenchmarks = await this.prisma.soaBenchmark.findMany({
       where: { projectId: cerVersion.projectId },
     });
 
@@ -116,7 +116,7 @@ export class DetectDeviationsUseCase {
       const exceedsThreshold =
         (levelOrder[deviation.significance] ?? 0) >= (levelOrder[mandatoryLevel] ?? 2);
 
-      await (this.prisma as any).pccpDeviation.create({
+      await this.prisma.pccpDeviation.create({
         data: {
           id: crypto.randomUUID(),
           cerVersionId: input.cerVersionId,
@@ -143,11 +143,7 @@ export class DetectDeviationsUseCase {
     };
   }
 
-  private computeSignificance(
-    expected: unknown,
-    actual: unknown,
-    tolerance?: number,
-  ): string {
+  private computeSignificance(expected: unknown, actual: unknown, tolerance?: number): string {
     const expectedNum = Number(expected);
     const actualNum = Number(actual);
 

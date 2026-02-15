@@ -7,6 +7,7 @@ import { ManageUsersUseCase } from '../application/use-cases/manage-users.js';
 import { AssignUserToProjectUseCase } from '../application/use-cases/assign-user-to-project.js';
 import { UnlockDocumentUseCase } from '../application/use-cases/unlock-document.js';
 import { ValidationError } from '../../../shared/errors/index.js';
+import { clearAuthCookies } from '../../../shared/utils/auth-cookies.js';
 
 // --- Auth mutations ---
 
@@ -44,7 +45,10 @@ builder.mutationField('loginWithGoogle', (t) =>
       googleToken: t.arg.string({ required: true }),
     },
     resolve: async (_parent, _args, _ctx) => {
-      throw new ValidationError('Google OAuth requires valid credentials - configure GOOGLE_CLIENT_ID');
+      // When implemented, set httpOnly cookies via setAuthCookies(ctx.reply, ...)
+      throw new ValidationError(
+        'Google OAuth requires valid credentials - configure GOOGLE_CLIENT_ID',
+      );
     },
   }),
 );
@@ -68,6 +72,7 @@ builder.mutationField('refreshToken', (t) =>
       refreshToken: t.arg.string({ required: true }),
     },
     resolve: async (_parent, _args, _ctx) => {
+      // When implemented, set httpOnly cookies via setAuthCookies(ctx.reply, ...)
       throw new ValidationError('Token refresh requires Redis connection');
     },
   }),
@@ -77,9 +82,10 @@ builder.mutationField('logout', (t) =>
   t.field({
     type: 'Boolean',
     args: {
-      refreshToken: t.arg.string({ required: true }),
+      refreshToken: t.arg.string({ required: false }),
     },
-    resolve: async (_parent, _args, _ctx) => {
+    resolve: async (_parent, _args, ctx) => {
+      clearAuthCookies(ctx.reply);
       return true;
     },
   }),
@@ -99,7 +105,9 @@ builder.mutationField('createUser', (t) =>
       checkPermission(ctx, 'users', 'admin');
       const validRoles = Object.values(UserRole);
       if (!validRoles.includes(args.role as UserRoleType)) {
-        throw new ValidationError(`Invalid role: ${args.role}. Must be one of: ${validRoles.join(', ')}`);
+        throw new ValidationError(
+          `Invalid role: ${args.role}. Must be one of: ${validRoles.join(', ')}`,
+        );
       }
       const useCase = new ManageUsersUseCase(ctx.prisma);
       return useCase.createUser(
@@ -123,7 +131,9 @@ builder.mutationField('updateUser', (t) =>
       if (args.role) {
         const validRoles = Object.values(UserRole);
         if (!validRoles.includes(args.role as UserRoleType)) {
-          throw new ValidationError(`Invalid role: ${args.role}. Must be one of: ${validRoles.join(', ')}`);
+          throw new ValidationError(
+            `Invalid role: ${args.role}. Must be one of: ${validRoles.join(', ')}`,
+          );
         }
       }
       const useCase = new ManageUsersUseCase(ctx.prisma);

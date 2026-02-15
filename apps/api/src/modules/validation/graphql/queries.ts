@@ -1,6 +1,17 @@
 import { builder } from '../../../graphql/builder.js';
-import { ValidationStudyObjectType, ProtocolObjectType, ProtocolAmendmentObjectType, AcceptanceCriterionObjectType, DataImportObjectType, ComputeDiffResultType, GsprMappingObjectType } from './types.js';
-import { checkPermission, checkProjectMembership } from '../../../shared/middleware/rbac-middleware.js';
+import {
+  ValidationStudyObjectType,
+  ProtocolObjectType,
+  ProtocolAmendmentObjectType,
+  AcceptanceCriterionObjectType,
+  DataImportObjectType,
+  ComputeDiffResultType,
+  GsprMappingObjectType,
+} from './types.js';
+import {
+  checkPermission,
+  checkProjectMembership,
+} from '../../../shared/middleware/rbac-middleware.js';
 import { NotFoundError } from '../../../shared/errors/index.js';
 import { ManageImportVersionsUseCase } from '../application/use-cases/manage-import-versions.js';
 
@@ -16,7 +27,7 @@ builder.queryField('validationStudies', (t) =>
       checkPermission(ctx, 'validation', 'read');
       await checkProjectMembership(ctx, args.projectId);
 
-      const studies = await (ctx.prisma as any).validationStudy.findMany({
+      const studies = await ctx.prisma.validationStudy.findMany({
         where: { projectId: args.projectId },
         orderBy: { createdAt: 'desc' },
       });
@@ -36,7 +47,7 @@ builder.queryField('validationStudy', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'validation', 'read');
 
-      const study = await (ctx.prisma as any).validationStudy.findUnique({
+      const study = await ctx.prisma.validationStudy.findUnique({
         where: { id: args.id },
       });
 
@@ -60,7 +71,7 @@ builder.queryField('acceptanceCriteria', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'validation', 'read');
 
-      const criteria = await (ctx.prisma as any).acceptanceCriterion.findMany({
+      const criteria = await ctx.prisma.acceptanceCriterion.findMany({
         where: { validationStudyId: args.validationStudyId },
         orderBy: { name: 'asc' },
       });
@@ -82,7 +93,7 @@ builder.queryField('protocol', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'validation', 'read');
 
-      const protocol = await (ctx.prisma as any).protocol.findFirst({
+      const protocol = await ctx.prisma.protocol.findFirst({
         where: { validationStudyId: args.validationStudyId },
         orderBy: { createdAt: 'desc' },
       });
@@ -101,7 +112,7 @@ builder.queryField('protocolAmendments', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'validation', 'read');
 
-      const amendments = await (ctx.prisma as any).protocolAmendment.findMany({
+      const amendments = await ctx.prisma.protocolAmendment.findMany({
         where: { protocolId: args.protocolId },
         orderBy: { createdAt: 'desc' },
       });
@@ -122,7 +133,7 @@ builder.queryField('dataImports', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'validation', 'read');
 
-      const imports = await (ctx.prisma as any).dataImport.findMany({
+      const imports = await ctx.prisma.dataImport.findMany({
         where: { validationStudyId: args.validationStudyId },
         orderBy: { version: 'desc' },
       });
@@ -164,7 +175,7 @@ builder.queryField('gsprMappings', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'validation', 'read');
 
-      const mappings = await (ctx.prisma as any).gsprMapping.findMany({
+      const mappings = await ctx.prisma.gsprMapping.findMany({
         where: { validationStudyId: args.validationStudyId },
         orderBy: { gsprId: 'asc' },
       });

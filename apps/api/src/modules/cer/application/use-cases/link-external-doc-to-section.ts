@@ -21,7 +21,7 @@ export class LinkExternalDocToSectionUseCase {
     const { cerSectionId, externalDocumentId, referenceContext, userId } = input;
 
     // Verify section exists
-    const section = await (this.prisma as any).cerSection.findUnique({
+    const section = await this.prisma.cerSection.findUnique({
       where: { id: cerSectionId },
       select: {
         id: true,
@@ -39,7 +39,7 @@ export class LinkExternalDocToSectionUseCase {
     }
 
     // Verify external document exists and belongs to the same CER version
-    const doc = await (this.prisma as any).cerExternalDocument.findUnique({
+    const doc = await this.prisma.cerExternalDocument.findUnique({
       where: { id: externalDocumentId },
       select: { id: true, cerVersionId: true },
     });
@@ -55,7 +55,7 @@ export class LinkExternalDocToSectionUseCase {
     }
 
     // Check for duplicate link
-    const existingLink = await (this.prisma as any).cerSectionDocLink.findFirst({
+    const existingLink = await this.prisma.cerSectionDocLink.findFirst({
       where: {
         cerSectionId,
         externalDocumentId,
@@ -69,7 +69,7 @@ export class LinkExternalDocToSectionUseCase {
     // Create link
     const linkId = crypto.randomUUID();
 
-    await (this.prisma as any).cerSectionDocLink.create({
+    await this.prisma.cerSectionDocLink.create({
       data: {
         id: linkId,
         cerSectionId,

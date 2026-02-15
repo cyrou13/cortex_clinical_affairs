@@ -20,7 +20,7 @@ export class ExtractGridDataUseCase {
   ) {}
 
   async execute(input: ExtractGridDataInput): Promise<ExtractGridDataResult> {
-    const grid = await (this.prisma as any).extractionGrid.findUnique({
+    const grid = await this.prisma.extractionGrid.findUnique({
       where: { id: input.gridId },
       include: {
         soaAnalysis: { select: { id: true, status: true } },
@@ -35,7 +35,7 @@ export class ExtractGridDataUseCase {
       throw new ValidationError('Cannot extract data on a locked SOA analysis');
     }
 
-    const columns = await (this.prisma as any).gridColumn.findMany({
+    const columns = await this.prisma.gridColumn.findMany({
       where: { extractionGridId: input.gridId },
       select: { id: true, name: true, displayName: true, dataType: true },
     });
@@ -44,7 +44,7 @@ export class ExtractGridDataUseCase {
       throw new ValidationError('No columns defined in extraction grid');
     }
 
-    const links = await (this.prisma as any).soaSlsLink.findMany({
+    const links = await this.prisma.soaSlsLink.findMany({
       where: { soaAnalysisId: grid.soaAnalysis.id },
       select: { slsSessionId: true },
     });

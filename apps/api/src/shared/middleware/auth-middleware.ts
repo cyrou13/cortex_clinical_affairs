@@ -15,14 +15,20 @@ declare module 'fastify' {
 
 export function createAuthMiddleware(jwtService: JwtService) {
   return async function authMiddleware(request: FastifyRequest, _reply: FastifyReply) {
+    // Try Bearer header first, then httpOnly cookie fallback
     const authHeader = request.headers.authorization;
+    let token: string | undefined;
 
-    if (!authHeader?.startsWith('Bearer ')) {
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.slice(7);
+    } else if (request.cookies?.['access_token']) {
+      token = request.cookies['access_token'];
+    }
+
+    if (!token) {
       request.currentUser = null;
       return;
     }
-
-    const token = authHeader.slice(7);
 
     try {
       const payload = jwtService.verifyAccessToken(token);

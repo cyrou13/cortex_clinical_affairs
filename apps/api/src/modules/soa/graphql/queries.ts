@@ -1,6 +1,24 @@
 import { builder } from '../../../graphql/builder.js';
-import { SoaAnalysisObjectType, ThematicSectionObjectType, SoaSlsLinkObjectType, SoaProgressType, ExtractionGridObjectType, GridColumnObjectType, GridCellObjectType, ArticleExtractionStatusType, GridExtractionProgressType, QualityAssessmentObjectType, SimilarDeviceObjectType, BenchmarkObjectType, ClaimObjectType, ClaimArticleLinkObjectType } from './types.js';
-import { checkPermission, checkProjectMembership } from '../../../shared/middleware/rbac-middleware.js';
+import {
+  SoaAnalysisObjectType,
+  ThematicSectionObjectType,
+  SoaSlsLinkObjectType,
+  SoaProgressType,
+  ExtractionGridObjectType,
+  GridColumnObjectType,
+  GridCellObjectType,
+  ArticleExtractionStatusType,
+  GridExtractionProgressType,
+  QualityAssessmentObjectType,
+  SimilarDeviceObjectType,
+  BenchmarkObjectType,
+  ClaimObjectType,
+  ClaimArticleLinkObjectType,
+} from './types.js';
+import {
+  checkPermission,
+  checkProjectMembership,
+} from '../../../shared/middleware/rbac-middleware.js';
 import { NotFoundError } from '../../../shared/errors/index.js';
 import { TrackExtractionStatusUseCase } from '../application/use-cases/track-extraction-status.js';
 import { ManageDeviceRegistryUseCase } from '../application/use-cases/manage-device-registry.js';
@@ -16,7 +34,7 @@ builder.queryField('soaAnalyses', (t) =>
       checkPermission(ctx, 'soa', 'read');
       await checkProjectMembership(ctx, args.projectId);
 
-      const analyses = await (ctx.prisma as any).soaAnalysis.findMany({
+      const analyses = await ctx.prisma.soaAnalysis.findMany({
         where: { projectId: args.projectId },
         orderBy: { createdAt: 'desc' },
       });
@@ -36,7 +54,7 @@ builder.queryField('soaAnalysis', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'read');
 
-      const soa = await (ctx.prisma as any).soaAnalysis.findUnique({
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
         where: { id: args.id },
       });
 
@@ -60,7 +78,7 @@ builder.queryField('soaSections', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'read');
 
-      const soa = await (ctx.prisma as any).soaAnalysis.findUnique({
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
         where: { id: args.soaAnalysisId },
       });
 
@@ -70,7 +88,7 @@ builder.queryField('soaSections', (t) =>
 
       await checkProjectMembership(ctx, soa.projectId);
 
-      const sections = await (ctx.prisma as any).thematicSection.findMany({
+      const sections = await ctx.prisma.thematicSection.findMany({
         where: { soaAnalysisId: args.soaAnalysisId },
         orderBy: { orderIndex: 'asc' },
       });
@@ -89,7 +107,7 @@ builder.queryField('soaLinkedSessions', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'read');
 
-      const soa = await (ctx.prisma as any).soaAnalysis.findUnique({
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
         where: { id: args.soaAnalysisId },
       });
 
@@ -99,7 +117,7 @@ builder.queryField('soaLinkedSessions', (t) =>
 
       await checkProjectMembership(ctx, soa.projectId);
 
-      const links = await (ctx.prisma as any).soaSlsLink.findMany({
+      const links = await ctx.prisma.soaSlsLink.findMany({
         where: { soaAnalysisId: args.soaAnalysisId },
         orderBy: { createdAt: 'asc' },
       });
@@ -118,7 +136,7 @@ builder.queryField('soaProgress', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'read');
 
-      const soa = await (ctx.prisma as any).soaAnalysis.findUnique({
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
         where: { id: args.soaAnalysisId },
       });
 
@@ -128,7 +146,7 @@ builder.queryField('soaProgress', (t) =>
 
       await checkProjectMembership(ctx, soa.projectId);
 
-      const sections = await (ctx.prisma as any).thematicSection.findMany({
+      const sections = await ctx.prisma.thematicSection.findMany({
         where: { soaAnalysisId: args.soaAnalysisId },
         select: { status: true },
       });
@@ -172,7 +190,7 @@ builder.queryField('extractionGrids', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'read');
 
-      const soa = await (ctx.prisma as any).soaAnalysis.findUnique({
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
         where: { id: args.soaAnalysisId },
       });
 
@@ -182,7 +200,7 @@ builder.queryField('extractionGrids', (t) =>
 
       await checkProjectMembership(ctx, soa.projectId);
 
-      const grids = await (ctx.prisma as any).extractionGrid.findMany({
+      const grids = await ctx.prisma.extractionGrid.findMany({
         where: { soaAnalysisId: args.soaAnalysisId },
         orderBy: { createdAt: 'asc' },
       });
@@ -201,7 +219,7 @@ builder.queryField('gridColumns', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'read');
 
-      const columns = await (ctx.prisma as any).gridColumn.findMany({
+      const columns = await ctx.prisma.gridColumn.findMany({
         where: { extractionGridId: args.gridId },
         orderBy: { orderIndex: 'asc' },
       });
@@ -226,7 +244,7 @@ builder.queryField('gridCells', (t) =>
         where.articleId = args.articleId;
       }
 
-      const cells = await (ctx.prisma as any).gridCell.findMany({
+      const cells = await ctx.prisma.gridCell.findMany({
         where,
         orderBy: { createdAt: 'asc' },
       });
@@ -281,7 +299,7 @@ builder.queryField('qualityAssessments', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'read');
 
-      const soa = await (ctx.prisma as any).soaAnalysis.findUnique({
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
         where: { id: args.soaAnalysisId },
       });
 
@@ -296,7 +314,7 @@ builder.queryField('qualityAssessments', (t) =>
         where.articleId = args.articleId;
       }
 
-      const assessments = await (ctx.prisma as any).qualityAssessment.findMany({
+      const assessments = await ctx.prisma.qualityAssessment.findMany({
         where,
         orderBy: { assessedAt: 'desc' },
       });
@@ -317,7 +335,7 @@ builder.queryField('similarDevices', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'read');
 
-      const soa = await (ctx.prisma as any).soaAnalysis.findUnique({
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
         where: { id: args.soaAnalysisId },
       });
 
@@ -342,7 +360,7 @@ builder.queryField('deviceBenchmarks', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'read');
 
-      const benchmarks = await (ctx.prisma as any).benchmark.findMany({
+      const benchmarks = await ctx.prisma.benchmark.findMany({
         where: { similarDeviceId: args.similarDeviceId },
         orderBy: { createdAt: 'asc' },
       });
@@ -363,7 +381,7 @@ builder.queryField('claims', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'read');
 
-      const soa = await (ctx.prisma as any).soaAnalysis.findUnique({
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
         where: { id: args.soaAnalysisId },
       });
 
@@ -388,7 +406,7 @@ builder.queryField('claimArticleLinks', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'read');
 
-      const links = await (ctx.prisma as any).claimArticleLink.findMany({
+      const links = await ctx.prisma.claimArticleLink.findMany({
         where: { claimId: args.claimId },
         orderBy: { createdAt: 'asc' },
       });

@@ -1,6 +1,20 @@
 import { builder } from '../../../graphql/builder.js';
-import { CreateStudyResultType, DefineProtocolResultType, AmendProtocolResultType, ImportXlsResultType, SetActiveVersionResultType, RollbackResultType, ComputeDiffResultType, MapResultsResultType, GsprMappingObjectType, LockValidationResultType, LinkSoaBenchmarksResultType } from './types.js';
-import { checkPermission, checkProjectMembership } from '../../../shared/middleware/rbac-middleware.js';
+import {
+  CreateStudyResultType,
+  DefineProtocolResultType,
+  AmendProtocolResultType,
+  ImportXlsResultType,
+  SetActiveVersionResultType,
+  RollbackResultType,
+  MapResultsResultType,
+  GsprMappingObjectType,
+  LockValidationResultType,
+  LinkSoaBenchmarksResultType,
+} from './types.js';
+import {
+  checkPermission,
+  checkProjectMembership,
+} from '../../../shared/middleware/rbac-middleware.js';
 import { NotFoundError } from '../../../shared/errors/index.js';
 import { CreateStudyUseCase } from '../application/use-cases/create-study.js';
 import { DefineProtocolUseCase } from '../application/use-cases/define-protocol.js';
@@ -261,7 +275,7 @@ builder.mutationField('lockValidationStudy', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'validation', 'write');
 
-      const study = await (ctx.prisma as any).validationStudy.findUnique({
+      const study = await ctx.prisma.validationStudy.findUnique({
         where: { id: args.validationStudyId },
       });
 

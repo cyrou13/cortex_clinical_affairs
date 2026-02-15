@@ -7,7 +7,7 @@ export class ApproveMinedReferenceUseCase {
   async approve(input: { referenceId: string; userId: string }) {
     const { referenceId, userId } = input;
 
-    const reference = await (this.prisma as any).minedReference.findUnique({
+    const reference = await this.prisma.minedReference.findUnique({
       where: { id: referenceId },
     });
 
@@ -35,7 +35,7 @@ export class ApproveMinedReferenceUseCase {
     });
 
     // Update reference approval status
-    await (this.prisma as any).minedReference.update({
+    await this.prisma.minedReference.update({
       where: { id: referenceId },
       data: {
         approvalStatus: 'APPROVED',
@@ -50,7 +50,7 @@ export class ApproveMinedReferenceUseCase {
   async reject(input: { referenceId: string; userId: string; reason: string }) {
     const { referenceId, userId, reason } = input;
 
-    const reference = await (this.prisma as any).minedReference.findUnique({
+    const reference = await this.prisma.minedReference.findUnique({
       where: { id: referenceId },
     });
 
@@ -62,7 +62,7 @@ export class ApproveMinedReferenceUseCase {
       throw new ValidationError(`Reference already ${reference.approvalStatus.toLowerCase()}`);
     }
 
-    await (this.prisma as any).minedReference.update({
+    await this.prisma.minedReference.update({
       where: { id: referenceId },
       data: {
         approvalStatus: 'REJECTED',

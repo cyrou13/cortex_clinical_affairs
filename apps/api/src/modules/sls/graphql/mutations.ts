@@ -1,7 +1,29 @@
 import type { Prisma } from '@prisma/client';
 import { builder } from '../../../graphql/builder.js';
-import { SlsSessionObjectType, SlsQueryObjectType, ExecuteQueryResultType, ImportArticlesResultType, ArticleObjectType, LaunchScoringResultType, ExclusionCodeObjectType, CustomAiFilterObjectType, RelevanceThresholdsType, ScreeningDecisionObjectType, BulkScreenResultType, SpotCheckResultType, LockDatasetResultType, PdfRetrievalResultType, ResolvePdfMismatchResultType, ManualArticleResultType, MineReferencesResultType, ApproveReferenceResultType, BulkApproveResultType } from './types.js';
-import { checkPermission, checkProjectMembership } from '../../../shared/middleware/rbac-middleware.js';
+import {
+  SlsSessionObjectType,
+  SlsQueryObjectType,
+  ExecuteQueryResultType,
+  ImportArticlesResultType,
+  ArticleObjectType,
+  LaunchScoringResultType,
+  ExclusionCodeObjectType,
+  CustomAiFilterObjectType,
+  RelevanceThresholdsType,
+  BulkScreenResultType,
+  SpotCheckResultType,
+  LockDatasetResultType,
+  PdfRetrievalResultType,
+  ResolvePdfMismatchResultType,
+  ManualArticleResultType,
+  MineReferencesResultType,
+  ApproveReferenceResultType,
+  BulkApproveResultType,
+} from './types.js';
+import {
+  checkPermission,
+  checkProjectMembership,
+} from '../../../shared/middleware/rbac-middleware.js';
 import { CreateSlsSessionUseCase } from '../application/use-cases/create-session.js';
 import { ConstructQueryUseCase } from '../application/use-cases/construct-query.js';
 import { UpdateQueryUseCase } from '../application/use-cases/update-query.js';
@@ -74,7 +96,8 @@ builder.mutationField('updateSlsSession', (t) =>
       // Validate update input
       const updateInput: Record<string, unknown> = {};
       if (args.name !== undefined && args.name !== null) updateInput.name = args.name;
-      if (args.scopeFields !== undefined && args.scopeFields !== null) updateInput.scopeFields = args.scopeFields;
+      if (args.scopeFields !== undefined && args.scopeFields !== null)
+        updateInput.scopeFields = args.scopeFields;
 
       const parsed = UpdateSlsSessionInput.safeParse(updateInput);
       if (!parsed.success) {
@@ -106,7 +129,10 @@ builder.mutationField('updateSlsSession', (t) =>
           action: 'sls.session.updated',
           targetType: 'slsSession',
           targetId: args.id,
-          before: { name: existing.name, scopeFields: existing.scopeFields } as unknown as Prisma.InputJsonValue,
+          before: {
+            name: existing.name,
+            scopeFields: existing.scopeFields,
+          } as unknown as Prisma.InputJsonValue,
           after: data as unknown as Prisma.InputJsonValue,
         },
       });
@@ -401,7 +427,10 @@ builder.mutationField('updateArticleStatus', (t) =>
           targetType: 'article',
           targetId: args.id,
           before: { status: article.status } as unknown as Prisma.InputJsonValue,
-          after: { status: newStatus, reason: args.reason ?? null } as unknown as Prisma.InputJsonValue,
+          after: {
+            status: newStatus,
+            reason: args.reason ?? null,
+          } as unknown as Prisma.InputJsonValue,
         },
       });
 
@@ -604,11 +633,7 @@ builder.mutationField('reorderExclusionCodes', (t) =>
       await checkProjectMembership(ctx, session.projectId);
 
       const useCase = new ManageExclusionCodesUseCase(ctx.prisma);
-      return useCase.reorderExclusionCodes(
-        args.sessionId,
-        args.orderedIds,
-        ctx.user!.id,
-      ) as any;
+      return useCase.reorderExclusionCodes(args.sessionId, args.orderedIds, ctx.user!.id) as any;
     },
   }),
 );
@@ -715,8 +740,10 @@ builder.mutationField('updateCustomAiFilter', (t) =>
 
       const updateInput: Record<string, unknown> = {};
       if (args.name !== undefined && args.name !== null) updateInput.name = args.name;
-      if (args.criterion !== undefined && args.criterion !== null) updateInput.criterion = args.criterion;
-      if (args.isActive !== undefined && args.isActive !== null) updateInput.isActive = args.isActive;
+      if (args.criterion !== undefined && args.criterion !== null)
+        updateInput.criterion = args.criterion;
+      if (args.isActive !== undefined && args.isActive !== null)
+        updateInput.isActive = args.isActive;
 
       const useCase = new ConfigureCustomFilterUseCase(ctx.prisma, getRedis());
       return useCase.updateCustomFilter(args.id, updateInput, ctx.user!.id) as any;
@@ -780,11 +807,7 @@ builder.mutationField('launchCustomFilterScoring', (t) =>
       await checkProjectMembership(ctx, session.projectId);
 
       const useCase = new ConfigureCustomFilterUseCase(ctx.prisma, getRedis());
-      return useCase.launchCustomFilterScoring(
-        args.sessionId,
-        args.filterId,
-        ctx.user!.id,
-      ) as any;
+      return useCase.launchCustomFilterScoring(args.sessionId, args.filterId, ctx.user!.id) as any;
     },
   }),
 );
@@ -914,7 +937,10 @@ builder.mutationField('spotCheckArticle', (t) =>
         articleId: args.articleId,
         userId: ctx.user!.id,
         agrees: args.agrees,
-        correctedDecision: (args.correctedDecision ?? undefined) as 'INCLUDED' | 'EXCLUDED' | undefined,
+        correctedDecision: (args.correctedDecision ?? undefined) as
+          | 'INCLUDED'
+          | 'EXCLUDED'
+          | undefined,
         exclusionCodeId: args.exclusionCodeId ?? undefined,
         reason: args.reason,
       }) as any;
@@ -975,10 +1001,13 @@ builder.mutationField('launchPdfRetrieval', (t) =>
 
       const redis = getRedis();
       const enqueueJob = async (queue: string, data: Record<string, unknown>) => {
-        await redis.publish('task:enqueued', JSON.stringify({
-          ...data,
-          type: queue,
-        }));
+        await redis.publish(
+          'task:enqueued',
+          JSON.stringify({
+            ...data,
+            type: queue,
+          }),
+        );
         return data.taskId as string;
       };
 
@@ -1107,10 +1136,13 @@ builder.mutationField('launchReferenceMining', (t) =>
 
       const redis = getRedis();
       const enqueueJob = async (queue: string, data: Record<string, unknown>) => {
-        await redis.publish('task:enqueued', JSON.stringify({
-          ...data,
-          type: queue,
-        }));
+        await redis.publish(
+          'task:enqueued',
+          JSON.stringify({
+            ...data,
+            type: queue,
+          }),
+        );
         return data.taskId as string;
       };
 
@@ -1134,7 +1166,7 @@ builder.mutationField('approveMinedReference', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via reference -> session
-      const reference = await (ctx.prisma as any).minedReference.findUnique({
+      const reference = await ctx.prisma.minedReference.findUnique({
         where: { id: args.referenceId },
       });
 
@@ -1172,7 +1204,7 @@ builder.mutationField('rejectMinedReference', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Check project membership via reference -> session
-      const reference = await (ctx.prisma as any).minedReference.findUnique({
+      const reference = await ctx.prisma.minedReference.findUnique({
         where: { id: args.referenceId },
       });
 
@@ -1210,7 +1242,7 @@ builder.mutationField('bulkApproveMinedReferences', (t) =>
       checkPermission(ctx, 'sls', 'write');
 
       // Batch-fetch all references and their sessions to avoid N+1 queries
-      const references = await (ctx.prisma as any).minedReference.findMany({
+      const references = await ctx.prisma.minedReference.findMany({
         where: { id: { in: args.referenceIds } },
       });
 
@@ -1243,7 +1275,10 @@ builder.mutationField('bulkApproveMinedReferences', (t) =>
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : String(err);
           const { logger } = await import('../../../shared/utils/logger.js');
-          logger.warn({ referenceId: reference.id, error: msg }, 'Failed to approve mined reference');
+          logger.warn(
+            { referenceId: reference.id, error: msg },
+            'Failed to approve mined reference',
+          );
         }
       }
 

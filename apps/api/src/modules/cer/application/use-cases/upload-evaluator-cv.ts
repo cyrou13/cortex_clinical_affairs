@@ -3,7 +3,10 @@ import { NotFoundError, ValidationError } from '../../../../shared/errors/index.
 
 // ── Types ───────────────────────────────────────────────────────────────
 
-const ALLOWED_MIMETYPES = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+const ALLOWED_MIMETYPES = [
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export interface UploadCvInput {
@@ -30,9 +33,7 @@ export class UploadEvaluatorCvUseCase {
   async execute(input: UploadCvInput): Promise<UploadCvResult> {
     // Validate file type
     if (!ALLOWED_MIMETYPES.includes(input.mimetype)) {
-      throw new ValidationError(
-        `Invalid file type: ${input.mimetype}. Allowed types: PDF, DOCX`,
-      );
+      throw new ValidationError(`Invalid file type: ${input.mimetype}. Allowed types: PDF, DOCX`);
     }
 
     // Validate file size
@@ -52,7 +53,7 @@ export class UploadEvaluatorCvUseCase {
     }
 
     // Verify evaluator exists
-    const evaluator = await (this.prisma as any).evaluator.findUnique({
+    const evaluator = await this.prisma.evaluator.findUnique({
       where: { id: input.evaluatorId },
       select: { id: true },
     });
@@ -63,7 +64,7 @@ export class UploadEvaluatorCvUseCase {
 
     const now = new Date();
 
-    await (this.prisma as any).evaluator.update({
+    await this.prisma.evaluator.update({
       where: { id: input.evaluatorId },
       data: {
         cvFilename: input.filename,

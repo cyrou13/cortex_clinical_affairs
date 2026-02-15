@@ -1,5 +1,5 @@
 import type { PrismaClient, Prisma } from '@prisma/client';
-import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
+import { NotFoundError } from '../../../../shared/errors/index.js';
 import type { ChecksumService } from '../../../../shared/services/checksum-service.js';
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -33,7 +33,7 @@ export class CreateUpstreamSnapshotsUseCase {
 
   async execute(input: CreateSnapshotsInput): Promise<CreateSnapshotsResult> {
     // Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: input.cerVersionId },
       select: { id: true, projectId: true },
     });
@@ -50,31 +50,21 @@ export class CreateUpstreamSnapshotsUseCase {
       where: { projectId },
     });
     if (slsData.length > 0) {
-      const snapshot = await this.createSnapshot(
-        input.cerVersionId,
-        'SLS',
-        slsData,
-        input.userId,
-      );
+      const snapshot = await this.createSnapshot(input.cerVersionId, 'SLS', slsData, input.userId);
       snapshots.push(snapshot);
     }
 
     // Snapshot SOA data
-    const soaData = await (this.prisma as any).soaAnalysis.findMany({
+    const soaData = await this.prisma.soaAnalysis.findMany({
       where: { projectId },
     });
     if (soaData.length > 0) {
-      const snapshot = await this.createSnapshot(
-        input.cerVersionId,
-        'SOA',
-        soaData,
-        input.userId,
-      );
+      const snapshot = await this.createSnapshot(input.cerVersionId, 'SOA', soaData, input.userId);
       snapshots.push(snapshot);
     }
 
     // Snapshot Validation data
-    const validationData = await (this.prisma as any).validationStudy.findMany({
+    const validationData = await this.prisma.validationStudy.findMany({
       where: { projectId },
     });
     if (validationData.length > 0) {
@@ -92,12 +82,7 @@ export class CreateUpstreamSnapshotsUseCase {
       where: { projectId },
     });
     if (pmsData.length > 0) {
-      const snapshot = await this.createSnapshot(
-        input.cerVersionId,
-        'PMS',
-        pmsData,
-        input.userId,
-      );
+      const snapshot = await this.createSnapshot(input.cerVersionId, 'PMS', pmsData, input.userId);
       snapshots.push(snapshot);
     }
 

@@ -1,5 +1,9 @@
 import type { PrismaClient, Prisma } from '@prisma/client';
-import { NotFoundError, LockConflictError, ValidationError } from '../../../../shared/errors/index.js';
+import {
+  NotFoundError,
+  LockConflictError,
+  ValidationError,
+} from '../../../../shared/errors/index.js';
 import type { EventBus } from '../../../../shared/events/event-bus.js';
 import { createValidationLockedEvent } from '../../domain/events/validation-locked.js';
 
@@ -34,7 +38,7 @@ export class LockValidationUseCase {
     const { validationStudyId, userId } = input;
 
     // 1. Fetch study
-    const study = await (this.prisma as any).validationStudy.findUnique({
+    const study = await this.prisma.validationStudy.findUnique({
       where: { id: validationStudyId },
       select: {
         id: true,
@@ -67,7 +71,7 @@ export class LockValidationUseCase {
     // 3. Lock study
     const now = new Date();
 
-    await (this.prisma as any).validationStudy.update({
+    await this.prisma.validationStudy.update({
       where: { id: validationStudyId },
       data: {
         status: 'LOCKED',
@@ -140,7 +144,7 @@ export class LockValidationUseCase {
     const checks: PreLockCheck[] = [];
 
     // Check 1: Protocol approved
-    const protocol = await (this.prisma as any).validationProtocol.findFirst({
+    const protocol = await this.prisma.protocol.findFirst({
       where: { validationStudyId },
       select: { id: true, status: true },
       orderBy: { createdAt: 'desc' },
@@ -153,7 +157,7 @@ export class LockValidationUseCase {
     });
 
     // Check 2: Active import exists
-    const activeImport = await (this.prisma as any).dataImport.findFirst({
+    const activeImport = await this.prisma.dataImport.findFirst({
       where: {
         validationStudyId,
         status: 'COMPLETED',
@@ -168,7 +172,7 @@ export class LockValidationUseCase {
     });
 
     // Check 3: Results mapped
-    const resultCount = await (this.prisma as any).validationResult.count({
+    const resultCount = await this.prisma.validationResult.count({
       where: { validationStudyId },
     });
 
@@ -179,7 +183,7 @@ export class LockValidationUseCase {
     });
 
     // Check 4: Reports generated
-    const reportCount = await (this.prisma as any).generatedReport.count({
+    const reportCount = await this.prisma.generatedReport.count({
       where: { validationStudyId },
     });
 

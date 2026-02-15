@@ -38,7 +38,7 @@ export class CreatePmsPlanUseCase {
       throw new NotFoundError('Project', input.projectId);
     }
 
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: input.cerVersionId },
       select: { id: true, status: true, projectId: true },
     });

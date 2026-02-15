@@ -32,7 +32,7 @@ export class UpdateGsprRowUseCase {
     const { gsprMatrixRowId, status, evidenceReferences, notes, userId } = input;
 
     // 1. Fetch row
-    const row = await (this.prisma as any).gsprMatrixRow.findUnique({
+    const row = await this.prisma.gsprMatrixRow.findUnique({
       where: { id: gsprMatrixRowId },
       select: {
         id: true,
@@ -79,7 +79,7 @@ export class UpdateGsprRowUseCase {
     }
 
     // 5. Persist
-    await (this.prisma as any).gsprMatrixRow.update({
+    await this.prisma.gsprMatrixRow.update({
       where: { id: gsprMatrixRowId },
       data: updateData,
     });
@@ -106,7 +106,8 @@ export class UpdateGsprRowUseCase {
       id: gsprMatrixRowId,
       gsprId: row.gsprId,
       status: effectiveStatus as GsprStatus,
-      evidenceReferences: evidenceReferences ?? (Array.isArray(row.evidenceReferences) ? row.evidenceReferences : []),
+      evidenceReferences:
+        evidenceReferences ?? (Array.isArray(row.evidenceReferences) ? row.evidenceReferences : []),
       notes: effectiveNotes ?? null,
     };
   }

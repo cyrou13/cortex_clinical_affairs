@@ -24,7 +24,7 @@ export class SaveSectionContentUseCase {
     const { cerSectionId, content, userId } = input;
 
     // 1. Fetch section
-    const section = await (this.prisma as any).cerSection.findUnique({
+    const section = await this.prisma.cerSection.findUnique({
       where: { id: cerSectionId },
       select: {
         id: true,
@@ -57,7 +57,7 @@ export class SaveSectionContentUseCase {
 
     // 5. Persist
     const now = new Date();
-    await (this.prisma as any).cerSection.update({
+    await this.prisma.cerSection.update({
       where: { id: cerSectionId },
       data: {
         humanEditedContent: mergedContent as unknown as Prisma.InputJsonValue,

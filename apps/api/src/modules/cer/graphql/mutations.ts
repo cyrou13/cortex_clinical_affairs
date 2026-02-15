@@ -1,6 +1,29 @@
 import { builder } from '../../../graphql/builder.js';
-import { CreateCerResultType, LinkUpstreamResultType, CerExternalDocumentObjectType, UpdateExternalDocVersionResultType, NamedDeviceSearchResultType, AssembleSectionsResultType, ReviewSectionResultType, SaveSectionContentResultType, GenerateGsprResultType, ComplianceStatementResultType, UpdateGsprRowResultType, BenefitRiskResultType, UpdateBenefitRiskResultType, BenefitRiskConclusionResultType, BibliographyResultType, EvaluatorObjectType, ESignResultType, CreateVersionResultType, ExportCerResultType, LockCerResultType } from './types.js';
-import { checkPermission, checkProjectMembership } from '../../../shared/middleware/rbac-middleware.js';
+import {
+  CreateCerResultType,
+  LinkUpstreamResultType,
+  CerExternalDocumentObjectType,
+  UpdateExternalDocVersionResultType,
+  NamedDeviceSearchResultType,
+  AssembleSectionsResultType,
+  ReviewSectionResultType,
+  SaveSectionContentResultType,
+  GenerateGsprResultType,
+  ComplianceStatementResultType,
+  UpdateGsprRowResultType,
+  BenefitRiskResultType,
+  UpdateBenefitRiskResultType,
+  BibliographyResultType,
+  EvaluatorObjectType,
+  ESignResultType,
+  CreateVersionResultType,
+  ExportCerResultType,
+  LockCerResultType,
+} from './types.js';
+import {
+  checkPermission,
+  checkProjectMembership,
+} from '../../../shared/middleware/rbac-middleware.js';
 import { NotFoundError } from '../../../shared/errors/index.js';
 import { CreateCerUseCase } from '../application/use-cases/create-cer.js';
 import { LinkUpstreamUseCase } from '../application/use-cases/link-upstream.js';
@@ -15,7 +38,6 @@ import { GenerateComplianceStatementUseCase } from '../application/use-cases/gen
 import { UpdateGsprRowUseCase } from '../application/use-cases/update-gspr-row.js';
 import { DetermineBenefitRiskUseCase } from '../application/use-cases/determine-benefit-risk.js';
 import { UpdateBenefitRiskUseCase } from '../application/use-cases/update-benefit-risk.js';
-import { GenerateBenefitRiskConclusionUseCase } from '../application/use-cases/generate-benefit-risk-conclusion.js';
 import { ManageBibliographyUseCase } from '../application/use-cases/manage-bibliography.js';
 import { ManageEvaluatorsUseCase } from '../application/use-cases/manage-evaluators.js';
 import { ESignDocumentUseCase } from '../application/use-cases/e-sign-document.js';
@@ -64,7 +86,7 @@ builder.mutationField('linkCerUpstream', (t) =>
       checkPermission(ctx, 'cer', 'write');
 
       // Verify project membership via cerVersion
-      const cer = await (ctx.prisma as any).cerVersion.findUnique({
+      const cer = await ctx.prisma.cerVersion.findUnique({
         where: { id: args.cerVersionId },
       });
       if (!cer) throw new NotFoundError('CerVersion', args.cerVersionId);
@@ -210,7 +232,15 @@ builder.mutationField('assembleCerSections', (t) =>
 
       const redis = getRedis();
       const jobEnqueuer = {
-        enqueue: async (queueName: string, jobData: { taskId: string; type: string; metadata: Record<string, unknown>; createdBy: string }) => {
+        enqueue: async (
+          queueName: string,
+          jobData: {
+            taskId: string;
+            type: string;
+            metadata: Record<string, unknown>;
+            createdBy: string;
+          },
+        ) => {
           await redis.publish('task:enqueued', JSON.stringify({ ...jobData, queue: queueName }));
           return jobData.taskId;
         },
@@ -549,9 +579,16 @@ builder.mutationField('exportCer', (t) =>
 
       const redis = getRedis();
       const taskService = {
-        enqueueTask: async (type: string, data: Record<string, unknown> | undefined, userId: string) => {
+        enqueueTask: async (
+          type: string,
+          data: Record<string, unknown> | undefined,
+          userId: string,
+        ) => {
           const taskId = crypto.randomUUID();
-          await redis.publish('task:enqueued', JSON.stringify({ taskId, type, data, createdBy: userId }));
+          await redis.publish(
+            'task:enqueued',
+            JSON.stringify({ taskId, type, data, createdBy: userId }),
+          );
           return { id: taskId };
         },
       };
@@ -575,7 +612,7 @@ builder.mutationField('lockCer', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'cer', 'write');
 
-      const cer = await (ctx.prisma as any).cerVersion.findUnique({
+      const cer = await ctx.prisma.cerVersion.findUnique({
         where: { id: args.cerVersionId },
       });
 

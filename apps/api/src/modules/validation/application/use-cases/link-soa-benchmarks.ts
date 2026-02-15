@@ -23,7 +23,7 @@ export class LinkSoaBenchmarksUseCase {
     const { validationStudyId, soaAnalysisId } = input;
 
     // Verify SOA exists
-    const soa = await (this.prisma as any).soaAnalysis.findUnique({
+    const soa = await this.prisma.soaAnalysis.findUnique({
       where: { id: soaAnalysisId },
       select: { id: true, type: true },
     });
@@ -33,7 +33,7 @@ export class LinkSoaBenchmarksUseCase {
     }
 
     // Fetch benchmarks from the SOA Device analysis (performance benchmarks)
-    const soaBenchmarks = await (this.prisma as any).soaBenchmark.findMany({
+    const soaBenchmarks = await this.prisma.soaBenchmark.findMany({
       where: { soaAnalysisId },
       select: {
         id: true,
@@ -53,7 +53,7 @@ export class LinkSoaBenchmarksUseCase {
 
     for (const benchmark of soaBenchmarks) {
       const criterionId = crypto.randomUUID();
-      await (this.prisma as any).acceptanceCriterion.create({
+      await this.prisma.acceptanceCriterion.create({
         data: {
           id: criterionId,
           validationStudyId,

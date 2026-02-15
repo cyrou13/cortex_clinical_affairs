@@ -67,13 +67,15 @@ function makePrisma(overrides?: {
       ),
     },
     validationResult: {
-      findMany: vi.fn().mockResolvedValue(
-        overrides?.validationResults ?? [
-          { metricType: 'SENSITIVITY', value: 0.95, comparison: 'ABOVE_THRESHOLD' },
-        ],
-      ),
+      findMany: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.validationResults ?? [
+            { metricType: 'SENSITIVITY', value: 0.95, comparison: 'ABOVE_THRESHOLD' },
+          ],
+        ),
     },
-    slsArticle: {
+    article: {
       findUnique: vi.fn().mockResolvedValue(
         overrides?.article !== undefined
           ? overrides.article
@@ -87,11 +89,13 @@ function makePrisma(overrides?: {
       ),
     },
     auditLog: {
-      findMany: vi.fn().mockResolvedValue(
-        overrides?.auditEntries ?? [
-          { action: 'claimTrace.created', userId: 'user-1', createdAt: '2026-01-01T00:00:00Z' },
-        ],
-      ),
+      findMany: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.auditEntries ?? [
+            { action: 'claimTrace.created', userId: 'user-1', createdAt: '2026-01-01T00:00:00Z' },
+          ],
+        ),
     },
   } as any;
 }
@@ -123,18 +127,14 @@ describe('GetClaimTraceUseCase', () => {
     const prisma = makePrisma({ trace: null });
     const useCase = new GetClaimTraceUseCase(prisma);
 
-    await expect(
-      useCase.execute({ claimTraceId: 'missing' }),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute({ claimTraceId: 'missing' })).rejects.toThrow('not found');
   });
 
   it('throws NotFoundError when section not found', async () => {
     const prisma = makePrisma({ section: null });
     const useCase = new GetClaimTraceUseCase(prisma);
 
-    await expect(
-      useCase.execute({ claimTraceId: TRACE_ID }),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute({ claimTraceId: TRACE_ID })).rejects.toThrow('not found');
   });
 
   it('returns null level2 when no soaSourceId', async () => {

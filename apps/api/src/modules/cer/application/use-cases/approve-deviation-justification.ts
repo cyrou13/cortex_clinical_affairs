@@ -1,5 +1,9 @@
 import type { PrismaClient } from '@prisma/client';
-import { NotFoundError, ValidationError, PermissionDeniedError } from '../../../../shared/errors/index.js';
+import {
+  NotFoundError,
+  ValidationError,
+  PermissionDeniedError,
+} from '../../../../shared/errors/index.js';
 import type { EventBus } from '../../../../shared/events/event-bus.js';
 import { createPccpDeviationApprovedEvent } from '../../domain/events/cer-events.js';
 
@@ -38,7 +42,7 @@ export class ApproveDeviationJustificationUseCase {
     }
 
     // Fetch deviation
-    const deviation = await (this.prisma as any).pccpDeviation.findUnique({
+    const deviation = await this.prisma.pccpDeviation.findUnique({
       where: { id: input.deviationId },
       select: {
         id: true,
@@ -67,7 +71,7 @@ export class ApproveDeviationJustificationUseCase {
 
     const now = new Date();
 
-    await (this.prisma as any).pccpDeviation.update({
+    await this.prisma.pccpDeviation.update({
       where: { id: input.deviationId },
       data: {
         status: 'APPROVED',

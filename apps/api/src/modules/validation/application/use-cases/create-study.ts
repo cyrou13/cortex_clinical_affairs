@@ -43,7 +43,7 @@ export class CreateStudyUseCase {
     }
 
     // Verify SOA exists and is locked
-    const soa = await (this.prisma as any).soaAnalysis.findUnique({
+    const soa = await this.prisma.soaAnalysis.findUnique({
       where: { id: input.soaAnalysisId },
       select: { id: true, status: true, projectId: true },
     });
@@ -62,7 +62,7 @@ export class CreateStudyUseCase {
 
     const studyId = crypto.randomUUID();
 
-    await (this.prisma as any).validationStudy.create({
+    await this.prisma.validationStudy.create({
       data: {
         id: studyId,
         projectId: input.projectId,

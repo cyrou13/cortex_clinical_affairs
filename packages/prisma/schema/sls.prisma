@@ -42,6 +42,7 @@ model SlsSession {
   articles         Article[]
   exclusionCodes   ExclusionCode[]
   customAiFilters  CustomAiFilter[]
+  minedReferences  MinedReference[]
 
   @@index([projectId, status])
 }
@@ -189,4 +190,32 @@ model CustomAiFilter {
   session SlsSession @relation(fields: [sessionId], references: [id])
 
   @@index([sessionId, isActive])
+}
+
+enum MinedReferenceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model MinedReference {
+  id               String               @id @default(uuid())
+  sessionId        String
+  title            String
+  authors          Json?
+  year             Int?
+  journal          String?
+  doi              String?
+  pmid             String?
+  approvalStatus   MinedReferenceStatus  @default(PENDING)
+  validationStatus String?
+  isDuplicate      Boolean              @default(false)
+  rejectionReason  String?
+  approvedById     String?
+  approvedAt       DateTime?
+  createdAt        DateTime             @default(now())
+
+  session SlsSession @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId, approvalStatus])
 }

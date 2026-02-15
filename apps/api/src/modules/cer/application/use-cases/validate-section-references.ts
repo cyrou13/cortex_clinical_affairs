@@ -30,7 +30,7 @@ export class ValidateSectionReferencesUseCase {
     const { cerSectionId } = input;
 
     // 1. Fetch section
-    const section = await (this.prisma as any).cerSection.findUnique({
+    const section = await this.prisma.cerSection.findUnique({
       where: { id: cerSectionId },
       select: {
         id: true,
@@ -49,14 +49,12 @@ export class ValidateSectionReferencesUseCase {
     const inlineRefs = extractInlineReferences(contentText);
 
     // 3. Fetch all claim traces for this section
-    const claimTraces = await (this.prisma as any).claimTrace.findMany({
+    const claimTraces = await this.prisma.claimTrace.findMany({
       where: { cerSectionId },
       select: { refNumber: true },
     });
 
-    const tracedRefSet = new Set(
-      claimTraces.map((ct: { refNumber: string }) => ct.refNumber),
-    );
+    const tracedRefSet = new Set(claimTraces.map((ct: { refNumber: string }) => ct.refNumber));
 
     // 4. Classify references
     const validations: ReferenceValidation[] = inlineRefs.map((ref) => ({

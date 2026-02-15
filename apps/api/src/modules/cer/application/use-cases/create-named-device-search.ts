@@ -24,7 +24,7 @@ export class CreateNamedDeviceSearchUseCase {
     const { cerVersionId, deviceName, keywords, databases, userId } = input;
 
     // Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: cerVersionId },
       select: { id: true, status: true },
     });
@@ -41,7 +41,7 @@ export class CreateNamedDeviceSearchUseCase {
     const search = createNamedDeviceSearch(cerVersionId, deviceName, keywords, databases);
 
     // Persist
-    await (this.prisma as any).namedDeviceSearch.create({
+    await this.prisma.namedDeviceSearch.create({
       data: {
         id: search.id,
         cerVersionId: search.cerVersionId,

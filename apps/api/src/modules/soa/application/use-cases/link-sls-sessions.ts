@@ -19,7 +19,7 @@ export class LinkSlsSessionsUseCase {
       throw new ValidationError('At least one SLS session ID is required');
     }
 
-    const soa = await (this.prisma as any).soaAnalysis.findUnique({
+    const soa = await this.prisma.soaAnalysis.findUnique({
       where: { id: input.soaAnalysisId },
       select: { id: true, status: true, projectId: true },
     });
@@ -44,12 +44,10 @@ export class LinkSlsSessionsUseCase {
     const lockedIds = new Set(sessions.map((s: { id: string }) => s.id));
     const invalidIds = input.slsSessionIds.filter((id) => !lockedIds.has(id));
     if (invalidIds.length > 0) {
-      throw new ValidationError(
-        `Sessions not found or not locked: ${invalidIds.join(', ')}`,
-      );
+      throw new ValidationError(`Sessions not found or not locked: ${invalidIds.join(', ')}`);
     }
 
-    const existingLinks = await (this.prisma as any).soaSlsLink.findMany({
+    const existingLinks = await this.prisma.soaSlsLink.findMany({
       where: { soaAnalysisId: input.soaAnalysisId },
       select: { slsSessionId: true },
     });
@@ -66,7 +64,7 @@ export class LinkSlsSessionsUseCase {
         skippedCount++;
         continue;
       }
-      await (this.prisma as any).soaSlsLink.create({
+      await this.prisma.soaSlsLink.create({
         data: {
           id: crypto.randomUUID(),
           soaAnalysisId: input.soaAnalysisId,

@@ -1,6 +1,27 @@
 import { builder } from '../../../graphql/builder.js';
-import { CreateSoaResultType, LinkSlsSessionsResultType, DependencyCheckResultType, CreateGridResultType, PopulateGridRowsResultType, UpdateCellResultType, ExtractGridDataResultType, CellValidationResultType, AssessQualityResultType, UpdateSectionContentResultType, FinalizeSectionResultType, DraftNarrativeResultType, SimilarDeviceObjectType, BenchmarkObjectType, ClaimObjectType, ClaimArticleLinkObjectType, LockSoaResultType } from './types.js';
-import { checkPermission, checkProjectMembership } from '../../../shared/middleware/rbac-middleware.js';
+import {
+  CreateSoaResultType,
+  LinkSlsSessionsResultType,
+  DependencyCheckResultType,
+  CreateGridResultType,
+  PopulateGridRowsResultType,
+  UpdateCellResultType,
+  ExtractGridDataResultType,
+  CellValidationResultType,
+  AssessQualityResultType,
+  UpdateSectionContentResultType,
+  FinalizeSectionResultType,
+  DraftNarrativeResultType,
+  SimilarDeviceObjectType,
+  BenchmarkObjectType,
+  ClaimObjectType,
+  ClaimArticleLinkObjectType,
+  LockSoaResultType,
+} from './types.js';
+import {
+  checkPermission,
+  checkProjectMembership,
+} from '../../../shared/middleware/rbac-middleware.js';
 import { NotFoundError } from '../../../shared/errors/index.js';
 import { CreateSoaUseCase } from '../application/use-cases/create-soa.js';
 import { LinkSlsSessionsUseCase } from '../application/use-cases/link-sls-sessions.js';
@@ -58,7 +79,7 @@ builder.mutationField('linkSlsSessions', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'write');
 
-      const soa = await (ctx.prisma as any).soaAnalysis.findUnique({
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
         where: { id: args.soaAnalysisId },
       });
 
@@ -108,7 +129,7 @@ builder.mutationField('createExtractionGrid', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'write');
 
-      const soa = await (ctx.prisma as any).soaAnalysis.findUnique({
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
         where: { id: args.soaAnalysisId },
       });
 
@@ -253,7 +274,13 @@ builder.mutationField('correctCell', (t) =>
       checkPermission(ctx, 'soa', 'write');
 
       const useCase = new ValidateExtractionUseCase(ctx.prisma);
-      return useCase.correctCell(args.gridId, args.articleId, args.columnId, args.newValue, ctx.user!.id) as any;
+      return useCase.correctCell(
+        args.gridId,
+        args.articleId,
+        args.columnId,
+        args.newValue,
+        ctx.user!.id,
+      ) as any;
     },
   }),
 );
@@ -271,7 +298,13 @@ builder.mutationField('flagCell', (t) =>
       checkPermission(ctx, 'soa', 'write');
 
       const useCase = new ValidateExtractionUseCase(ctx.prisma);
-      return useCase.flagCell(args.gridId, args.articleId, args.columnId, args.reason, ctx.user!.id) as any;
+      return useCase.flagCell(
+        args.gridId,
+        args.articleId,
+        args.columnId,
+        args.reason,
+        ctx.user!.id,
+      ) as any;
     },
   }),
 );
@@ -291,7 +324,7 @@ builder.mutationField('assessQuality', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'write');
 
-      const soa = await (ctx.prisma as any).soaAnalysis.findUnique({
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
         where: { id: args.soaAnalysisId },
       });
 
@@ -359,7 +392,7 @@ builder.mutationField('draftNarrative', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'write');
 
-      const soa = await (ctx.prisma as any).soaAnalysis.findUnique({
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
         where: { id: args.soaAnalysisId },
       });
 
@@ -401,7 +434,7 @@ builder.mutationField('addSimilarDevice', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'write');
 
-      const soa = await (ctx.prisma as any).soaAnalysis.findUnique({
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
         where: { id: args.soaAnalysisId },
       });
 
@@ -467,7 +500,7 @@ builder.mutationField('createClaim', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'write');
 
-      const soa = await (ctx.prisma as any).soaAnalysis.findUnique({
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
         where: { id: args.soaAnalysisId },
       });
 
@@ -520,7 +553,7 @@ builder.mutationField('lockSoaAnalysis', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'write');
 
-      const soa = await (ctx.prisma as any).soaAnalysis.findUnique({
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
         where: { id: args.soaAnalysisId },
       });
 

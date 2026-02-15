@@ -35,11 +35,13 @@ export interface GenerateComplianceStatementResult {
 export class GenerateComplianceStatementUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async execute(input: GenerateComplianceStatementInput): Promise<GenerateComplianceStatementResult> {
+  async execute(
+    input: GenerateComplianceStatementInput,
+  ): Promise<GenerateComplianceStatementResult> {
     const { cerVersionId, userId } = input;
 
     // 1. Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: cerVersionId },
       select: { id: true },
     });
@@ -49,7 +51,7 @@ export class GenerateComplianceStatementUseCase {
     }
 
     // 2. Fetch GSPR matrix rows
-    const rows = await (this.prisma as any).gsprMatrixRow.findMany({
+    const rows = await this.prisma.gsprMatrixRow.findMany({
       where: { cerVersionId },
       select: {
         gsprId: true,
@@ -101,7 +103,7 @@ export class GenerateComplianceStatementUseCase {
     const statementText = generateStatementText(summary, gaps, conclusion);
 
     // 6. Store as CER section or update existing compliance section
-    const existingSection = await (this.prisma as any).cerSection.findFirst({
+    const existingSection = await this.prisma.cerSection.findFirst({
       where: {
         cerVersionId,
         sectionType: 'COMPLIANCE_STATEMENT',
@@ -110,7 +112,7 @@ export class GenerateComplianceStatementUseCase {
     });
 
     if (existingSection) {
-      await (this.prisma as any).cerSection.update({
+      await this.prisma.cerSection.update({
         where: { id: existingSection.id },
         data: {
           aiDraftContent: { statementText, summary, gaps } as unknown as Prisma.InputJsonValue,
@@ -119,7 +121,7 @@ export class GenerateComplianceStatementUseCase {
         },
       });
     } else {
-      await (this.prisma as any).cerSection.create({
+      await this.prisma.cerSection.create({
         data: {
           id: crypto.randomUUID(),
           cerVersionId,

@@ -30,7 +30,7 @@ export class LinkFindingToSectionUseCase {
     }
 
     // Verify section exists
-    const section = await (this.prisma as any).cerSection.findUnique({
+    const section = await this.prisma.cerSection.findUnique({
       where: { id: cerSectionId },
       select: {
         id: true,

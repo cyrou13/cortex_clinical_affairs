@@ -79,9 +79,7 @@ describe('PopulateGapRegistryUseCase', () => {
   it('skips duplicate entries and counts them', async () => {
     prisma = makePrisma({
       gapRegistryEntry: {
-        findMany: vi.fn().mockResolvedValue([
-          { sourceModule: 'SOA', sourceId: 'q-1' },
-        ]),
+        findMany: vi.fn().mockResolvedValue([{ sourceModule: 'SOA', sourceId: 'q-1' }]),
         create: vi.fn().mockResolvedValue({}),
         count: vi.fn().mockResolvedValue(2),
       },
@@ -138,9 +136,7 @@ describe('PopulateGapRegistryUseCase', () => {
   it('uses default description when question has no description', async () => {
     prisma = makePrisma({
       soaOpenQuestion: {
-        findMany: vi.fn().mockResolvedValue([
-          { id: 'q-1', description: null },
-        ]),
+        findMany: vi.fn().mockResolvedValue([{ id: 'q-1', description: null }]),
       },
       gapRegistryEntry: {
         findMany: vi.fn().mockResolvedValue([]),
@@ -185,15 +181,13 @@ describe('PopulateGapRegistryUseCase', () => {
     });
     useCase = new PopulateGapRegistryUseCase(prisma);
 
-    await expect(useCase.execute('plan-1', 'user-1')).rejects.toThrow(
-      'not found',
-    );
+    await expect(useCase.execute('plan-1', 'user-1')).rejects.toThrow('not found');
   });
 
   it('queries open questions using the plan cerVersionId', async () => {
     await useCase.execute('plan-1', 'user-1');
 
-    expect((prisma as any).soaOpenQuestion.findMany).toHaveBeenCalledWith({
+    expect(prisma.soaOpenQuestion.findMany).toHaveBeenCalledWith({
       where: { cerVersionId: 'cer-v1' },
     });
   });

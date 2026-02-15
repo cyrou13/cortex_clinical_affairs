@@ -38,11 +38,13 @@ export interface GenerateBenefitRiskConclusionResult {
 export class GenerateBenefitRiskConclusionUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async execute(input: GenerateBenefitRiskConclusionInput): Promise<GenerateBenefitRiskConclusionResult> {
+  async execute(
+    input: GenerateBenefitRiskConclusionInput,
+  ): Promise<GenerateBenefitRiskConclusionResult> {
     const { cerVersionId } = input;
 
     // 1. Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: cerVersionId },
       select: { id: true },
     });
@@ -52,23 +54,25 @@ export class GenerateBenefitRiskConclusionUseCase {
     }
 
     // 2. Fetch benefits
-    const benefits = await (this.prisma as any).benefitRiskItem.findMany({
+    const benefits = await this.prisma.benefitRiskItem.findMany({
       where: { cerVersionId, itemType: 'BENEFIT' },
       select: { description: true },
     });
 
     if (benefits.length === 0) {
-      throw new ValidationError('No benefit-risk data found. Run benefit-risk determination first.');
+      throw new ValidationError(
+        'No benefit-risk data found. Run benefit-risk determination first.',
+      );
     }
 
     // 3. Fetch risks
-    const risks = await (this.prisma as any).benefitRiskItem.findMany({
+    const risks = await this.prisma.benefitRiskItem.findMany({
       where: { cerVersionId, itemType: 'RISK' },
       select: { description: true, riskLevel: true },
     });
 
     // 4. Fetch mitigations
-    const mitigations = await (this.prisma as any).benefitRiskMitigation.findMany({
+    const mitigations = await this.prisma.benefitRiskMitigation.findMany({
       where: { cerVersionId },
       select: { description: true },
     });
@@ -83,7 +87,8 @@ export class GenerateBenefitRiskConclusionUseCase {
       total: risks.length,
       acceptable: risks.filter((r: { riskLevel: string }) => r.riskLevel === 'ACCEPTABLE').length,
       alarp: risks.filter((r: { riskLevel: string }) => r.riskLevel === 'ALARP').length,
-      unacceptable: risks.filter((r: { riskLevel: string }) => r.riskLevel === 'UNACCEPTABLE').length,
+      unacceptable: risks.filter((r: { riskLevel: string }) => r.riskLevel === 'UNACCEPTABLE')
+        .length,
     };
 
     const mitigationSummary: MitigationSummary = {
@@ -144,18 +149,18 @@ export function generateConclusionText(
   if (favorable) {
     lines.push(
       'Based on the available evidence, the benefit-risk ratio is considered FAVORABLE. ' +
-      'The clinical benefits of the device outweigh the residual risks when used as intended.',
+        'The clinical benefits of the device outweigh the residual risks when used as intended.',
     );
   } else if (risks.unacceptable > 0) {
     lines.push(
       `WARNING: ${risks.unacceptable} unacceptable risk(s) identified. ` +
-      'The benefit-risk ratio cannot be considered favorable until all unacceptable risks are mitigated. ' +
-      'Additional risk mitigation measures are required before the device can be approved.',
+        'The benefit-risk ratio cannot be considered favorable until all unacceptable risks are mitigated. ' +
+        'Additional risk mitigation measures are required before the device can be approved.',
     );
   } else {
     lines.push(
       'The benefit-risk determination requires further review. ' +
-      'Additional clinical evidence may be needed to establish a favorable benefit-risk ratio.',
+        'Additional clinical evidence may be needed to establish a favorable benefit-risk ratio.',
     );
   }
 

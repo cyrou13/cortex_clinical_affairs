@@ -31,13 +31,11 @@ export class RecordCoiDeclarationUseCase {
 
     // If conflict exists, require details
     if (input.hasConflict && !input.conflictDetails?.trim()) {
-      throw new ValidationError(
-        'Conflict details are required when a conflict of interest exists',
-      );
+      throw new ValidationError('Conflict details are required when a conflict of interest exists');
     }
 
     // Verify evaluator exists
-    const evaluator = await (this.prisma as any).evaluator.findUnique({
+    const evaluator = await this.prisma.evaluator.findUnique({
       where: { id: input.evaluatorId },
       select: { id: true, signedAt: true },
     });
@@ -53,7 +51,7 @@ export class RecordCoiDeclarationUseCase {
 
     const now = new Date();
 
-    await (this.prisma as any).evaluator.update({
+    await this.prisma.evaluator.update({
       where: { id: input.evaluatorId },
       data: {
         hasConflict: input.hasConflict,

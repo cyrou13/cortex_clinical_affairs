@@ -1,5 +1,9 @@
 import type { PrismaClient, Prisma } from '@prisma/client';
-import { NotFoundError, LockConflictError, ValidationError } from '../../../../shared/errors/index.js';
+import {
+  NotFoundError,
+  LockConflictError,
+  ValidationError,
+} from '../../../../shared/errors/index.js';
 import type { EventBus } from '../../../../shared/events/event-bus.js';
 import { createSoaLockedEvent } from '../../domain/events/soa-locked.js';
 
@@ -23,7 +27,7 @@ export class LockSoaUseCase {
   async execute(input: LockSoaInput): Promise<LockSoaResult> {
     const { soaAnalysisId, userId } = input;
 
-    const soa = await (this.prisma as any).soaAnalysis.findUnique({
+    const soa = await this.prisma.soaAnalysis.findUnique({
       where: { id: soaAnalysisId },
       select: { id: true, status: true, projectId: true },
     });
@@ -36,7 +40,7 @@ export class LockSoaUseCase {
       throw new LockConflictError('SoaAnalysis', soaAnalysisId);
     }
 
-    const sections = await (this.prisma as any).thematicSection.findMany({
+    const sections = await this.prisma.thematicSection.findMany({
       where: { soaAnalysisId },
       select: { id: true, status: true, title: true },
     });
@@ -46,9 +50,7 @@ export class LockSoaUseCase {
     );
 
     if (nonFinalizedSections.length > 0) {
-      const titles = nonFinalizedSections
-        .map((s: { title: string }) => s.title)
-        .join(', ');
+      const titles = nonFinalizedSections.map((s: { title: string }) => s.title).join(', ');
       throw new ValidationError(
         `Cannot lock SOA: ${nonFinalizedSections.length} section(s) not finalized (${titles})`,
       );
@@ -56,7 +58,7 @@ export class LockSoaUseCase {
 
     const now = new Date();
 
-    await (this.prisma as any).soaAnalysis.update({
+    await this.prisma.soaAnalysis.update({
       where: { id: soaAnalysisId },
       data: {
         status: 'LOCKED',

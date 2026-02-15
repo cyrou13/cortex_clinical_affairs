@@ -11,7 +11,7 @@ interface PopulateGapRegistryResult {
 export class PopulateGapRegistryUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async execute(pmsPlanId: string, userId: string): Promise<PopulateGapRegistryResult> {
+  async execute(pmsPlanId: string, _userId: string): Promise<PopulateGapRegistryResult> {
     const plan = await this.prisma.pmsPlan.findUnique({
       where: { id: pmsPlanId },
       select: { id: true, cerVersionId: true },
@@ -30,12 +30,15 @@ export class PopulateGapRegistryUseCase {
     });
 
     const existingKeys = new Set(
-      existingGaps.map((g: { sourceModule: string; sourceId: string }) => `${g.sourceModule}:${g.sourceId}`),
+      existingGaps.map(
+        (g: { sourceModule: string; sourceId: string }) => `${g.sourceModule}:${g.sourceId}`,
+      ),
     );
 
-    const soaOpenQuestions = await (this.prisma as any).soaOpenQuestion?.findMany?.({
-      where: { cerVersionId: plan.cerVersionId },
-    }) ?? [];
+    const soaOpenQuestions =
+      (await this.prisma.soaOpenQuestion?.findMany?.({
+        where: { cerVersionId: plan.cerVersionId },
+      })) ?? [];
 
     for (const question of soaOpenQuestions) {
       const key = `SOA:${question.id}`;

@@ -29,7 +29,7 @@ export class ImportXlsUseCase {
     const { validationStudyId, fileName, headers, rawRows, userId } = input;
 
     // Verify study exists and is not locked
-    const study = await (this.prisma as any).validationStudy.findUnique({
+    const study = await this.prisma.validationStudy.findUnique({
       where: { id: validationStudyId },
       select: { id: true, status: true, type: true },
     });
@@ -50,13 +50,11 @@ export class ImportXlsUseCase {
     const validation = validateXlsData(parsed.headers, parsed.rows, schema);
 
     if (!validation.valid) {
-      throw new ValidationError(
-        `XLS validation failed: ${validation.errors.join('; ')}`,
-      );
+      throw new ValidationError(`XLS validation failed: ${validation.errors.join('; ')}`);
     }
 
     // Determine next version number
-    const lastImport = await (this.prisma as any).dataImport.findFirst({
+    const lastImport = await this.prisma.dataImport.findFirst({
       where: { validationStudyId },
       orderBy: { version: 'desc' },
       select: { version: true },
@@ -66,7 +64,7 @@ export class ImportXlsUseCase {
 
     // Create data import record
     const importId = crypto.randomUUID();
-    await (this.prisma as any).dataImport.create({
+    await this.prisma.dataImport.create({
       data: {
         id: importId,
         validationStudyId,
@@ -82,7 +80,7 @@ export class ImportXlsUseCase {
     });
 
     // Deactivate previous active imports
-    await (this.prisma as any).dataImport.updateMany({
+    await this.prisma.dataImport.updateMany({
       where: {
         validationStudyId,
         id: { not: importId },

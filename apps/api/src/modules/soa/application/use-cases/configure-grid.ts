@@ -21,7 +21,7 @@ export class ConfigureGridUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async createGrid(input: CreateGridInput) {
-    const soa = await (this.prisma as any).soaAnalysis.findUnique({
+    const soa = await this.prisma.soaAnalysis.findUnique({
       where: { id: input.soaAnalysisId },
       select: { id: true, status: true },
     });
@@ -36,7 +36,7 @@ export class ConfigureGridUseCase {
 
     const gridId = crypto.randomUUID();
 
-    await (this.prisma as any).extractionGrid.create({
+    await this.prisma.extractionGrid.create({
       data: {
         id: gridId,
         soaAnalysisId: input.soaAnalysisId,
@@ -51,7 +51,7 @@ export class ConfigureGridUseCase {
         throw new NotFoundError('GridTemplate', input.templateId);
       }
       for (const col of template.columns) {
-        await (this.prisma as any).gridColumn.create({
+        await this.prisma.gridColumn.create({
           data: {
             id: crypto.randomUUID(),
             extractionGridId: gridId,
@@ -70,7 +70,7 @@ export class ConfigureGridUseCase {
   }
 
   async addColumn(input: AddColumnInput) {
-    const grid = await (this.prisma as any).extractionGrid.findUnique({
+    const grid = await this.prisma.extractionGrid.findUnique({
       where: { id: input.gridId },
       select: { id: true },
     });
@@ -79,14 +79,14 @@ export class ConfigureGridUseCase {
       throw new NotFoundError('ExtractionGrid', input.gridId);
     }
 
-    const maxOrder = await (this.prisma as any).gridColumn.findFirst({
+    const maxOrder = await this.prisma.gridColumn.findFirst({
       where: { extractionGridId: input.gridId },
       orderBy: { orderIndex: 'desc' },
       select: { orderIndex: true },
     });
 
     const columnId = crypto.randomUUID();
-    await (this.prisma as any).gridColumn.create({
+    await this.prisma.gridColumn.create({
       data: {
         id: columnId,
         extractionGridId: input.gridId,
@@ -103,7 +103,7 @@ export class ConfigureGridUseCase {
 
   async reorderColumns(gridId: string, columnIds: string[]) {
     for (let i = 0; i < columnIds.length; i++) {
-      await (this.prisma as any).gridColumn.update({
+      await this.prisma.gridColumn.update({
         where: { id: columnIds[i] },
         data: { orderIndex: i },
       });
@@ -116,7 +116,7 @@ export class ConfigureGridUseCase {
       throw new ValidationError('Column name cannot be empty');
     }
 
-    await (this.prisma as any).gridColumn.update({
+    await this.prisma.gridColumn.update({
       where: { id: columnId },
       data: { displayName: newName.trim() },
     });
@@ -125,7 +125,7 @@ export class ConfigureGridUseCase {
   }
 
   async removeColumn(gridId: string, columnId: string) {
-    await (this.prisma as any).gridColumn.delete({
+    await this.prisma.gridColumn.delete({
       where: { id: columnId },
     });
 

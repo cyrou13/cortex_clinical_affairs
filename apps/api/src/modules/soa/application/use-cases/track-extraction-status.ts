@@ -27,7 +27,7 @@ export class TrackExtractionStatusUseCase {
     gridId: string,
     articleId: string,
   ): Promise<ArticleExtractionStatusResult> {
-    const grid = await (this.prisma as any).extractionGrid.findUnique({
+    const grid = await this.prisma.extractionGrid.findUnique({
       where: { id: gridId },
     });
 
@@ -35,7 +35,7 @@ export class TrackExtractionStatusUseCase {
       throw new NotFoundError('ExtractionGrid', gridId);
     }
 
-    const cells = await (this.prisma as any).gridCell.findMany({
+    const cells = await this.prisma.gridCell.findMany({
       where: {
         extractionGridId: gridId,
         articleId,
@@ -47,7 +47,9 @@ export class TrackExtractionStatusUseCase {
       throw new NotFoundError('GridCell', `${gridId}/${articleId}`);
     }
 
-    const statuses = cells.map((c: { validationStatus: CellValidationStatus }) => c.validationStatus);
+    const statuses = cells.map(
+      (c: { validationStatus: CellValidationStatus }) => c.validationStatus,
+    );
     const flaggedCells = statuses.filter((s: CellValidationStatus) => s === 'FLAGGED').length;
     const validatedCells = statuses.filter(
       (s: CellValidationStatus) => s === 'VALIDATED' || s === 'CORRECTED',
@@ -75,7 +77,7 @@ export class TrackExtractionStatusUseCase {
   }
 
   async getGridExtractionProgress(gridId: string): Promise<GridExtractionProgress> {
-    const grid = await (this.prisma as any).extractionGrid.findUnique({
+    const grid = await this.prisma.extractionGrid.findUnique({
       where: { id: gridId },
     });
 
@@ -83,13 +85,16 @@ export class TrackExtractionStatusUseCase {
       throw new NotFoundError('ExtractionGrid', gridId);
     }
 
-    const cells = await (this.prisma as any).gridCell.findMany({
+    const cells = await this.prisma.gridCell.findMany({
       where: { extractionGridId: gridId },
       select: { articleId: true, validationStatus: true },
     });
 
     const articleMap = new Map<string, CellValidationStatus[]>();
-    for (const cell of cells as Array<{ articleId: string; validationStatus: CellValidationStatus }>) {
+    for (const cell of cells as Array<{
+      articleId: string;
+      validationStatus: CellValidationStatus;
+    }>) {
       const existing = articleMap.get(cell.articleId) ?? [];
       existing.push(cell.validationStatus);
       articleMap.set(cell.articleId, existing);
@@ -120,9 +125,8 @@ export class TrackExtractionStatusUseCase {
 
     const totalArticles = articleMap.size;
     const completedArticles = counts.REVIEWED;
-    const overallPercentage = totalArticles > 0
-      ? Math.round((completedArticles / totalArticles) * 100)
-      : 0;
+    const overallPercentage =
+      totalArticles > 0 ? Math.round((completedArticles / totalArticles) * 100) : 0;
 
     return {
       gridId,

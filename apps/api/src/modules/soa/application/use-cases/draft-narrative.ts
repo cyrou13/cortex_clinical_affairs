@@ -18,7 +18,7 @@ export class DraftNarrativeUseCase {
   ) {}
 
   async execute(input: DraftNarrativeInput): Promise<DraftNarrativeResult> {
-    const section = await (this.prisma as any).thematicSection.findUnique({
+    const section = await this.prisma.thematicSection.findUnique({
       where: { id: input.sectionId },
       include: {
         soaAnalysis: { select: { id: true, status: true } },

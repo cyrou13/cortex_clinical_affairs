@@ -1,6 +1,10 @@
 import type { PrismaClient } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
-import { parseVersion, incrementMinor, formatVersion } from '../../domain/value-objects/protocol-version.js';
+import {
+  parseVersion,
+  incrementMinor,
+  formatVersion,
+} from '../../domain/value-objects/protocol-version.js';
 
 interface AmendProtocolInput {
   protocolId: string;
@@ -30,7 +34,7 @@ export class AmendProtocolUseCase {
       throw new ValidationError('Amendment reason is required');
     }
 
-    const protocol = await (this.prisma as any).protocol.findUnique({
+    const protocol = await this.prisma.protocol.findUnique({
       where: { id: protocolId },
       select: {
         id: true,
@@ -49,13 +53,11 @@ export class AmendProtocolUseCase {
     }
 
     if (protocol.status !== 'APPROVED' && protocol.status !== 'AMENDED') {
-      throw new ValidationError(
-        'Only approved or previously amended protocols can be amended',
-      );
+      throw new ValidationError('Only approved or previously amended protocols can be amended');
     }
 
     // Verify the parent study is not locked
-    const study = await (this.prisma as any).validationStudy.findUnique({
+    const study = await this.prisma.validationStudy.findUnique({
       where: { id: protocol.validationStudyId },
       select: { id: true, status: true },
     });
@@ -69,15 +71,14 @@ export class AmendProtocolUseCase {
     const newVersionStr = formatVersion(newVersion);
 
     // Update protocol
-    await (this.prisma as any).protocol.update({
+    await this.prisma.protocol.update({
       where: { id: protocolId },
       data: {
         version: newVersionStr,
         status: 'AMENDED',
         summary: input.summary ?? protocol.summary,
         endpoints: input.endpoints ?? protocol.endpoints,
-        sampleSizeJustification:
-          input.sampleSizeJustification ?? protocol.sampleSizeJustification,
+        sampleSizeJustification: input.sampleSizeJustification ?? protocol.sampleSizeJustification,
         statisticalStrategy: input.statisticalStrategy ?? protocol.statisticalStrategy,
         updatedAt: new Date(),
       },
@@ -85,7 +86,7 @@ export class AmendProtocolUseCase {
 
     // Create amendment record
     const amendmentId = crypto.randomUUID();
-    await (this.prisma as any).protocolAmendment.create({
+    await this.prisma.protocolAmendment.create({
       data: {
         id: amendmentId,
         protocolId,

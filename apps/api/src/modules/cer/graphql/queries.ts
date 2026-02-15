@@ -12,7 +12,10 @@ import {
   BenefitRiskConclusionResultType,
   EvaluatorObjectType,
 } from './types.js';
-import { checkPermission, checkProjectMembership } from '../../../shared/middleware/rbac-middleware.js';
+import {
+  checkPermission,
+  checkProjectMembership,
+} from '../../../shared/middleware/rbac-middleware.js';
 import { NotFoundError } from '../../../shared/errors/index.js';
 import { ManageExternalDocsUseCase } from '../application/use-cases/manage-external-docs.js';
 import { EnforceTraceabilityUseCase } from '../application/use-cases/enforce-traceability.js';
@@ -34,7 +37,7 @@ builder.queryField('cerVersions', (t) =>
       checkPermission(ctx, 'cer', 'read');
       await checkProjectMembership(ctx, args.projectId);
 
-      const versions = await (ctx.prisma as any).cerVersion.findMany({
+      const versions = await ctx.prisma.cerVersion.findMany({
         where: { projectId: args.projectId },
         orderBy: { createdAt: 'desc' },
       });
@@ -54,7 +57,7 @@ builder.queryField('cerVersion', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'cer', 'read');
 
-      const version = await (ctx.prisma as any).cerVersion.findUnique({
+      const version = await ctx.prisma.cerVersion.findUnique({
         where: { id: args.id },
       });
 
@@ -80,7 +83,7 @@ builder.queryField('cerUpstreamLinks', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'cer', 'read');
 
-      const cerVersion = await (ctx.prisma as any).cerVersion.findUnique({
+      const cerVersion = await ctx.prisma.cerVersion.findUnique({
         where: { id: args.cerVersionId },
       });
 
@@ -90,7 +93,7 @@ builder.queryField('cerUpstreamLinks', (t) =>
 
       await checkProjectMembership(ctx, cerVersion.projectId);
 
-      const links = await (ctx.prisma as any).cerUpstreamLink.findMany({
+      const links = await ctx.prisma.cerUpstreamLink.findMany({
         where: { cerVersionId: args.cerVersionId },
       });
 
@@ -127,7 +130,7 @@ builder.queryField('cerSections', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'cer', 'read');
 
-      const cerVersion = await (ctx.prisma as any).cerVersion.findUnique({
+      const cerVersion = await ctx.prisma.cerVersion.findUnique({
         where: { id: args.cerVersionId },
       });
 
@@ -137,7 +140,7 @@ builder.queryField('cerSections', (t) =>
 
       await checkProjectMembership(ctx, cerVersion.projectId);
 
-      const sections = await (ctx.prisma as any).cerSection.findMany({
+      const sections = await ctx.prisma.cerSection.findMany({
         where: { cerVersionId: args.cerVersionId },
         orderBy: { orderIndex: 'asc' },
       });
@@ -157,7 +160,7 @@ builder.queryField('cerSection', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'cer', 'read');
 
-      const section = await (ctx.prisma as any).cerSection.findUnique({
+      const section = await ctx.prisma.cerSection.findUnique({
         where: { id: args.id },
       });
 
@@ -228,7 +231,7 @@ builder.queryField('gsprMatrixRows', (t) =>
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'cer', 'read');
 
-      const rows = await (ctx.prisma as any).gsprMatrixRow.findMany({
+      const rows = await ctx.prisma.gsprMatrixRow.findMany({
         where: { cerVersionId: args.cerVersionId },
         orderBy: { gsprId: 'asc' },
       });

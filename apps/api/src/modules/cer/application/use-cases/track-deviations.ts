@@ -76,7 +76,7 @@ export class TrackDeviationsUseCase {
     }
 
     // Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: input.cerVersionId },
       select: { id: true, status: true },
     });
@@ -94,15 +94,14 @@ export class TrackDeviationsUseCase {
     }
 
     // Check configured thresholds
-    const config = await (this.prisma as any).pccpDeviationConfig.findFirst({
+    const config = await this.prisma.pccpDeviationConfig.findFirst({
       where: { cerVersionId: input.cerVersionId },
       select: { mandatoryJustificationLevel: true },
     });
 
     const mandatoryLevel = config?.mandatoryJustificationLevel ?? 'HIGH';
     const levelOrder: Record<string, number> = { LOW: 0, MEDIUM: 1, HIGH: 2, CRITICAL: 3 };
-    const exceedsThreshold =
-      (levelOrder[significance] ?? 0) >= (levelOrder[mandatoryLevel] ?? 2);
+    const exceedsThreshold = (levelOrder[significance] ?? 0) >= (levelOrder[mandatoryLevel] ?? 2);
 
     if (exceedsThreshold && !input.justification?.trim()) {
       throw new ValidationError(
@@ -112,7 +111,7 @@ export class TrackDeviationsUseCase {
 
     const deviationId = crypto.randomUUID();
 
-    const deviation = await (this.prisma as any).pccpDeviation.create({
+    const deviation = await this.prisma.pccpDeviation.create({
       data: {
         id: deviationId,
         cerVersionId: input.cerVersionId,
@@ -160,7 +159,7 @@ export class TrackDeviationsUseCase {
   }
 
   async update(input: UpdateDeviationInput): Promise<DeviationResult> {
-    const existing = await (this.prisma as any).pccpDeviation.findUnique({
+    const existing = await this.prisma.pccpDeviation.findUnique({
       where: { id: input.deviationId },
       select: {
         id: true,
@@ -182,7 +181,10 @@ export class TrackDeviationsUseCase {
       throw new NotFoundError('PccpDeviation', input.deviationId);
     }
 
-    if (input.significance && !DEVIATION_SIGNIFICANCE.includes(input.significance as DeviationSignificance)) {
+    if (
+      input.significance &&
+      !DEVIATION_SIGNIFICANCE.includes(input.significance as DeviationSignificance)
+    ) {
       throw new ValidationError(`Invalid significance: ${input.significance}`);
     }
 
@@ -191,9 +193,13 @@ export class TrackDeviationsUseCase {
     }
 
     const newSignificance = (input.significance ?? existing.significance) as DeviationSignificance;
-    const newJustification = input.justification !== undefined ? input.justification : existing.justification;
+    const newJustification =
+      input.justification !== undefined ? input.justification : existing.justification;
 
-    if ((newSignificance === 'HIGH' || newSignificance === 'CRITICAL') && !newJustification?.trim()) {
+    if (
+      (newSignificance === 'HIGH' || newSignificance === 'CRITICAL') &&
+      !newJustification?.trim()
+    ) {
       throw new ValidationError(
         `Justification is required for ${newSignificance} significance deviations`,
       );
@@ -211,7 +217,7 @@ export class TrackDeviationsUseCase {
     if (input.resolutionAction !== undefined) data['resolutionAction'] = input.resolutionAction;
     if (input.status !== undefined) data['status'] = input.status;
 
-    const updated = await (this.prisma as any).pccpDeviation.update({
+    const updated = await this.prisma.pccpDeviation.update({
       where: { id: input.deviationId },
       data,
     });
@@ -233,7 +239,7 @@ export class TrackDeviationsUseCase {
   }
 
   async delete(input: DeleteDeviationInput): Promise<{ deleted: boolean }> {
-    const existing = await (this.prisma as any).pccpDeviation.findUnique({
+    const existing = await this.prisma.pccpDeviation.findUnique({
       where: { id: input.deviationId },
       select: { id: true },
     });
@@ -242,7 +248,7 @@ export class TrackDeviationsUseCase {
       throw new NotFoundError('PccpDeviation', input.deviationId);
     }
 
-    await (this.prisma as any).pccpDeviation.delete({
+    await this.prisma.pccpDeviation.delete({
       where: { id: input.deviationId },
     });
 
@@ -250,7 +256,7 @@ export class TrackDeviationsUseCase {
   }
 
   async list(input: GetDeviationsInput): Promise<DeviationResult[]> {
-    const deviations = await (this.prisma as any).pccpDeviation.findMany({
+    const deviations = await this.prisma.pccpDeviation.findMany({
       where: { cerVersionId: input.cerVersionId },
       orderBy: { createdAt: 'desc' },
     });

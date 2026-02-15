@@ -38,7 +38,7 @@ export class AssessQualityUseCase {
       );
     }
 
-    const soaAnalysis = await (this.prisma as any).soaAnalysis.findUnique({
+    const soaAnalysis = await this.prisma.soaAnalysis.findUnique({
       where: { id: input.soaAnalysisId },
       select: { id: true, status: true },
     });
@@ -51,7 +51,7 @@ export class AssessQualityUseCase {
       throw new ValidationError('Cannot assess quality on a locked SOA analysis');
     }
 
-    const links = await (this.prisma as any).soaSlsLink.findMany({
+    const links = await this.prisma.soaSlsLink.findMany({
       where: { soaAnalysisId: input.soaAnalysisId },
       select: { slsSessionId: true },
     });
@@ -72,7 +72,7 @@ export class AssessQualityUseCase {
 
     const qualityAssessmentId = crypto.randomUUID();
 
-    await (this.prisma as any).qualityAssessment.create({
+    await this.prisma.qualityAssessment.create({
       data: {
         id: qualityAssessmentId,
         soaAnalysisId: input.soaAnalysisId,

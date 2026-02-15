@@ -1,4 +1,4 @@
-import type { PrismaClient, Prisma } from '@prisma/client';
+import type { PrismaClient } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
 
 // ── Types ───────────────────────────────────────────────────────────────
@@ -44,7 +44,7 @@ export class ExportCerUseCase {
     }
 
     // Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: input.cerVersionId },
       select: { id: true, status: true, projectId: true },
     });
@@ -54,7 +54,7 @@ export class ExportCerUseCase {
     }
 
     // Validate sections exist
-    const sectionCount = await (this.prisma as any).cerSection.count({
+    const sectionCount = await this.prisma.cerSection.count({
       where: { cerVersionId: input.cerVersionId },
     });
 

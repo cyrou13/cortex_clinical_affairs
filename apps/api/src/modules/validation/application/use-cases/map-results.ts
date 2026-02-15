@@ -37,7 +37,7 @@ export class MapResultsUseCase {
     const { validationStudyId, userId } = input;
 
     // Verify study exists
-    const study = await (this.prisma as any).validationStudy.findUnique({
+    const study = await this.prisma.validationStudy.findUnique({
       where: { id: validationStudyId },
       select: { id: true, status: true, type: true },
     });
@@ -47,7 +47,7 @@ export class MapResultsUseCase {
     }
 
     // Get active data import
-    const activeImport = await (this.prisma as any).dataImport.findFirst({
+    const activeImport = await this.prisma.dataImport.findFirst({
       where: { validationStudyId, isActive: true },
       select: { id: true, data: true },
     });
@@ -57,7 +57,7 @@ export class MapResultsUseCase {
     }
 
     // Get acceptance criteria (from SOA benchmarks)
-    const criteria = await (this.prisma as any).acceptanceCriterion.findMany({
+    const criteria = await this.prisma.acceptanceCriterion.findMany({
       where: { validationStudyId },
       select: {
         id: true,
@@ -119,7 +119,7 @@ export class MapResultsUseCase {
 
       // Save result mapping
       const mappingId = crypto.randomUUID();
-      await (this.prisma as any).resultsMapping.create({
+      await this.prisma.resultsMapping.create({
         data: {
           id: mappingId,
           validationStudyId,

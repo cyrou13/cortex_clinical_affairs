@@ -1,1 +1,178 @@
-// Validation Module Schema - To be implemented in Epic 4
+// Validation Module Schema - Epic 4: Validation Studies
+
+enum ValidationStudyStatus {
+  DRAFT
+  LOCKED
+}
+
+enum ProtocolStatus {
+  DRAFT
+  APPROVED
+}
+
+enum AcceptanceCriterionMetricType {
+  SENSITIVITY
+  SPECIFICITY
+  ACCURACY
+  PPV
+  NPV
+}
+
+enum GsprMappingStatus {
+  COMPLIANT
+  PARTIAL
+  NOT_APPLICABLE
+}
+
+enum ResultsMappingResult {
+  MET
+  NOT_MET
+}
+
+// --- Model 1: ValidationStudy (root aggregate) ---
+
+model ValidationStudy {
+  id              String                @id @default(uuid())
+  projectId       String
+  name            String
+  type            String
+  status          ValidationStudyStatus @default(DRAFT)
+  description     String?
+  soaAnalysisId   String?
+  createdById     String
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  protocols           Protocol[]
+  dataImports         DataImport[]
+  acceptanceCriteria  AcceptanceCriterion[]
+  gsprMappings        GsprMapping[]
+
+  @@index([projectId, status])
+}
+
+// --- Model 2: Protocol ---
+
+model Protocol {
+  id                      String         @id @default(uuid())
+  validationStudyId       String
+  version                 String
+  status                  ProtocolStatus @default(DRAFT)
+  summary                 String?
+  endpoints               String?
+  sampleSizeJustification String?
+  statisticalStrategy     String?
+  createdById             String
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+
+  validationStudy ValidationStudy     @relation(fields: [validationStudyId], references: [id])
+  amendments      ProtocolAmendment[]
+
+  @@index([validationStudyId])
+}
+
+// --- Model 3: ProtocolAmendment ---
+
+model ProtocolAmendment {
+  id          String         @id @default(uuid())
+  protocolId  String
+  version     String
+  status      ProtocolStatus @default(DRAFT)
+  reason      String
+  changes     Json?
+  createdById String
+  createdAt   DateTime       @default(now())
+
+  protocol Protocol @relation(fields: [protocolId], references: [id])
+
+  @@index([protocolId])
+}
+
+// --- Model 4: DataImport ---
+
+model DataImport {
+  id                String   @id @default(uuid())
+  validationStudyId String
+  fileName          String
+  version           Int
+  isActive          Boolean  @default(true)
+  rowCount          Int
+  columnCount       Int
+  data              Json?
+  headers           Json?
+  uploadedById      String
+  createdAt         DateTime @default(now())
+
+  validationStudy ValidationStudy @relation(fields: [validationStudyId], references: [id])
+
+  @@index([validationStudyId])
+}
+
+// --- Model 5: AcceptanceCriterion ---
+
+model AcceptanceCriterion {
+  id              String                       @id @default(uuid())
+  validationStudyId String
+  soaBenchmarkId  String?
+  name            String
+  threshold       Float?
+  unit            String?
+  metricType      AcceptanceCriterionMetricType?
+
+  validationStudy ValidationStudy @relation(fields: [validationStudyId], references: [id])
+  resultsMappings ResultsMapping[]
+
+  @@index([validationStudyId])
+}
+
+// --- Model 6: GsprMapping ---
+
+model GsprMapping {
+  id                  String            @id @default(uuid())
+  validationStudyId   String
+  gsprId              String
+  status              GsprMappingStatus
+  justification       String?
+  evidenceReferences  Json?
+  createdById         String
+  updatedById         String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  validationStudy ValidationStudy @relation(fields: [validationStudyId], references: [id])
+
+  @@index([validationStudyId])
+}
+
+// --- Model 7: ValidationResult ---
+
+model ValidationResult {
+  id            String   @id @default(uuid())
+  projectId     String
+  parameterName String
+  value         String?
+  createdAt     DateTime @default(now())
+
+  @@index([projectId])
+}
+
+// --- Model 8: ResultsMapping ---
+
+model ResultsMapping {
+  id                    String               @id @default(uuid())
+  validationStudyId     String
+  acceptanceCriterionId String
+  computedValue         Float
+  threshold             Float
+  unit                  String?
+  result                ResultsMappingResult
+  statistics            Json?
+  createdById           String
+  createdAt             DateTime             @default(now())
+
+  acceptanceCriterion AcceptanceCriterion @relation(fields: [acceptanceCriterionId], references: [id])
+
+  @@index([validationStudyId])
+  @@index([acceptanceCriterionId])
+}

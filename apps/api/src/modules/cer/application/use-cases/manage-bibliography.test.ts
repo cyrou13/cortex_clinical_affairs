@@ -12,17 +12,21 @@ function makePrisma(overrides?: {
 }) {
   return {
     cerVersion: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.cerVersion !== undefined
-          ? overrides.cerVersion
-          : { id: VERSION_ID },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.cerVersion !== undefined ? overrides.cerVersion : { id: VERSION_ID },
+        ),
     },
     cerSection: {
       findMany: vi.fn().mockResolvedValue(
         overrides?.sections ?? [
           { id: 'sec-1', humanEditedContent: { text: 'See [1] and [2]' }, aiDraftContent: null },
-          { id: 'sec-2', humanEditedContent: { text: 'Reference [1] again' }, aiDraftContent: null },
+          {
+            id: 'sec-2',
+            humanEditedContent: { text: 'Reference [1] again' },
+            aiDraftContent: null,
+          },
         ],
       ),
     },
@@ -34,11 +38,31 @@ function makePrisma(overrides?: {
         ],
       ),
     },
-    slsArticle: {
+    article: {
       findMany: vi.fn().mockResolvedValue(
         overrides?.articles ?? [
-          { id: 'art-1', title: 'First Article', authors: ['Smith J'], journal: 'JAMA', year: 2025, volume: '1', issue: '1', pages: '1-10', doi: '10.1/a' },
-          { id: 'art-2', title: 'Second Article', authors: ['Doe A'], journal: 'Lancet', year: 2024, volume: '2', issue: null, pages: null, doi: null },
+          {
+            id: 'art-1',
+            title: 'First Article',
+            authors: ['Smith J'],
+            journal: 'JAMA',
+            year: 2025,
+            volume: '1',
+            issue: '1',
+            pages: '1-10',
+            doi: '10.1/a',
+          },
+          {
+            id: 'art-2',
+            title: 'Second Article',
+            authors: ['Doe A'],
+            journal: 'Lancet',
+            year: 2024,
+            volume: '2',
+            issue: null,
+            pages: null,
+            doi: null,
+          },
         ],
       ),
     },
@@ -188,7 +212,17 @@ describe('ManageBibliographyUseCase', () => {
   it('handles articles with string authors field', async () => {
     const prisma = makePrisma({
       articles: [
-        { id: 'art-1', title: 'Article', authors: 'Smith J, Doe A', journal: 'J', year: 2025, volume: null, issue: null, pages: null, doi: null },
+        {
+          id: 'art-1',
+          title: 'Article',
+          authors: 'Smith J, Doe A',
+          journal: 'J',
+          year: 2025,
+          volume: null,
+          issue: null,
+          pages: null,
+          doi: null,
+        },
       ],
       claimTraces: [{ refNumber: '1', slsArticleId: 'art-1' }],
       sections: [{ id: 'sec-1', humanEditedContent: { text: '[1]' }, aiDraftContent: null }],

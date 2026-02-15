@@ -13,7 +13,7 @@ export class UpdateCellUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async execute(input: UpdateCellInput) {
-    const grid = await (this.prisma as any).extractionGrid.findUnique({
+    const grid = await this.prisma.extractionGrid.findUnique({
       where: { id: input.gridId },
       include: { soaAnalysis: { select: { status: true } } },
     });
@@ -26,7 +26,7 @@ export class UpdateCellUseCase {
       throw new ValidationError('Cannot edit cells on a locked SOA analysis');
     }
 
-    const cell = await (this.prisma as any).gridCell.findFirst({
+    const cell = await this.prisma.gridCell.findFirst({
       where: {
         extractionGridId: input.gridId,
         articleId: input.articleId,
@@ -38,7 +38,7 @@ export class UpdateCellUseCase {
       throw new NotFoundError('GridCell', `${input.gridId}/${input.articleId}/${input.columnId}`);
     }
 
-    const updated = await (this.prisma as any).gridCell.update({
+    const updated = await this.prisma.gridCell.update({
       where: { id: cell.id },
       data: {
         value: input.value,

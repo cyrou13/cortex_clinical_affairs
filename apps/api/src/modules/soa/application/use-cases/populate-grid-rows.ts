@@ -11,7 +11,7 @@ export class PopulateGridRowsUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async execute(gridId: string): Promise<PopulateGridRowsResult> {
-    const grid = await (this.prisma as any).extractionGrid.findUnique({
+    const grid = await this.prisma.extractionGrid.findUnique({
       where: { id: gridId },
       select: { id: true, soaAnalysisId: true },
     });
@@ -20,7 +20,7 @@ export class PopulateGridRowsUseCase {
       throw new NotFoundError('ExtractionGrid', gridId);
     }
 
-    const links = await (this.prisma as any).soaSlsLink.findMany({
+    const links = await this.prisma.soaSlsLink.findMany({
       where: { soaAnalysisId: grid.soaAnalysisId },
       select: { slsSessionId: true },
     });
@@ -35,7 +35,7 @@ export class PopulateGridRowsUseCase {
       select: { id: true },
     });
 
-    const columns = await (this.prisma as any).gridColumn.findMany({
+    const columns = await this.prisma.gridColumn.findMany({
       where: { extractionGridId: gridId },
       select: { id: true },
     });
@@ -44,7 +44,7 @@ export class PopulateGridRowsUseCase {
 
     for (const article of articles) {
       for (const column of columns) {
-        await (this.prisma as any).gridCell.create({
+        await this.prisma.gridCell.create({
           data: {
             id: crypto.randomUUID(),
             extractionGridId: gridId,

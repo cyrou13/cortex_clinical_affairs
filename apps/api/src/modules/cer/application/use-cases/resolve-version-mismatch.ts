@@ -28,7 +28,7 @@ export class ResolveVersionMismatchUseCase {
     }
 
     // Fetch section
-    const section = await (this.prisma as any).cerSection.findUnique({
+    const section = await this.prisma.cerSection.findUnique({
       where: { id: sectionId },
       select: {
         id: true,
@@ -50,7 +50,7 @@ export class ResolveVersionMismatchUseCase {
     }
 
     // Clear the warning
-    await (this.prisma as any).cerSection.update({
+    await this.prisma.cerSection.update({
       where: { id: sectionId },
       data: {
         versionMismatchWarning: false,

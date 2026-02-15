@@ -1,5 +1,9 @@
 import type { PrismaClient } from '@prisma/client';
-import { NotFoundError, ValidationError, UpstreamNotLockedError } from '../../../../shared/errors/index.js';
+import {
+  NotFoundError,
+  ValidationError,
+  UpstreamNotLockedError,
+} from '../../../../shared/errors/index.js';
 
 interface LinkUpstreamInput {
   cerVersionId: string;
@@ -22,7 +26,7 @@ export class LinkUpstreamUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async execute(input: LinkUpstreamInput): Promise<LinkUpstreamResult> {
-    const { cerVersionId, moduleType, moduleId, userId } = input;
+    const { cerVersionId, moduleType, moduleId, userId: _userId } = input;
 
     // Validate module type
     if (!VALID_MODULE_TYPES.includes(moduleType as (typeof VALID_MODULE_TYPES)[number])) {
@@ -30,7 +34,7 @@ export class LinkUpstreamUseCase {
     }
 
     // Check CER version exists and is not locked
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: cerVersionId },
       select: { id: true, status: true },
     });
@@ -55,7 +59,7 @@ export class LinkUpstreamUseCase {
     }
 
     // Check for duplicate link
-    const existingLink = await (this.prisma as any).cerUpstreamLink.findFirst({
+    const existingLink = await this.prisma.cerUpstreamLink.findFirst({
       where: {
         cerVersionId,
         moduleType,
@@ -73,7 +77,7 @@ export class LinkUpstreamUseCase {
     const linkId = crypto.randomUUID();
     const lockedAt = new Date(module.lockedAt).toISOString();
 
-    await (this.prisma as any).cerUpstreamLink.create({
+    await this.prisma.cerUpstreamLink.create({
       data: {
         id: linkId,
         cerVersionId,
@@ -103,12 +107,12 @@ export class LinkUpstreamUseCase {
           select: { id: true, status: true, lockedAt: true },
         });
       case 'SOA':
-        return (this.prisma as any).soaAnalysis.findUnique({
+        return this.prisma.soaAnalysis.findUnique({
           where: { id: moduleId },
           select: { id: true, status: true, lockedAt: true },
         });
       case 'VALIDATION':
-        return (this.prisma as any).validationStudy.findUnique({
+        return this.prisma.validationStudy.findUnique({
           where: { id: moduleId },
           select: { id: true, status: true, lockedAt: true },
         });

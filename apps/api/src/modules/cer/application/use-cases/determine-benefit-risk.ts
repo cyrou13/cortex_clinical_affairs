@@ -78,7 +78,7 @@ export class DetermineBenefitRiskUseCase {
     const { cerVersionId, userId } = input;
 
     // 1. Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: cerVersionId },
       select: { id: true, projectId: true },
     });
@@ -88,7 +88,7 @@ export class DetermineBenefitRiskUseCase {
     }
 
     // 2. Check for existing benefit-risk analysis
-    const existingCount = await (this.prisma as any).benefitRiskItem.count({
+    const existingCount = await this.prisma.benefitRiskItem.count({
       where: { cerVersionId },
     });
 
@@ -118,7 +118,7 @@ export class DetermineBenefitRiskUseCase {
 
     // 6. Persist all items
     for (const benefit of benefits) {
-      await (this.prisma as any).benefitRiskItem.create({
+      await this.prisma.benefitRiskItem.create({
         data: {
           id: benefit.id,
           cerVersionId,
@@ -132,7 +132,7 @@ export class DetermineBenefitRiskUseCase {
     }
 
     for (const risk of risks) {
-      await (this.prisma as any).benefitRiskItem.create({
+      await this.prisma.benefitRiskItem.create({
         data: {
           id: risk.id,
           cerVersionId,
@@ -149,7 +149,7 @@ export class DetermineBenefitRiskUseCase {
     }
 
     for (const mit of mitigations) {
-      await (this.prisma as any).benefitRiskMitigation.create({
+      await this.prisma.benefitRiskMitigation.create({
         data: {
           id: mit.id,
           riskId: mit.riskId,
@@ -194,14 +194,16 @@ export class DetermineBenefitRiskUseCase {
     };
   }
 
-  private async gatherBenefits(projectId: string, cerVersionId: string): Promise<Benefit[]> {
+  private async gatherBenefits(projectId: string, _cerVersionId: string): Promise<Benefit[]> {
     const benefits: Benefit[] = [];
 
     // From SOA analysis data
-    const soaAnalyses = await (this.prisma as any).soaAnalysis.findMany({
-      where: { projectId },
-      select: { id: true, clinicalBenefits: true },
-    }).catch(() => []);
+    const soaAnalyses = await this.prisma.soaAnalysis
+      .findMany({
+        where: { projectId },
+        select: { id: true, clinicalBenefits: true },
+      })
+      .catch(() => []);
 
     for (const soa of soaAnalyses) {
       if (soa.clinicalBenefits && Array.isArray(soa.clinicalBenefits)) {
@@ -217,10 +219,12 @@ export class DetermineBenefitRiskUseCase {
     }
 
     // From validation results
-    const validationStudies = await (this.prisma as any).validationStudy.findMany({
-      where: { projectId, status: 'LOCKED' },
-      select: { id: true, name: true },
-    }).catch(() => []);
+    const validationStudies = await this.prisma.validationStudy
+      .findMany({
+        where: { projectId, status: 'LOCKED' },
+        select: { id: true, name: true },
+      })
+      .catch(() => []);
 
     for (const study of validationStudies) {
       benefits.push({
@@ -244,14 +248,16 @@ export class DetermineBenefitRiskUseCase {
     return benefits;
   }
 
-  private async gatherRisks(projectId: string, cerVersionId: string): Promise<Risk[]> {
+  private async gatherRisks(projectId: string, _cerVersionId: string): Promise<Risk[]> {
     const risks: Risk[] = [];
 
     // From risk management references
-    const riskEntries = await (this.prisma as any).riskEntry.findMany({
-      where: { projectId },
-      select: { id: true, description: true, severity: true, probability: true },
-    }).catch(() => []);
+    const riskEntries = await this.prisma.riskEntry
+      .findMany({
+        where: { projectId },
+        select: { id: true, description: true, severity: true, probability: true },
+      })
+      .catch(() => []);
 
     for (const entry of riskEntries) {
       const severity = (entry.severity as Severity) || 'MINOR';
@@ -271,8 +277,16 @@ export class DetermineBenefitRiskUseCase {
     // If no risks gathered, add default residual risks
     if (risks.length === 0) {
       const defaultRisks: Array<{ desc: string; sev: Severity; prob: Probability }> = [
-        { desc: 'False positive result leading to unnecessary follow-up', sev: 'MINOR', prob: 'OCCASIONAL' },
-        { desc: 'False negative result leading to missed diagnosis', sev: 'SERIOUS', prob: 'REMOTE' },
+        {
+          desc: 'False positive result leading to unnecessary follow-up',
+          sev: 'MINOR',
+          prob: 'OCCASIONAL',
+        },
+        {
+          desc: 'False negative result leading to missed diagnosis',
+          sev: 'SERIOUS',
+          prob: 'REMOTE',
+        },
       ];
 
       for (const dr of defaultRisks) {

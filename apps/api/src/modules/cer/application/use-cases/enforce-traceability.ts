@@ -32,7 +32,7 @@ export class EnforceTraceabilityUseCase {
     const { cerVersionId } = input;
 
     // 1. Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: cerVersionId },
       select: { id: true },
     });
@@ -42,7 +42,7 @@ export class EnforceTraceabilityUseCase {
     }
 
     // 2. Fetch all sections for this CER version
-    const sections = await (this.prisma as any).cerSection.findMany({
+    const sections = await this.prisma.cerSection.findMany({
       where: { cerVersionId },
       select: {
         id: true,
@@ -71,7 +71,7 @@ export class EnforceTraceabilityUseCase {
 
     // 4. Fetch all claim traces for sections in this CER version
     const sectionIds = sections.map((s: { id: string }) => s.id);
-    const claimTraces = await (this.prisma as any).claimTrace.findMany({
+    const claimTraces = await this.prisma.claimTrace.findMany({
       where: { cerSectionId: { in: sectionIds } },
       select: { refNumber: true, cerSectionId: true },
     });
@@ -97,7 +97,8 @@ export class EnforceTraceabilityUseCase {
     }
 
     const totalClaims = allClaims.length;
-    const coveragePercentage = totalClaims === 0 ? 100 : Math.round((tracedCount / totalClaims) * 100);
+    const coveragePercentage =
+      totalClaims === 0 ? 100 : Math.round((tracedCount / totalClaims) * 100);
     const canFinalize = coveragePercentage === 100;
 
     return {
@@ -120,7 +121,7 @@ export class EnforceTraceabilityUseCase {
     if (!result.canFinalize) {
       throw new TraceabilityViolationError(
         `Traceability coverage is ${result.coveragePercentage}% (required: 100%). ` +
-        `${result.untracedClaims.length} untraced claim(s) found.`,
+          `${result.untracedClaims.length} untraced claim(s) found.`,
       );
     }
 

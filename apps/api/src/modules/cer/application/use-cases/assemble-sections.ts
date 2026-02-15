@@ -36,7 +36,7 @@ export class AssembleSectionsUseCase {
     const { cerVersionId, userId } = input;
 
     // Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: cerVersionId },
       select: { id: true, status: true },
     });
@@ -50,7 +50,7 @@ export class AssembleSectionsUseCase {
     }
 
     // Verify upstream modules are linked
-    const upstreamLinks = await (this.prisma as any).cerUpstreamLink.findMany({
+    const upstreamLinks = await this.prisma.cerUpstreamLink.findMany({
       where: { cerVersionId },
       select: { moduleType: true },
     });
@@ -60,7 +60,7 @@ export class AssembleSectionsUseCase {
     }
 
     // Check for existing sections
-    const existingSections = await (this.prisma as any).cerSection.count({
+    const existingSections = await this.prisma.cerSection.count({
       where: { cerVersionId },
     });
 
@@ -76,7 +76,7 @@ export class AssembleSectionsUseCase {
       const sectionId = crypto.randomUUID();
       sectionIds.push(sectionId);
 
-      await (this.prisma as any).cerSection.create({
+      await this.prisma.cerSection.create({
         data: {
           id: sectionId,
           cerVersionId,

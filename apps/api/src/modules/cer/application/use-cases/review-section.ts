@@ -38,7 +38,7 @@ export class ReviewSectionUseCase {
     const { cerSectionId, content, targetStatus, userId } = input;
 
     // 1. Fetch section
-    const section = await (this.prisma as any).cerSection.findUnique({
+    const section = await this.prisma.cerSection.findUnique({
       where: { id: cerSectionId },
       select: {
         id: true,
@@ -58,16 +58,14 @@ export class ReviewSectionUseCase {
     const allowedTransitions = VALID_TRANSITIONS[currentStatus] ?? [];
 
     if (!allowedTransitions.includes(targetStatus)) {
-      throw new ValidationError(
-        `Cannot transition from ${currentStatus} to ${targetStatus}`,
-      );
+      throw new ValidationError(`Cannot transition from ${currentStatus} to ${targetStatus}`);
     }
 
     // 3. Validate references for FINALIZED
     if (targetStatus === 'FINALIZED') {
       const refs = extractInlineReferences(JSON.stringify(content));
       if (refs.length > 0) {
-        const claimTraces = await (this.prisma as any).claimTrace.findMany({
+        const claimTraces = await this.prisma.claimTrace.findMany({
           where: {
             cerSectionId,
             refNumber: { in: refs },
@@ -87,16 +85,14 @@ export class ReviewSectionUseCase {
     }
 
     // 4. Compute diff metrics
-    const aiDraftText = section.aiDraftContent
-      ? extractPlainText(section.aiDraftContent)
-      : '';
+    const aiDraftText = section.aiDraftContent ? extractPlainText(section.aiDraftContent) : '';
     const humanText = extractPlainText(content);
     const humanEditPercentage = computeEditPercentage(aiDraftText, humanText);
     const wordCount = countWords(humanText);
 
     // 5. Update section
     const now = new Date();
-    await (this.prisma as any).cerSection.update({
+    await this.prisma.cerSection.update({
       where: { id: cerSectionId },
       data: {
         status: targetStatus,
@@ -125,7 +121,12 @@ export class ReviewSectionUseCase {
     });
 
     // 7. Emit domain event
-    const event: DomainEvent<{ cerSectionId: string; cerVersionId: string; fromStatus: string; toStatus: string }> = {
+    const event: DomainEvent<{
+      cerSectionId: string;
+      cerVersionId: string;
+      fromStatus: string;
+      toStatus: string;
+    }> = {
       eventType: 'cer.section.status-changed',
       aggregateId: cerSectionId,
       aggregateType: 'CerSection',

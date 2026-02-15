@@ -25,7 +25,7 @@ export class ManageDeviceRegistryUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
   async addDevice(input: AddDeviceInput) {
-    const soa = await (this.prisma as any).soaAnalysis.findUnique({
+    const soa = await this.prisma.soaAnalysis.findUnique({
       where: { id: input.soaAnalysisId },
       select: { id: true, status: true },
     });
@@ -42,7 +42,7 @@ export class ManageDeviceRegistryUseCase {
       throw new ValidationError('Device name is required');
     }
 
-    const device = await (this.prisma as any).similarDevice.create({
+    const device = await this.prisma.similarDevice.create({
       data: {
         id: crypto.randomUUID(),
         soaAnalysisId: input.soaAnalysisId,
@@ -59,7 +59,7 @@ export class ManageDeviceRegistryUseCase {
   }
 
   async addBenchmark(input: AddBenchmarkInput) {
-    const device = await (this.prisma as any).similarDevice.findUnique({
+    const device = await this.prisma.similarDevice.findUnique({
       where: { id: input.similarDeviceId },
       include: {
         soaAnalysis: { select: { id: true, status: true } },
@@ -82,7 +82,7 @@ export class ManageDeviceRegistryUseCase {
       throw new ValidationError('Metric name is required');
     }
 
-    const benchmark = await (this.prisma as any).benchmark.create({
+    const benchmark = await this.prisma.benchmark.create({
       data: {
         id: crypto.randomUUID(),
         similarDeviceId: input.similarDeviceId,
@@ -98,7 +98,7 @@ export class ManageDeviceRegistryUseCase {
   }
 
   async getDevicesWithBenchmarks(soaAnalysisId: string) {
-    const soa = await (this.prisma as any).soaAnalysis.findUnique({
+    const soa = await this.prisma.soaAnalysis.findUnique({
       where: { id: soaAnalysisId },
       select: { id: true },
     });
@@ -107,7 +107,7 @@ export class ManageDeviceRegistryUseCase {
       throw new NotFoundError('SoaAnalysis', soaAnalysisId);
     }
 
-    const devices = await (this.prisma as any).similarDevice.findMany({
+    const devices = await this.prisma.similarDevice.findMany({
       where: { soaAnalysisId },
       include: {
         benchmarks: true,

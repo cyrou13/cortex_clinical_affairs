@@ -8,7 +8,7 @@ interface ExportAuditTrailInput {
   filters?: {
     dateRange?: {
       from: string; // ISO 8601
-      to: string;   // ISO 8601
+      to: string; // ISO 8601
     };
     userId?: string;
     actionType?: string;
@@ -43,7 +43,7 @@ export class ExportAuditTrailUseCase {
     const { cerVersionId, filters, format = 'JSON' } = input;
 
     // 1. Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: cerVersionId },
       select: { id: true },
     });
@@ -53,7 +53,7 @@ export class ExportAuditTrailUseCase {
     }
 
     // 2. Fetch sections for this CER version (to scope audit log queries)
-    const sections = await (this.prisma as any).cerSection.findMany({
+    const sections = await this.prisma.cerSection.findMany({
       where: { cerVersionId },
       select: { id: true },
     });
@@ -100,7 +100,14 @@ export class ExportAuditTrailUseCase {
 
     // 5. Map to structured entries
     const entries: AuditTrailEntry[] = rawEntries.map(
-      (e: { userId: string; action: string; createdAt: Date | string; targetType: string; targetId: string; after: unknown }) => ({
+      (e: {
+        userId: string;
+        action: string;
+        createdAt: Date | string;
+        targetType: string;
+        targetId: string;
+        after: unknown;
+      }) => ({
         who: e.userId,
         what: e.action,
         when: typeof e.createdAt === 'string' ? e.createdAt : e.createdAt.toISOString(),

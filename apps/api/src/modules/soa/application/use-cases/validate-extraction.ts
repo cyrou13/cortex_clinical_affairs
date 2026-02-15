@@ -7,7 +7,7 @@ export class ValidateExtractionUseCase {
   async validateCell(gridId: string, articleId: string, columnId: string, userId: string) {
     const cell = await this.findCell(gridId, articleId, columnId);
 
-    await (this.prisma as any).gridCell.update({
+    await this.prisma.gridCell.update({
       where: { id: cell.id },
       data: {
         validationStatus: 'VALIDATED',
@@ -28,7 +28,7 @@ export class ValidateExtractionUseCase {
   ) {
     const cell = await this.findCell(gridId, articleId, columnId);
 
-    await (this.prisma as any).gridCell.update({
+    await this.prisma.gridCell.update({
       where: { id: cell.id },
       data: {
         value: newValue,
@@ -54,7 +54,7 @@ export class ValidateExtractionUseCase {
 
     const cell = await this.findCell(gridId, articleId, columnId);
 
-    await (this.prisma as any).gridCell.update({
+    await this.prisma.gridCell.update({
       where: { id: cell.id },
       data: {
         validationStatus: 'FLAGGED',
@@ -67,7 +67,7 @@ export class ValidateExtractionUseCase {
   }
 
   private async findCell(gridId: string, articleId: string, columnId: string) {
-    const cell = await (this.prisma as any).gridCell.findFirst({
+    const cell = await this.prisma.gridCell.findFirst({
       where: {
         extractionGridId: gridId,
         articleId,

@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import cookie from '@fastify/cookie';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import { ApolloServer } from '@apollo/server';
@@ -57,7 +58,8 @@ export async function buildServer(options?: BuildServerOptions | PrismaClient) {
   });
 
   // FIX #1: CORS restricted to configured origins
-  await app.register(cors, { origin: config.CORS_ORIGIN });
+  await app.register(cors, { origin: config.CORS_ORIGIN, credentials: true });
+  await app.register(cookie);
   await app.register(helmet, { contentSecurityPolicy: false });
   await app.register(rateLimit, { max: 100, timeWindow: '1 minute' });
 
@@ -91,10 +93,11 @@ export async function buildServer(options?: BuildServerOptions | PrismaClient) {
 
   await app.register(fastifyApollo(apollo), {
     // FIX #2: Populate user from auth middleware instead of always null
-    context: async (request): Promise<GraphQLContext> => ({
+    context: async (request, reply): Promise<GraphQLContext> => ({
       prisma,
       user: request.currentUser ?? null,
       requestId: (request.id as string) ?? randomUUID(),
+      reply,
     }),
   });
 

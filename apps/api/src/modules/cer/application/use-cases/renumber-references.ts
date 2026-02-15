@@ -35,7 +35,7 @@ export class RenumberReferencesUseCase {
     const { cerVersionId, userId } = input;
 
     // 1. Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: cerVersionId },
       select: { id: true },
     });
@@ -45,7 +45,7 @@ export class RenumberReferencesUseCase {
     }
 
     // 2. Fetch sections ordered by section number
-    const sections = await (this.prisma as any).cerSection.findMany({
+    const sections = await this.prisma.cerSection.findMany({
       where: { cerVersionId },
       select: {
         id: true,
@@ -146,11 +146,9 @@ export class RenumberReferencesUseCase {
       }
 
       if (updatedText !== originalText) {
-        const updatedContent = typeof content === 'string'
-          ? updatedText
-          : JSON.parse(updatedText);
+        const updatedContent = typeof content === 'string' ? updatedText : JSON.parse(updatedText);
 
-        await (this.prisma as any).cerSection.update({
+        await this.prisma.cerSection.update({
           where: { id: section.id },
           data: {
             humanEditedContent: (typeof updatedContent === 'string'
@@ -171,15 +169,17 @@ export class RenumberReferencesUseCase {
     for (const [oldNum, newNum] of bibMap) {
       if (oldNum === newNum) continue;
 
-      const updated = await (this.prisma as any).bibliographyEntry.updateMany({
-        where: {
-          cerVersionId,
-          orderIndex: parseInt(oldNum, 10),
-        },
-        data: {
-          orderIndex: parseInt(newNum, 10),
-        },
-      }).catch(() => ({ count: 0 }));
+      const updated = await this.prisma.bibliographyEntry
+        .updateMany({
+          where: {
+            cerVersionId,
+            orderIndex: parseInt(oldNum, 10),
+          },
+          data: {
+            orderIndex: parseInt(newNum, 10),
+          },
+        })
+        .catch(() => ({ count: 0 }));
 
       bibliographyEntriesUpdated += updated.count ?? 0;
     }
@@ -190,15 +190,17 @@ export class RenumberReferencesUseCase {
     for (const [oldNum, newNum] of extMap) {
       if (oldNum === newNum) continue;
 
-      const updated = await (this.prisma as any).crossReference.updateMany({
-        where: {
-          cerVersionId,
-          refNumber: oldNum,
-        },
-        data: {
-          refNumber: newNum,
-        },
-      }).catch(() => ({ count: 0 }));
+      const updated = await this.prisma.crossReference
+        .updateMany({
+          where: {
+            cerVersionId,
+            refNumber: oldNum,
+          },
+          data: {
+            refNumber: newNum,
+          },
+        })
+        .catch(() => ({ count: 0 }));
 
       crossReferencesUpdated += updated.count ?? 0;
     }

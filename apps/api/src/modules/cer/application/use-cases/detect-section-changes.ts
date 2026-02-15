@@ -38,7 +38,7 @@ export class DetectSectionChangesUseCase {
 
   async execute(input: DetectChangesInput): Promise<DetectChangesResult> {
     // Verify both versions exist
-    const currentVersion = await (this.prisma as any).cerVersion.findUnique({
+    const currentVersion = await this.prisma.cerVersion.findUnique({
       where: { id: input.cerVersionId },
       select: { id: true, projectId: true },
     });
@@ -47,7 +47,7 @@ export class DetectSectionChangesUseCase {
       throw new NotFoundError('CerVersion', input.cerVersionId);
     }
 
-    const previousVersion = await (this.prisma as any).cerVersion.findUnique({
+    const previousVersion = await this.prisma.cerVersion.findUnique({
       where: { id: input.previousVersionId },
       select: { id: true },
     });
@@ -108,7 +108,7 @@ export class DetectSectionChangesUseCase {
     }
 
     // Map upstream changes to affected sections
-    const sections = await (this.prisma as any).cerSection.findMany({
+    const sections = await this.prisma.cerSection.findMany({
       where: { cerVersionId: input.cerVersionId },
       select: { id: true, sectionType: true },
     });
@@ -146,7 +146,7 @@ export class DetectSectionChangesUseCase {
     // Flag affected sections in DB
     for (const affected of affectedSections) {
       if (affected.requiresUpdate) {
-        await (this.prisma as any).cerSection.update({
+        await this.prisma.cerSection.update({
           where: { id: affected.sectionId },
           data: {
             requiresUpdate: true,

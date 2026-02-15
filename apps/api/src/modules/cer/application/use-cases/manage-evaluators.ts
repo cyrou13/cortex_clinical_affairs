@@ -39,7 +39,7 @@ export class ManageEvaluatorsUseCase {
     }
 
     // Verify CER version exists
-    const cerVersion = await (this.prisma as any).cerVersion.findUnique({
+    const cerVersion = await this.prisma.cerVersion.findUnique({
       where: { id: input.cerVersionId },
       select: { id: true },
     });
@@ -49,7 +49,7 @@ export class ManageEvaluatorsUseCase {
     }
 
     // Verify section exists
-    const section = await (this.prisma as any).cerSection.findUnique({
+    const section = await this.prisma.cerSection.findUnique({
       where: { id: input.sectionId },
       select: { id: true, cerVersionId: true },
     });
@@ -73,7 +73,7 @@ export class ManageEvaluatorsUseCase {
     }
 
     // Check one role per type per section
-    const existingAssignment = await (this.prisma as any).evaluator.findFirst({
+    const existingAssignment = await this.prisma.evaluator.findFirst({
       where: {
         cerVersionId: input.cerVersionId,
         sectionId: input.sectionId,
@@ -83,14 +83,12 @@ export class ManageEvaluatorsUseCase {
     });
 
     if (existingAssignment) {
-      throw new ValidationError(
-        `Role ${input.role} is already assigned for this section`,
-      );
+      throw new ValidationError(`Role ${input.role} is already assigned for this section`);
     }
 
     // Separation of duties: APPROVED_BY must not be same as WRITTEN_BY
     if (input.role === 'APPROVED_BY') {
-      const writtenBy = await (this.prisma as any).evaluator.findFirst({
+      const writtenBy = await this.prisma.evaluator.findFirst({
         where: {
           cerVersionId: input.cerVersionId,
           sectionId: input.sectionId,
@@ -107,7 +105,7 @@ export class ManageEvaluatorsUseCase {
     }
 
     if (input.role === 'WRITTEN_BY') {
-      const approvedBy = await (this.prisma as any).evaluator.findFirst({
+      const approvedBy = await this.prisma.evaluator.findFirst({
         where: {
           cerVersionId: input.cerVersionId,
           sectionId: input.sectionId,
@@ -125,7 +123,7 @@ export class ManageEvaluatorsUseCase {
 
     const evaluatorId = crypto.randomUUID();
 
-    const evaluator = await (this.prisma as any).evaluator.create({
+    const evaluator = await this.prisma.evaluator.create({
       data: {
         id: evaluatorId,
         cerVersionId: input.cerVersionId,
@@ -146,7 +144,7 @@ export class ManageEvaluatorsUseCase {
   }
 
   async remove(input: RemoveEvaluatorInput): Promise<{ deleted: boolean }> {
-    const evaluator = await (this.prisma as any).evaluator.findUnique({
+    const evaluator = await this.prisma.evaluator.findUnique({
       where: { id: input.evaluatorId },
       select: { id: true, signedAt: true },
     });
@@ -159,7 +157,7 @@ export class ManageEvaluatorsUseCase {
       throw new ValidationError('Cannot remove evaluator who has already signed');
     }
 
-    await (this.prisma as any).evaluator.delete({
+    await this.prisma.evaluator.delete({
       where: { id: input.evaluatorId },
     });
 
@@ -167,7 +165,7 @@ export class ManageEvaluatorsUseCase {
   }
 
   async listBySection(cerVersionId: string, sectionId: string): Promise<EvaluatorResult[]> {
-    const evaluators = await (this.prisma as any).evaluator.findMany({
+    const evaluators = await this.prisma.evaluator.findMany({
       where: { cerVersionId, sectionId },
       orderBy: { createdAt: 'asc' },
     });

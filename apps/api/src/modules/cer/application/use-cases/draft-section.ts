@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client';
-import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
+import { NotFoundError } from '../../../../shared/errors/index.js';
 import type { UpstreamDataRequirement } from '@cortex/shared';
 
 interface DraftSectionInput {
@@ -54,10 +54,10 @@ export class DraftSectionUseCase {
   ) {}
 
   async execute(input: DraftSectionInput): Promise<DraftSectionResult> {
-    const { cerSectionId, cerVersionId, sectionNumber, sectionTitle, requiredUpstreamData, userId } = input;
+    const { cerSectionId, cerVersionId, sectionNumber, sectionTitle, requiredUpstreamData } = input;
 
     // Verify section exists
-    const section = await (this.prisma as any).cerSection.findUnique({
+    const section = await this.prisma.cerSection.findUnique({
       where: { id: cerSectionId },
       select: { id: true, status: true },
     });
@@ -86,7 +86,7 @@ export class DraftSectionUseCase {
     const wordCount = llmResult.content.split(/\s+/).filter(Boolean).length;
 
     // Store content
-    await (this.prisma as any).cerSection.update({
+    await this.prisma.cerSection.update({
       where: { id: cerSectionId },
       data: {
         content: llmResult.content,

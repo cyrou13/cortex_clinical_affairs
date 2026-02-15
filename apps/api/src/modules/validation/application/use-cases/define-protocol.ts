@@ -24,7 +24,7 @@ export class DefineProtocolUseCase {
     const { validationStudyId, userId } = input;
 
     // Verify study exists
-    const study = await (this.prisma as any).validationStudy.findUnique({
+    const study = await this.prisma.validationStudy.findUnique({
       where: { id: validationStudyId },
       select: { id: true, status: true },
     });
@@ -38,20 +38,18 @@ export class DefineProtocolUseCase {
     }
 
     // Check if protocol already exists for this study
-    const existingProtocol = await (this.prisma as any).protocol.findFirst({
+    const existingProtocol = await this.prisma.protocol.findFirst({
       where: { validationStudyId },
       select: { id: true, version: true, status: true },
     });
 
     if (existingProtocol) {
       if (existingProtocol.status === 'APPROVED') {
-        throw new ValidationError(
-          'Protocol is approved. Use amend-protocol to make changes.',
-        );
+        throw new ValidationError('Protocol is approved. Use amend-protocol to make changes.');
       }
 
       // Update existing draft protocol
-      await (this.prisma as any).protocol.update({
+      await this.prisma.protocol.update({
         where: { id: existingProtocol.id },
         data: {
           summary: input.summary ?? undefined,
@@ -72,7 +70,7 @@ export class DefineProtocolUseCase {
 
     // Create new protocol
     const protocolId = crypto.randomUUID();
-    await (this.prisma as any).protocol.create({
+    await this.prisma.protocol.create({
       data: {
         id: protocolId,
         validationStudyId,

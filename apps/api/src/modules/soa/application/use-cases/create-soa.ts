@@ -66,7 +66,7 @@ export class CreateSoaUseCase {
 
     const soaId = crypto.randomUUID();
 
-    await (this.prisma as any).soaAnalysis.create({
+    await this.prisma.soaAnalysis.create({
       data: {
         id: soaId,
         projectId: input.projectId,
@@ -79,7 +79,7 @@ export class CreateSoaUseCase {
     });
 
     for (const sessionId of input.slsSessionIds) {
-      await (this.prisma as any).soaSlsLink.create({
+      await this.prisma.soaSlsLink.create({
         data: {
           id: crypto.randomUUID(),
           soaAnalysisId: soaId,
@@ -89,7 +89,7 @@ export class CreateSoaUseCase {
     }
 
     for (const section of sections) {
-      await (this.prisma as any).thematicSection.create({
+      await this.prisma.thematicSection.create({
         data: {
           id: crypto.randomUUID(),
           soaAnalysisId: soaId,

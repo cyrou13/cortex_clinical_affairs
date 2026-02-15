@@ -9,8 +9,10 @@ model Project {
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
-  cep     Cep?
-  members ProjectMember[]
+  cep         Cep?
+  members     ProjectMember[]
+  cerVersions CerVersion[]
+  riskEntries RiskEntry[]
 }
 
 model Cep {
