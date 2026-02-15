@@ -1,0 +1,55 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+
+:root {
+  --cortex-blue-50: #F0F6FB;
+  --cortex-blue-100: #E1EDF8;
+  --cortex-blue-200: #C2DCF0;
+  --cortex-blue-300: #A4CBE8;
+  --cortex-blue-400: #85BAE0;
+  --cortex-blue-500: #0F4C81;
+  --cortex-blue-600: #0D3F6A;
+  --cortex-blue-700: #0A3153;
+  --cortex-blue-800: #07233C;
+  --cortex-blue-900: #051525;
+
+  --cortex-success: #27AE60;
+  --cortex-warning: #F39C12;
+  --cortex-error: #E74C3C;
+  --cortex-info: #3498DB;
+
+  --cortex-bg-primary: #FFFFFF;
+  --cortex-bg-secondary: #F8F9FA;
+  --cortex-bg-tertiary: #ECF0F1;
+  --cortex-border: #E1EDF8;
+  --cortex-border-strong: #C2DCF0;
+  --cortex-text-primary: #051525;
+  --cortex-text-secondary: #2C3E50;
+  --cortex-text-muted: #7F8C8D;
+
+  font-family: 'Inter Variable', system-ui, sans-serif;
+  color: var(--cortex-text-primary);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 9999;
+  padding: 8px 16px;
+  background: var(--cortex-blue-500);
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  left: 0;
+}

@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: cortex-postgres-test
+    ports:
+      - '5433:5432'
+    environment:
+      POSTGRES_DB: cortex_test
+      POSTGRES_USER: cortex
+      POSTGRES_PASSWORD: cortex_test_secret
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U cortex']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7
+    container_name: cortex-redis-test
+    ports:
+      - '6380:6379'
+    tmpfs:
+      - /data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3
+    container_name: cortex-rabbitmq-test
+    ports:
+      - '5673:5672'
+    environment:
+      RABBITMQ_DEFAULT_USER: cortex
+      RABBITMQ_DEFAULT_PASS: cortex_test_secret
+    tmpfs:
+      - /var/lib/rabbitmq

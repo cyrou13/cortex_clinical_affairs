@@ -1,0 +1,192 @@
+enum SlsSessionType {
+  SOA_CLINICAL
+  SOA_DEVICE
+  SIMILAR_DEVICE
+  PMS_UPDATE
+  AD_HOC
+}
+
+enum SlsSessionStatus {
+  DRAFT
+  SCREENING
+  LOCKED
+}
+
+enum ArticleStatus {
+  PENDING
+  SCORED
+  INCLUDED
+  EXCLUDED
+  SKIPPED
+  FULL_TEXT_REVIEW
+  FINAL_INCLUDED
+  FINAL_EXCLUDED
+}
+
+model SlsSession {
+  id                       String           @id @default(uuid())
+  projectId                String
+  cepId                    String
+  name                     String
+  type                     SlsSessionType
+  status                   SlsSessionStatus @default(DRAFT)
+  scopeFields              Json?
+  createdById              String
+  lockedAt                 DateTime?
+  likelyRelevantThreshold  Int              @default(75)
+  uncertainLowerThreshold  Int              @default(40)
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+
+  queries          SlsQuery[]
+  articles         Article[]
+  exclusionCodes   ExclusionCode[]
+  customAiFilters  CustomAiFilter[]
+
+  @@index([projectId, status])
+}
+
+model SlsQuery {
+  id            String    @id @default(uuid())
+  sessionId     String
+  name          String
+  queryString   String
+  version       Int       @default(1)
+  isActive      Boolean   @default(true)
+  parentQueryId String?
+  createdById   String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  session       SlsSession @relation(fields: [sessionId], references: [id])
+  executions    QueryExecution[]
+  articleLinks  ArticleQueryLink[]
+
+  @@index([sessionId, isActive])
+}
+
+model QueryVersion {
+  id          String   @id @default(uuid())
+  queryId     String
+  version     Int
+  queryString String
+  diff        Json?
+  createdById String
+  createdAt   DateTime @default(now())
+
+  @@index([queryId, version])
+}
+
+model QueryExecution {
+  id                       String   @id @default(uuid())
+  queryId                  String
+  database                 String
+  status                   String   @default("RUNNING")
+  articlesFound            Int      @default(0)
+  articlesImported         Int      @default(0)
+  reproducibilityStatement String?
+  errorMessage             String?
+  executedAt               DateTime @default(now())
+  completedAt              DateTime?
+
+  query        SlsQuery @relation(fields: [queryId], references: [id])
+  articleLinks ArticleQueryLink[]
+
+  @@index([queryId])
+}
+
+model Article {
+  id              String        @id @default(uuid())
+  sessionId       String
+  title           String
+  abstract        String?
+  authors         Json?
+  doi             String?
+  pmid            String?
+  publicationDate DateTime?
+  journal         String?
+  sourceDatabase  String?
+  status          ArticleStatus @default(PENDING)
+  relevanceScore  Float?
+  aiExclusionCode String?
+  aiReasoning     String?
+  aiCategory      String?
+  scoredAt        DateTime?
+  customFilterScore Float?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  session    SlsSession         @relation(fields: [sessionId], references: [id])
+  queryLinks ArticleQueryLink[]
+  screeningDecisions ScreeningDecision[]
+
+  @@index([sessionId, status])
+  @@index([sessionId, relevanceScore])
+  @@index([doi])
+  @@index([pmid])
+}
+
+model ArticleQueryLink {
+  id           String @id @default(uuid())
+  articleId    String
+  queryId      String
+  executionId  String?
+  sourceDatabase String?
+
+  article   Article        @relation(fields: [articleId], references: [id])
+  query     SlsQuery       @relation(fields: [queryId], references: [id])
+  execution QueryExecution? @relation(fields: [executionId], references: [id])
+
+  @@index([articleId, queryId])
+}
+
+model ScreeningDecision {
+  id              String   @id @default(uuid())
+  articleId       String
+  userId          String
+  decision        String
+  exclusionCodeId String?
+  reason          String
+  isAiOverride    Boolean  @default(false)
+  previousStatus  String
+  newStatus       String
+  timestamp       DateTime @default(now())
+
+  article Article @relation(fields: [articleId], references: [id])
+
+  @@index([articleId])
+  @@index([userId, timestamp])
+}
+
+model ExclusionCode {
+  id           String   @id @default(uuid())
+  sessionId    String
+  code         String
+  label        String
+  shortCode    String?
+  description  String?
+  isHidden     Boolean  @default(false)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  session SlsSession @relation(fields: [sessionId], references: [id])
+
+  @@unique([sessionId, code])
+  @@unique([sessionId, shortCode])
+  @@index([sessionId, isHidden, displayOrder])
+}
+
+model CustomAiFilter {
+  id        String   @id @default(uuid())
+  sessionId String
+  name      String
+  criterion String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  session SlsSession @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId, isActive])
+}

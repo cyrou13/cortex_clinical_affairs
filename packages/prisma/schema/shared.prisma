@@ -1,0 +1,77 @@
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String
+  action     String
+  targetType String
+  targetId   String
+  before     Json?
+  after      Json?
+  metadata   Json?
+  timestamp  DateTime @default(now())
+
+  @@index([targetType, targetId])
+  @@index([userId])
+  @@index([timestamp])
+}
+
+model AsyncTask {
+  id          String    @id @default(uuid())
+  type        String
+  status      String    @default("PENDING")
+  progress    Float     @default(0)
+  total       Float?
+  result      Json?
+  error       String?
+  metadata    Json?
+  createdBy   String
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@index([createdBy])
+}
+
+model VersionSnapshot {
+  id         String   @id @default(uuid())
+  entityType String
+  entityId   String
+  version    Int
+  data       Json
+  checksum   String
+  createdBy  String
+  createdAt  DateTime @default(now())
+
+  @@unique([entityType, entityId, version])
+  @@index([entityType, entityId])
+}
+
+model LlmConfig {
+  id        String   @id @default(uuid())
+  level     String   // SYSTEM, PROJECT, TASK
+  projectId String?
+  taskType  String?  // scoring, extraction, drafting, metadata_extraction
+  provider  String   // claude, openai, ollama
+  model     String   // specific model name
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([level, projectId, taskType])
+}
+
+model LlmCostRecord {
+  id               String   @id @default(uuid())
+  projectId        String?
+  taskType         String
+  provider         String
+  model            String
+  promptTokens     Int
+  completionTokens Int
+  costUsd          Float
+  createdAt        DateTime @default(now())
+
+  @@index([projectId, taskType])
+  @@index([createdAt])
+}

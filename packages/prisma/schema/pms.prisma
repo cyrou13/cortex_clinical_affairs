@@ -1,0 +1,311 @@
+// PMS Module Schema - Epic 6: Post-Market Surveillance
+
+enum PmsPlanStatus {
+  DRAFT
+  APPROVED
+  ACTIVE
+}
+
+enum CycleStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
+}
+
+enum ActivityType {
+  LITERATURE_UPDATE
+  NAMED_DEVICE_SEARCH
+  USER_SURVEYS
+  VIGILANCE_MONITORING
+  COMPLAINTS
+  INSTALLED_BASE
+  TREND_ANALYSIS
+}
+
+enum ActivityStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum GapSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum GapStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum GapSourceModule {
+  SOA
+  VALIDATION
+  CER
+  PMS
+  MANUAL
+}
+
+enum ComplaintSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ComplaintStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  CLOSED
+}
+
+enum ComplaintSource {
+  MANUAL
+  ZOHO_DESK
+}
+
+enum HarmSeverity {
+  NEGLIGIBLE
+  MINOR
+  SERIOUS
+  CRITICAL
+  DEATH
+}
+
+enum TrendAnalysisStatus {
+  DRAFT
+  FINALIZED
+}
+
+enum CerUpdateConclusion {
+  CER_UPDATE_REQUIRED
+  CER_UPDATE_NOT_REQUIRED
+  CER_PATCH_REQUIRED
+}
+
+enum DecisionStatus {
+  DRAFT
+  FINALIZED
+}
+
+// --- Story 6.1: PMS Plan Configuration & Management ---
+
+model PmsPlan {
+  id                    String        @id @default(uuid())
+  projectId             String
+  cerVersionId          String
+  updateFrequency       String
+  dataCollectionMethods Json
+  status                PmsPlanStatus @default(DRAFT)
+  createdById           String
+  approvedAt            DateTime?
+  approvedById          String?
+  activatedAt           DateTime?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  vigilanceDatabases PmsPlanVigilanceDb[]
+  responsibilities   PmsResponsibility[]
+  gapEntries         GapRegistryEntry[]
+  cycles             PmsCycle[]
+
+  @@index([projectId, status])
+}
+
+model PmsPlanVigilanceDb {
+  id             String  @id @default(uuid())
+  pmsPlanId      String
+  databaseName   String
+  enabled        Boolean @default(true)
+  searchKeywords Json?
+
+  plan PmsPlan @relation(fields: [pmsPlanId], references: [id])
+
+  @@index([pmsPlanId])
+}
+
+model PmsResponsibility {
+  id           String  @id @default(uuid())
+  pmsPlanId    String
+  activityType String
+  userId       String
+  role         String
+  description  String?
+
+  plan PmsPlan @relation(fields: [pmsPlanId], references: [id])
+
+  @@index([pmsPlanId])
+}
+
+// --- Story 6.2: Gap Registry ---
+
+model GapRegistryEntry {
+  id                  String      @id @default(uuid())
+  pmsPlanId           String
+  sourceModule        String      @default("MANUAL")
+  sourceId            String      @default("")
+  description         String
+  severity            String      @default("MEDIUM")
+  recommendedActivity String
+  status              String      @default("OPEN")
+  manuallyCreated     Boolean     @default(false)
+  resolvedAt          DateTime?
+  resolvedBy          String?
+  resolutionNotes     String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  plan PmsPlan @relation(fields: [pmsPlanId], references: [id])
+
+  @@index([pmsPlanId, status])
+  @@index([pmsPlanId, severity])
+}
+
+// --- Story 6.3: PMS Cycle ---
+
+model PmsCycle {
+  id           String      @id @default(uuid())
+  pmsPlanId    String
+  cerVersionId String
+  name         String
+  startDate    DateTime
+  endDate      DateTime
+  status       String      @default("PLANNED")
+  completedAt  DateTime?
+  createdById  String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  plan               PmsPlan             @relation(fields: [pmsPlanId], references: [id])
+  activities         PmcfActivity[]
+  complaints         Complaint[]
+  trendAnalyses      TrendAnalysis[]
+  installedBaseEntries InstalledBaseEntry[]
+  cerUpdateDecisions CerUpdateDecision[]
+
+  @@index([pmsPlanId, status])
+}
+
+// --- Story 6.4: PMCF Activity ---
+
+model PmcfActivity {
+  id              String    @id @default(uuid())
+  pmsCycleId      String
+  activityType    String
+  assigneeId      String
+  title           String
+  description     String?
+  status          String    @default("PLANNED")
+  startedAt       DateTime?
+  completedAt     DateTime?
+  findingsSummary String?
+  dataCollected   Json?
+  conclusions     String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  cycle PmsCycle @relation(fields: [pmsCycleId], references: [id])
+
+  @@index([pmsCycleId, status])
+  @@index([assigneeId])
+}
+
+// --- Story 6.5: Complaints ---
+
+model Complaint {
+  id                        String    @id @default(uuid())
+  pmsCycleId                String
+  date                      DateTime
+  reportDate                DateTime
+  description               String
+  deviceIdentifier          String
+  lotNumber                 String?
+  serialNumber              String?
+  severity                  String
+  classification            String
+  classificationDescription String?
+  status                    String    @default("OPEN")
+  resolution                String?
+  resolutionDate            DateTime?
+  source                    String    @default("MANUAL")
+  externalId                String?
+  isIncident                Boolean   @default(false)
+  regulatoryReportRequired  Boolean   @default(false)
+  harmSeverity              String?
+  correctiveAction          String?
+  reporterName              String?
+  reporterContact           String?
+  createdById               String?
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  cycle PmsCycle @relation(fields: [pmsCycleId], references: [id])
+
+  @@index([pmsCycleId, status])
+  @@index([pmsCycleId, severity])
+  @@index([externalId])
+}
+
+// --- Story 6.6: Trend Analysis ---
+
+model TrendAnalysis {
+  id                         String    @id @default(uuid())
+  pmsCycleId                 String
+  analysisDate               DateTime  @default(now())
+  createdById                String
+  installedBase              Json?
+  complaintTrends            Json?
+  severityDistribution       Json?
+  classificationDistribution Json?
+  significantChanges         Json?
+  conclusions                String?
+  status                     String    @default("DRAFT")
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+
+  cycle PmsCycle @relation(fields: [pmsCycleId], references: [id])
+
+  @@index([pmsCycleId])
+}
+
+model InstalledBaseEntry {
+  id                String   @id @default(uuid())
+  pmsCycleId        String
+  periodStart       DateTime
+  periodEnd         DateTime
+  totalUnitsShipped Int
+  activeDevices     Int
+  regionBreakdown   Json?
+  source            String   @default("MANUAL")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  cycle PmsCycle @relation(fields: [pmsCycleId], references: [id])
+
+  @@index([pmsCycleId])
+}
+
+// --- Story 6.9: CER Update Decision ---
+
+model CerUpdateDecision {
+  id                          String    @id @default(uuid())
+  pmsCycleId                  String
+  benefitRiskReAssessment     String
+  conclusion                  String
+  justification               String
+  materialChangesIdentified   Boolean   @default(false)
+  materialChangesDescription  String?
+  status                      String    @default("DRAFT")
+  decidedBy                   String
+  decidedAt                   DateTime?
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+
+  cycle PmsCycle @relation(fields: [pmsCycleId], references: [id])
+
+  @@index([pmsCycleId])
+}
