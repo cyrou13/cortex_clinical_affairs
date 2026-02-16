@@ -1,6 +1,6 @@
 # Story 3.7: MDR-Aligned Thematic Sections
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

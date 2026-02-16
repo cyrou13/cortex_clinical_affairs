@@ -1,6 +1,6 @@
 # Story 3.9: Similar Device Registry & Performance Benchmarks
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

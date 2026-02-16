@@ -1,6 +1,6 @@
 # Story 1.6: Role-Based Access Control & User Management
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

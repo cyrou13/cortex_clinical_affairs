@@ -1,6 +1,6 @@
 # Story 3.3: AI Pre-Population of Extraction Grids
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

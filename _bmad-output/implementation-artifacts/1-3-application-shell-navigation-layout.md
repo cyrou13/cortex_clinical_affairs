@@ -1,6 +1,6 @@
 # Story 1.3: Application Shell & Navigation Layout
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

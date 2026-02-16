@@ -1,6 +1,6 @@
 # Story 1.2: API Server, Database & GraphQL Foundation
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

@@ -1,6 +1,6 @@
 # Story 3.10: Device Comparison Tables & Claims Management
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

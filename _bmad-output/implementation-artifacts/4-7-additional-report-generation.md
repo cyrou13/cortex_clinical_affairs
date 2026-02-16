@@ -1,6 +1,6 @@
 # Story 4.7: Additional Report Generation
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

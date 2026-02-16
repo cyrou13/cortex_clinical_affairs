@@ -1,6 +1,6 @@
 # Story 6.6: Trend Analysis Computation
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

@@ -1,6 +1,6 @@
 # Story 4.2: Protocol Management with Amendment Tracking
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

@@ -1,6 +1,6 @@
 # Story 5.1: CER Creation, Configuration & Upstream Module Linking
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

@@ -1,6 +1,6 @@
 # Story 5.8: Benefit-Risk Determination
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

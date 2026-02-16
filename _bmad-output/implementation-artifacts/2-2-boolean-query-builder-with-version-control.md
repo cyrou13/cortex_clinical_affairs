@@ -1,6 +1,6 @@
 # Story 2.2: Boolean Query Builder with Version Control
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

@@ -1,6 +1,6 @@
 # Story 5.5: CER Section Review & Finalization
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

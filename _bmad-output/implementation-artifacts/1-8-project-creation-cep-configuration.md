@@ -1,6 +1,6 @@
 # Story 1.8: Project Creation & CEP Configuration
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

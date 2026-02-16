@@ -1,6 +1,6 @@
 # Story 2.1: SLS Session Creation & Configuration
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

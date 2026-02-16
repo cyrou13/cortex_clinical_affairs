@@ -1,6 +1,6 @@
 # Story 1.4: User Authentication & Session Management
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

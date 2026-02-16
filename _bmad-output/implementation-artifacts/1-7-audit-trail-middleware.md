@@ -1,6 +1,6 @@
 # Story 1.7: Audit Trail Middleware
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

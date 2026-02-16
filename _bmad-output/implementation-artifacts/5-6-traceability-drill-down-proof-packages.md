@@ -1,6 +1,6 @@
 # Story 5.6: Traceability Drill-Down & Proof Packages
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

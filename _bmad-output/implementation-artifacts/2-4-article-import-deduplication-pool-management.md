@@ -1,6 +1,6 @@
 # Story 2.4: Article Import, Deduplication & Pool Management
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

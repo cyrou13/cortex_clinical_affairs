@@ -1,6 +1,6 @@
 # Story 4.1: Validation Study Creation & SOA Linking
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

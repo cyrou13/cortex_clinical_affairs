@@ -1,6 +1,6 @@
 # Story 6.4: PMCF Activity Execution & Tracking
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

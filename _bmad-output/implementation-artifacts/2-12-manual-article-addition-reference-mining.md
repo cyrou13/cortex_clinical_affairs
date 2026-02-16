@@ -1,6 +1,6 @@
 # Story 2.12: Manual Article Addition & Reference Mining
 
-Status: review
+Status: done
 
 ## Story
 

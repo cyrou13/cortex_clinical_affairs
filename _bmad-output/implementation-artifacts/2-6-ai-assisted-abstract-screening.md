@@ -1,6 +1,6 @@
 # Story 2.6: AI-Assisted Abstract Screening
 
-Status: review
+Status: done
 
 ## Story
 

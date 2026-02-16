@@ -1,6 +1,6 @@
 # Story 5.12: CER Version Management
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

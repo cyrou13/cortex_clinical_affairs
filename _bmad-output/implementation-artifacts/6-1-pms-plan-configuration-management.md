@@ -1,6 +1,6 @@
 # Story 6.1: PMS Plan Configuration & Management
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

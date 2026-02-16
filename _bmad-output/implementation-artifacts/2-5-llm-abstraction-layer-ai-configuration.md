@@ -1,6 +1,6 @@
 # Story 2.5: LLM Abstraction Layer & AI Configuration
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

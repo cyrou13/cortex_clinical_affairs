@@ -1,6 +1,6 @@
 # Story 1.9: Project Dashboard & Pipeline Status
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

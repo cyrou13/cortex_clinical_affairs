@@ -1,6 +1,6 @@
 # Story 5.13: Multi-Format DOCX Export & CER Locking
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

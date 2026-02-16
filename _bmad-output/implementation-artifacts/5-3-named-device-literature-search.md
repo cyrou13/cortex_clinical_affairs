@@ -1,6 +1,6 @@
 # Story 5.3: Named Device Literature Search
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

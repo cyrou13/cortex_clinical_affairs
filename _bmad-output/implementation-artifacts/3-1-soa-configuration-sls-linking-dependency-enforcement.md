@@ -1,6 +1,6 @@
 # Story 3.1: SOA Configuration, SLS Linking & Dependency Enforcement
 
-Status: review
+Status: done
 
 ## Story
 

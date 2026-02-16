@@ -1,6 +1,6 @@
 # Story 3.4: AI Confidence Indicators & Source Quote Tracking
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

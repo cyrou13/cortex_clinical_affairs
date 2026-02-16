@@ -1,6 +1,6 @@
 # Story 1.1: Initialize Turborepo Monorepo & Development Environment
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

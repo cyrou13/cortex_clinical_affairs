@@ -1,6 +1,6 @@
 # Story 4.8: GSPR Mapping & Validation Locking
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

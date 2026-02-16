@@ -1,6 +1,6 @@
 # Story 2.11: PDF Retrieval & Verification
 
-Status: review
+Status: done
 
 ## Story
 

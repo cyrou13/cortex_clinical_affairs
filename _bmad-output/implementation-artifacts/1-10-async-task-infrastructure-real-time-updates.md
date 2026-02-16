@@ -1,6 +1,6 @@
 # Story 1.10: Async Task Infrastructure & Real-Time Updates
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

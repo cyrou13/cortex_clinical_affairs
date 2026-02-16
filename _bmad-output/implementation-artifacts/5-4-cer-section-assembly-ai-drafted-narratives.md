@@ -1,6 +1,6 @@
 # Story 5.4: CER Section Assembly & AI-Drafted Narratives
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

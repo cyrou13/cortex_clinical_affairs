@@ -1,6 +1,6 @@
 # Story 3.11: SOA Locking
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

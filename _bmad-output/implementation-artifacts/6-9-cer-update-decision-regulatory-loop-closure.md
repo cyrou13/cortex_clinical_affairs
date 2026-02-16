@@ -1,6 +1,6 @@
 # Story 6.9: CER Update Decision & Regulatory Loop Closure
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

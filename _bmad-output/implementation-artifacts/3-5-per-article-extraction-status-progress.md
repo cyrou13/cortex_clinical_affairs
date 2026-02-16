@@ -1,6 +1,6 @@
 # Story 3.5: Per-Article Extraction Status & Progress
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

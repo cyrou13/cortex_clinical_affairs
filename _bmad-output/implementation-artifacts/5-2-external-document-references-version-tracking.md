@@ -1,6 +1,6 @@
 # Story 5.2: External Document References & Version Tracking
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

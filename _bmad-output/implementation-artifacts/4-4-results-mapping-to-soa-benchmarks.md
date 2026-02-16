@@ -1,6 +1,6 @@
 # Story 4.4: Results Mapping to SOA Benchmarks
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

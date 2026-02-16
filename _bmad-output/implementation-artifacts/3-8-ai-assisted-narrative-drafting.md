@@ -1,6 +1,6 @@
 # Story 3.8: AI-Assisted Narrative Drafting
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

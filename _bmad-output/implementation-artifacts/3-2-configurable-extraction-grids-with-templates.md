@@ -1,6 +1,6 @@
 # Story 3.2: Configurable Extraction Grids with Templates
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

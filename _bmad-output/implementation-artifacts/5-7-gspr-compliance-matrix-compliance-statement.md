@@ -1,6 +1,6 @@
 # Story 5.7: GSPR Compliance Matrix & Compliance Statement
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

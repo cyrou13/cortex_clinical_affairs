@@ -1,6 +1,6 @@
 # Story 6.2: Gap Registry Auto-Population
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

@@ -1,6 +1,6 @@
 # Story 6.7: PMCF Report Generation
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

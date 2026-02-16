@@ -1,6 +1,6 @@
 # Story 5.9: Cross-Reference & Bibliography Management
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

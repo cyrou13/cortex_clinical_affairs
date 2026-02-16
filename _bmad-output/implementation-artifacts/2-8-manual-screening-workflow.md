@@ -1,6 +1,6 @@
 # Story 2.8: Manual Screening Workflow
 
-Status: review
+Status: done
 
 ## Story
 

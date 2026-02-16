@@ -1,6 +1,6 @@
 # Story 6.8: PSUR Generation
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

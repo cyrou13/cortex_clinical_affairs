@@ -1,6 +1,6 @@
 # Story 4.6: Validation Report Generation
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 

@@ -1,6 +1,6 @@
 # Story 3.6: Evidence Quality Assessment
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
