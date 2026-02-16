@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { LlmService, ManualRequiredError } from './llm-abstraction.js';
-import type { LlmProvider, LlmOptions, LlmResponse, ConfigResolver } from './llm-abstraction.js';
+import type { LlmProvider, LlmResponse, ConfigResolver } from './llm-abstraction.js';
 
 function createMockProvider(name: string, overrides?: Partial<LlmProvider>): LlmProvider {
   return {
@@ -50,7 +50,9 @@ describe('LlmService', () => {
       ['claude', claudeProvider],
       ['openai', openaiProvider],
     ]);
-    configResolver = vi.fn().mockResolvedValue({ provider: 'claude', model: 'claude-sonnet-4-20250514' });
+    configResolver = vi
+      .fn()
+      .mockResolvedValue({ provider: 'claude', model: 'claude-sonnet-4-20250514' });
     service = new LlmService(providers, mockRedis, configResolver);
   });
 
@@ -58,9 +60,12 @@ describe('LlmService', () => {
     it('resolves config and calls provider', async () => {
       const result = await service.complete('scoring', 'Test prompt');
       expect(configResolver).toHaveBeenCalledWith('scoring', undefined);
-      expect(claudeProvider.complete).toHaveBeenCalledWith('Test prompt', expect.objectContaining({
-        model: 'claude-sonnet-4-20250514',
-      }));
+      expect(claudeProvider.complete).toHaveBeenCalledWith(
+        'Test prompt',
+        expect.objectContaining({
+          model: 'claude-sonnet-4-20250514',
+        }),
+      );
       expect(result.provider).toBe('claude');
     });
 
@@ -127,39 +132,51 @@ describe('LlmService', () => {
       const fastService = new LlmService(providers, mockRedis, configResolver, {
         rateLimitWaitTimeoutMs: 600,
       });
-      await expect(
-        fastService.complete('scoring', 'Test prompt'),
-      ).rejects.toThrow('Rate limit exceeded');
+      await expect(fastService.complete('scoring', 'Test prompt')).rejects.toThrow(
+        'Rate limit exceeded',
+      );
     }, 5000);
 
     it('uses options.model when provided, overriding config', async () => {
       await service.complete('scoring', 'Test prompt', { model: 'custom-model' });
-      expect(claudeProvider.complete).toHaveBeenCalledWith('Test prompt', expect.objectContaining({
-        model: 'custom-model',
-      }));
+      expect(claudeProvider.complete).toHaveBeenCalledWith(
+        'Test prompt',
+        expect.objectContaining({
+          model: 'custom-model',
+        }),
+      );
     });
 
     it('passes systemPrompt to provider', async () => {
       await service.complete('scoring', 'Test prompt', {
         systemPrompt: 'You are a helpful assistant',
       });
-      expect(claudeProvider.complete).toHaveBeenCalledWith('Test prompt', expect.objectContaining({
-        systemPrompt: 'You are a helpful assistant',
-      }));
+      expect(claudeProvider.complete).toHaveBeenCalledWith(
+        'Test prompt',
+        expect.objectContaining({
+          systemPrompt: 'You are a helpful assistant',
+        }),
+      );
     });
 
     it('passes temperature to provider', async () => {
       await service.complete('drafting', 'Draft this', { temperature: 0.7 });
-      expect(claudeProvider.complete).toHaveBeenCalledWith('Draft this', expect.objectContaining({
-        temperature: 0.7,
-      }));
+      expect(claudeProvider.complete).toHaveBeenCalledWith(
+        'Draft this',
+        expect.objectContaining({
+          temperature: 0.7,
+        }),
+      );
     });
 
     it('passes responseFormat to provider', async () => {
       await service.complete('extraction', 'Extract JSON', { responseFormat: 'json' });
-      expect(claudeProvider.complete).toHaveBeenCalledWith('Extract JSON', expect.objectContaining({
-        responseFormat: 'json',
-      }));
+      expect(claudeProvider.complete).toHaveBeenCalledWith(
+        'Extract JSON',
+        expect.objectContaining({
+          responseFormat: 'json',
+        }),
+      );
     });
   });
 

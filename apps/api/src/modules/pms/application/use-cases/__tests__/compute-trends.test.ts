@@ -7,9 +7,11 @@ function makePrisma(overrides: Record<string, unknown> = {}): PrismaClient {
     pmsCycle: {
       findUnique: vi.fn().mockResolvedValue({
         id: 'cycle-1',
+        pmsPlanId: 'plan-1',
         startDate: new Date('2026-01-01'),
         endDate: new Date('2026-03-31'),
       }),
+      findMany: vi.fn().mockResolvedValue([]),
     },
     complaint: {
       findMany: vi.fn().mockResolvedValue([
@@ -92,5 +94,58 @@ describe('ComputeTrendsUseCase', () => {
     const result = await useCase.execute('cycle-1', 'user-1');
 
     expect(result.complaintTrends[0]!.complaintRate).toBe(3000);
+  });
+
+  it('detects significant changes when previous cycle data exists', async () => {
+    prisma = makePrisma({
+      pmsCycle: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'cycle-2',
+          pmsPlanId: 'plan-1',
+          startDate: new Date('2026-04-01'),
+          endDate: new Date('2026-06-30'),
+        }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'cycle-1',
+            pmsPlanId: 'plan-1',
+            startDate: new Date('2026-01-01'),
+            endDate: new Date('2026-03-31'),
+            status: 'COMPLETED',
+            complaints: [{ severity: 'LOW', classification: 'MALFUNCTION', isIncident: false }],
+            installedBaseEntries: [
+              {
+                activeDevices: 1000,
+                totalUnitsShipped: 2000,
+              },
+            ],
+          },
+        ]),
+      },
+      complaint: {
+        findMany: vi.fn().mockResolvedValue([
+          { severity: 'HIGH', classification: 'MALFUNCTION', isIncident: false },
+          { severity: 'HIGH', classification: 'MALFUNCTION', isIncident: false },
+          { severity: 'HIGH', classification: 'MALFUNCTION', isIncident: false },
+          { severity: 'HIGH', classification: 'INJURY', isIncident: true },
+          { severity: 'HIGH', classification: 'INJURY', isIncident: true },
+          { severity: 'HIGH', classification: 'INJURY', isIncident: true },
+        ]),
+      },
+    });
+    useCase = new ComputeTrendsUseCase(prisma);
+
+    const result = await useCase.execute('cycle-2', 'user-1');
+
+    expect(result.significantChanges.length).toBeGreaterThan(0);
+    const complaintChange = result.significantChanges.find((c) => c.metric === 'Complaint Count');
+    expect(complaintChange).toBeDefined();
+    expect(complaintChange?.changePercent).toBeGreaterThan(0);
+  });
+
+  it('returns empty significant changes when no previous cycle exists', async () => {
+    const result = await useCase.execute('cycle-1', 'user-1');
+
+    expect(result.significantChanges).toEqual([]);
   });
 });

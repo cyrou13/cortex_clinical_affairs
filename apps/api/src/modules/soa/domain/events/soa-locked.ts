@@ -4,6 +4,7 @@ export interface SoaLockedData {
   soaAnalysisId: string;
   projectId: string;
   sectionCount: number;
+  claimCount?: number;
 }
 
 export function createSoaLockedEvent(

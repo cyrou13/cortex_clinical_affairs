@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 /**
  * Epic 1 — Foundation Integration Tests
  *
@@ -149,7 +150,7 @@ describe('User Management', () => {
 
     expect(errors).toBeDefined();
     expect(errors!.length).toBeGreaterThan(0);
-    expect(errors![0].message).toContain('Invalid role');
+    expect(errors![0]!.message).toContain('Invalid role');
     expect(data?.createUser).toBeNull();
   });
 
@@ -162,7 +163,7 @@ describe('User Management', () => {
 
     expect(errors).toBeDefined();
     expect(errors!.length).toBeGreaterThan(0);
-    expect(errors![0].message).toContain('Authentication required');
+    expect(errors![0]!.message).toContain('Authentication required');
   });
 
   it('CLINICAL_SPECIALIST cannot create users (users:admin denied)', async () => {
@@ -175,7 +176,7 @@ describe('User Management', () => {
     expect(errors).toBeDefined();
     expect(errors!.length).toBeGreaterThan(0);
     // CLINICAL_SPECIALIST has no 'admin' action on 'users' module
-    expect(errors![0].message).toMatch(/cannot perform|permission|denied/i);
+    expect(errors![0]!.message).toMatch(/cannot perform|permission|denied/i);
   });
 
   it('listUsers query returns created users', async () => {
@@ -326,7 +327,7 @@ describe('Project Management', () => {
 
     expect(errors).toBeDefined();
     expect(errors!.length).toBeGreaterThan(0);
-    expect(errors![0].message).toMatch(/not a member|membership|denied/i);
+    expect(errors![0]!.message).toMatch(/not a member|membership|denied/i);
   });
 
   it('projects query returns created projects (admin sees all)', async () => {
@@ -452,7 +453,7 @@ describe('RBAC', () => {
     );
 
     expect(errors).toBeDefined();
-    expect(errors![0].message).toMatch(/cannot perform|permission|denied/i);
+    expect(errors![0]!.message).toMatch(/cannot perform|permission|denied/i);
   });
 
   it('CLINICAL_SPECIALIST can read projects but not create users', async () => {
@@ -470,7 +471,7 @@ describe('RBAC', () => {
       }`,
     );
     expect(errors).toBeDefined();
-    expect(errors![0].message).toMatch(/cannot perform|permission|denied/i);
+    expect(errors![0]!.message).toMatch(/cannot perform|permission|denied/i);
   });
 
   it('CLINICAL_SPECIALIST cannot read audit logs', async () => {
@@ -478,6 +479,6 @@ describe('RBAC', () => {
     const { errors } = await gql(clinicalApp, `query { auditLogs(limit: 1) { id } }`);
 
     expect(errors).toBeDefined();
-    expect(errors![0].message).toMatch(/cannot perform|permission|denied/i);
+    expect(errors![0]!.message).toMatch(/cannot perform|permission|denied/i);
   });
 });

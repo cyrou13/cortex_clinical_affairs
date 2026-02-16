@@ -382,6 +382,26 @@ builder.objectType(AssessQualityResultType, {
   }),
 });
 
+export const QualitySummaryType = builder.objectRef<{
+  totalAssessments: number;
+  quadas2Count: number;
+  readingGridCount: number;
+  contributionLevels: {
+    pivotal: number;
+    supportive: number;
+    background: number;
+  };
+}>('QualitySummary');
+
+builder.objectType(QualitySummaryType, {
+  fields: (t) => ({
+    totalAssessments: t.exposeInt('totalAssessments'),
+    quadas2Count: t.exposeInt('quadas2Count'),
+    readingGridCount: t.exposeInt('readingGridCount'),
+    contributionLevels: t.expose('contributionLevels', { type: 'JSON' }),
+  }),
+});
+
 // --- Section Management Result types (Story 3.7) ---
 
 export const UpdateSectionContentResultType = builder.objectRef<{
@@ -474,6 +494,30 @@ builder.objectType(BenchmarkObjectType, {
   }),
 });
 
+export const AggregatedBenchmarkType = builder.objectRef<{
+  metricName: string;
+  min: number;
+  max: number;
+  mean: number;
+  median: number;
+  range: number;
+  deviceCount: number;
+  unit: string;
+}>('AggregatedBenchmark');
+
+builder.objectType(AggregatedBenchmarkType, {
+  fields: (t) => ({
+    metricName: t.exposeString('metricName'),
+    min: t.exposeFloat('min'),
+    max: t.exposeFloat('max'),
+    mean: t.exposeFloat('mean'),
+    median: t.exposeFloat('median'),
+    range: t.exposeFloat('range'),
+    deviceCount: t.exposeInt('deviceCount'),
+    unit: t.exposeString('unit'),
+  }),
+});
+
 // --- Claim types (Story 3.10) ---
 
 export const ClaimObjectType = builder.objectRef<{
@@ -481,8 +525,8 @@ export const ClaimObjectType = builder.objectRef<{
   soaAnalysisId: string;
   statementText: string;
   thematicSectionId: string | null;
+  createdById: string;
   createdAt: Date;
-  updatedAt: Date;
 }>('Claim');
 
 builder.objectType(ClaimObjectType, {
@@ -491,8 +535,8 @@ builder.objectType(ClaimObjectType, {
     soaAnalysisId: t.exposeString('soaAnalysisId'),
     statementText: t.exposeString('statementText'),
     thematicSectionId: t.exposeString('thematicSectionId', { nullable: true }),
+    createdById: t.exposeString('createdById'),
     createdAt: t.expose('createdAt', { type: 'DateTime' }),
-    updatedAt: t.expose('updatedAt', { type: 'DateTime' }),
   }),
 });
 
@@ -511,6 +555,46 @@ builder.objectType(ClaimArticleLinkObjectType, {
     articleId: t.exposeString('articleId'),
     sourceQuote: t.exposeString('sourceQuote', { nullable: true }),
     createdAt: t.expose('createdAt', { type: 'DateTime' }),
+  }),
+});
+
+export const ComparisonTableType = builder.objectRef<{
+  metrics: string[];
+  devices: Array<{
+    deviceId: string;
+    deviceName: string;
+    manufacturer: string;
+    indication: string;
+    isSubjectDevice: boolean;
+    values: Record<string, string | null>;
+  }>;
+}>('ComparisonTable');
+
+builder.objectType(ComparisonTableType, {
+  fields: (t) => ({
+    metrics: t.exposeStringList('metrics'),
+    devices: t.expose('devices', { type: 'JSON' }),
+  }),
+});
+
+export const TraceabilityReportType = builder.objectRef<{
+  totalClaims: number;
+  linkedClaims: number;
+  unlinkedClaims: number;
+  traceabilityPercentage: number;
+  unlinkedClaimsList: Array<{
+    claimId: string;
+    statementText: string;
+  }>;
+}>('TraceabilityReport');
+
+builder.objectType(TraceabilityReportType, {
+  fields: (t) => ({
+    totalClaims: t.exposeInt('totalClaims'),
+    linkedClaims: t.exposeInt('linkedClaims'),
+    unlinkedClaims: t.exposeInt('unlinkedClaims'),
+    traceabilityPercentage: t.exposeInt('traceabilityPercentage'),
+    unlinkedClaimsList: t.expose('unlinkedClaimsList', { type: 'JSON' }),
   }),
 });
 

@@ -23,8 +23,10 @@ import {
   CreateCerUpdateDecisionResultType,
   FinalizeDecisionResultType,
 } from './types.js';
-import { checkPermission, checkProjectMembership } from '../../../shared/middleware/rbac-middleware.js';
-import { NotFoundError } from '../../../shared/errors/index.js';
+import {
+  checkPermission,
+  checkProjectMembership,
+} from '../../../shared/middleware/rbac-middleware.js';
 import { CreatePmsPlanUseCase } from '../application/use-cases/create-pms-plan.js';
 import { UpdatePmsPlanUseCase } from '../application/use-cases/update-pms-plan.js';
 import { ApprovePmsPlanUseCase } from '../application/use-cases/approve-pms-plan.js';
@@ -592,9 +594,16 @@ builder.mutationField('generatePmcfReport', (t) =>
 
       const redis = getRedis();
       const taskService = {
-        enqueueTask: async (type: string, data: Record<string, unknown> | undefined, userId: string) => {
+        enqueueTask: async (
+          type: string,
+          data: Record<string, unknown> | undefined,
+          userId: string,
+        ) => {
           const taskId = crypto.randomUUID();
-          await redis.publish('task:enqueued', JSON.stringify({ taskId, type, data, createdBy: userId }));
+          await redis.publish(
+            'task:enqueued',
+            JSON.stringify({ taskId, type, data, createdBy: userId }),
+          );
           return { id: taskId };
         },
       };
@@ -618,9 +627,16 @@ builder.mutationField('generatePsur', (t) =>
 
       const redis = getRedis();
       const taskService = {
-        enqueueTask: async (type: string, data: Record<string, unknown> | undefined, userId: string) => {
+        enqueueTask: async (
+          type: string,
+          data: Record<string, unknown> | undefined,
+          userId: string,
+        ) => {
           const taskId = crypto.randomUUID();
-          await redis.publish('task:enqueued', JSON.stringify({ taskId, type, data, createdBy: userId }));
+          await redis.publish(
+            'task:enqueued',
+            JSON.stringify({ taskId, type, data, createdBy: userId }),
+          );
           return { id: taskId };
         },
       };
@@ -671,7 +687,7 @@ builder.mutationField('finalizeCerUpdateDecision', (t) =>
       checkPermission(ctx, 'pms', 'write');
 
       const useCase = new FinalizeCerUpdateDecisionUseCase(ctx.prisma, getEventBus());
-      return useCase.execute(args.decisionId, ctx.user!.id) as any;
+      return useCase.execute({ decisionId: args.decisionId, userId: ctx.user!.id }) as any;
     },
   }),
 );

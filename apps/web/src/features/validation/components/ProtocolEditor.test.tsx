@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 vi.mock('@apollo/client', () => ({
   gql: (str: TemplateStringsArray) => str[0],
@@ -21,9 +21,7 @@ const mockProtocolData = {
     version: 1,
     status: 'DRAFT',
     summary: 'Test summary',
-    endpoints: [
-      { id: 'ep-1', name: 'Sensitivity', type: 'PRIMARY', target: '95', unit: '%' },
-    ],
+    endpoints: [{ id: 'ep-1', name: 'Sensitivity', type: 'PRIMARY', target: '95', unit: '%' }],
     sampleSize: '100 patients',
     statisticalStrategy: 'Superiority test',
   },
@@ -126,13 +124,18 @@ describe('ProtocolEditor', () => {
   });
 
   it('adds a new endpoint', () => {
-    mockUseQuery.mockReturnValue({ data: { validationProtocol: { ...mockProtocolData.validationProtocol, endpoints: [] } }, loading: false });
+    mockUseQuery.mockReturnValue({
+      data: { validationProtocol: { ...mockProtocolData.validationProtocol, endpoints: [] } },
+      loading: false,
+    });
     render(<ProtocolEditor studyId="study-1" />);
 
     fireEvent.click(screen.getByTestId('next-btn'));
     fireEvent.click(screen.getByTestId('add-endpoint-btn'));
 
-    const endpointItems = screen.getByTestId('endpoint-list').querySelectorAll('[data-testid^="endpoint-new-"]');
+    const endpointItems = screen
+      .getByTestId('endpoint-list')
+      .querySelectorAll('[data-testid^="endpoint-new-"]');
     expect(endpointItems.length).toBe(1);
   });
 

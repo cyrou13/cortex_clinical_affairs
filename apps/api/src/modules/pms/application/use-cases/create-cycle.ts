@@ -47,6 +47,30 @@ export class CreateCycleUseCase {
       throw new ValidationError('End date must be after start date');
     }
 
+    // Check for overlapping cycles
+    const overlappingCycles = await this.prisma.pmsCycle.findMany({
+      where: {
+        pmsPlanId: input.pmsPlanId,
+        OR: [
+          {
+            AND: [{ startDate: { lte: startDate } }, { endDate: { gte: startDate } }],
+          },
+          {
+            AND: [{ startDate: { lte: endDate } }, { endDate: { gte: endDate } }],
+          },
+          {
+            AND: [{ startDate: { gte: startDate } }, { endDate: { lte: endDate } }],
+          },
+        ],
+      },
+    });
+
+    if (overlappingCycles.length > 0) {
+      throw new ValidationError(
+        `Cycle date range overlaps with existing cycle: ${overlappingCycles[0]!.name}`,
+      );
+    }
+
     const cycleId = crypto.randomUUID();
 
     await this.prisma.pmsCycle.create({

@@ -243,3 +243,89 @@ The AI narrative prompt should:
 ### Completion Notes List
 
 ### File List
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Sonnet 4.5 (Automated Senior Review)
+**Date:** 2026-02-16
+**Outcome:** Changes Requested
+
+### AC Verification
+
+- [x] **Generate narrative from grid (FR28, FR87)** — `draftNarrative` mutation exists. DraftNarrativeUseCase enqueues job to 'soa:draft-narrative' queue with sectionId and soaAnalysisId.
+
+- [!] **Plate rich text editor (FR29)** — Backend mutation exists but Plate integration NOT verified. Frontend SectionEditor NOT in File List.
+
+- [!] **Inline references [1], [2]** — No evidence of NarrativeReference model in schema (Task T4.1). No queries for references (Task T4.3).
+
+- [!] **Review, edit, approve narrative (FR29)** — updateSectionContent mutation handles edits. HOWEVER: no AI acceptance rate tracking found (FR90).
+
+- [!] **Editor supports formatting** — Plate plugins NOT verified without frontend file.
+
+- [x] **Auto-save 10s (R3)** — Backend supports updateSectionContent mutation. Frontend auto-save hook NOT verified.
+
+- [!] **Track AI vs human edits (FR90)** — Schema has narrativeContent field but NO narrativeAiDraft field to preserve original. Task T3.1 specifies preserving AI draft — NOT implemented in schema or use case.
+
+### Test Coverage
+
+- draft-narrative.test.ts exists (3 tests): validates section exists, prevents locked SOA, enqueues task.
+- manage-section.test.ts covers content updates.
+- **Gap:** No tests for AI acceptance rate calculation. No tests for reference management. No worker tests.
+
+### Code Quality Notes
+
+**Issues found:**
+
+1. **Worker NOT implemented:** BullMQ processor `apps/workers/src/processors/soa/draft-narrative.ts` not confirmed. Critical piece missing.
+2. **No narrativeAiDraft field:** ThematicSection schema line 84 shows only narrativeContent. Task T3.1 requires separate narrativeAiDraft field to preserve original AI version for acceptance tracking (FR90). NOT found.
+3. **No reference system:** NarrativeReference model NOT in soa.prisma despite Task T4.1-T4.4. Cannot track inline references [1], [2].
+4. **No acceptance rate tracking:** Use case for computing diff between AI draft and final content NOT found (Task T3.2).
+5. **Plate editor:** Frontend integration unverified. No custom reference plugin.
+
+**Strengths:**
+
+- Use case structure correct: validates prerequisites, creates AsyncTask, enqueues job.
+- Lock and finalized section checks present.
+
+### Security Notes
+
+- RBAC enforced on draftNarrative mutation.
+- Locked/finalized sections protected.
+
+### Verdict
+
+**CHANGES REQUESTED.** Story significantly incomplete. Infrastructure (mutation, use case, task) exists BUT:
+
+1. **Worker NOT implemented** — no actual AI narrative generation
+2. **No AI draft preservation** — cannot track acceptance rate (FR90 not met)
+3. **No reference system** — inline references [1], [2] not implemented
+4. **Plate editor unverified** — frontend integration missing
+5. **Schema incomplete** — missing narrativeAiDraft field and NarrativeReference model
+
+Current implementation is skeleton only (~20% complete).
+
+**Required changes:**
+
+1. Add `narrativeAiDraft` field to ThematicSection schema
+2. Implement worker `apps/workers/src/processors/soa/draft-narrative.ts` with LLM integration
+3. Add NarrativeReference model to schema per Task T4.1
+4. Implement queries/mutations for reference management (Task T4.3-T4.4)
+5. Implement AI acceptance rate tracking (Task T3.2)
+6. Verify Plate editor integration with custom reference plugin
+7. Update ManageSectionUseCase.updateContent() to preserve narrativeAiDraft
+8. Add worker tests with mocked LLM
+9. Add tests for acceptance rate computation
+
+**Change Log:**
+
+- 2026-02-16: Senior review completed. Changes requested. Worker missing (critical). Schema incomplete (narrativeAiDraft, NarrativeReference). FR90 not implemented. Frontend unverified.
+- 2026-02-16: Code review fixes applied:
+  - ✅ Added `narrativeAiDraft Json?` field to ThematicSection schema
+  - ✅ Updated ThematicSectionObjectType to expose narrativeAiDraft
+  - ✅ Implemented DraftNarrativeProcessor with progress tracking
+  - ✅ Worker saves AI draft to narrativeAiDraft (preserves for acceptance tracking)
+  - ⏳ Pending: Actual LLM integration (currently placeholder)
+  - ⏳ Pending: NarrativeReference model for inline citations [1], [2]
+  - ⏳ Pending: AI acceptance rate computation use case
+  - ⏳ Pending: Frontend Plate editor integration
+  - 📋 Next: Run Prisma migration: `pnpm --filter @cortex/prisma db:migrate:dev --name add-narrative-ai-draft`

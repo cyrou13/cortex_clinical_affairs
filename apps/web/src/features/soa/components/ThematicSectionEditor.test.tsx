@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 
 vi.mock('@apollo/client', () => ({
   gql: (str: TemplateStringsArray) => str[0],
@@ -17,7 +17,12 @@ import { ThematicSectionEditor } from './ThematicSectionEditor';
 
 const mockSections = [
   { id: 'sec-1', sectionKey: 'SCOPE', title: 'Scope', status: 'FINALIZED' as const },
-  { id: 'sec-2', sectionKey: 'CLINICAL_BACKGROUND', title: 'Clinical Background', status: 'IN_PROGRESS' as const },
+  {
+    id: 'sec-2',
+    sectionKey: 'CLINICAL_BACKGROUND',
+    title: 'Clinical Background',
+    status: 'IN_PROGRESS' as const,
+  },
   { id: 'sec-3', sectionKey: 'STATE_OF_ART', title: 'State of the Art', status: 'DRAFT' as const },
 ];
 
@@ -52,8 +57,12 @@ const finalizedSectionData = {
 };
 
 describe('ThematicSectionEditor', () => {
-  const mockUpdateContent = vi.fn().mockResolvedValue({ data: { updateSectionContent: { sectionId: 'sec-2', status: 'IN_PROGRESS' } } });
-  const mockFinalize = vi.fn().mockResolvedValue({ data: { finalizeSection: { sectionId: 'sec-2', status: 'FINALIZED' } } });
+  const mockUpdateContent = vi.fn().mockResolvedValue({
+    data: { updateSectionContent: { sectionId: 'sec-2', status: 'IN_PROGRESS' } },
+  });
+  const mockFinalize = vi
+    .fn()
+    .mockResolvedValue({ data: { finalizeSection: { sectionId: 'sec-2', status: 'FINALIZED' } } });
 
   beforeEach(() => {
     vi.clearAllMocks();

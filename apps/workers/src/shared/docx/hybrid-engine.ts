@@ -9,6 +9,7 @@
  */
 
 import { DocxBuilder, type DocxDocument } from './docx-builder.js';
+import { generateDocxBuffer } from './docx-generator.js';
 
 // ── Document Types ──────────────────────────────────────────────────────
 
@@ -131,9 +132,7 @@ function prepareClinicalBenefit(data: DocumentData, builder: DocxBuilder): DocxD
   builder.setAuthor(data.author);
 
   builder.createHeading('Clinical Benefit Assessment', 1);
-  builder.createParagraph(
-    `Study ID: ${data.studyId ?? 'N/A'}`,
-  );
+  builder.createParagraph(`Study ID: ${data.studyId ?? 'N/A'}`);
 
   for (const section of data.sections) {
     builder.createHeading(section.heading, section.level);
@@ -201,7 +200,7 @@ export class HybridEngine {
    * Steps:
    * 1. Look up the data preparation function from the registry
    * 2. Build the DocxDocument structure
-   * 3. Serialize to a Buffer (stubbed — returns JSON representation)
+   * 3. Generate real DOCX buffer using docx-generator
    */
   async generateDocument(type: DocumentType, data: DocumentData): Promise<Buffer> {
     const prepareFn = this.registry[type];
@@ -212,10 +211,9 @@ export class HybridEngine {
     const builder = new DocxBuilder();
     const document = prepareFn(data, builder);
 
-    // Stub serialization: in production this would use docx/carbone
-    // to produce actual DOCX bytes. For now we serialize the structure.
-    const serialized = JSON.stringify(document);
-    return Buffer.from(serialized, 'utf-8');
+    // Generate real DOCX buffer
+    // When docx npm package is installed, this will produce actual DOCX files
+    return await generateDocxBuffer(document);
   }
 
   /**

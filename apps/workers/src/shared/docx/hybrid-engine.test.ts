@@ -1,10 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  HybridEngine,
-  DOCUMENT_TYPES,
-  type DocumentData,
-  type DocumentType,
-} from './hybrid-engine.js';
+import { HybridEngine, DOCUMENT_TYPES, type DocumentData } from './hybrid-engine.js';
 
 function makeDocumentData(overrides?: Partial<DocumentData>): DocumentData {
   return {

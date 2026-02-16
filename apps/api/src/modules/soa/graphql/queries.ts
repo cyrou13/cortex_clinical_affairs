@@ -10,10 +10,14 @@ import {
   ArticleExtractionStatusType,
   GridExtractionProgressType,
   QualityAssessmentObjectType,
+  QualitySummaryType,
   SimilarDeviceObjectType,
   BenchmarkObjectType,
+  AggregatedBenchmarkType,
   ClaimObjectType,
   ClaimArticleLinkObjectType,
+  ComparisonTableType,
+  TraceabilityReportType,
 } from './types.js';
 import {
   checkPermission,
@@ -21,8 +25,11 @@ import {
 } from '../../../shared/middleware/rbac-middleware.js';
 import { NotFoundError } from '../../../shared/errors/index.js';
 import { TrackExtractionStatusUseCase } from '../application/use-cases/track-extraction-status.js';
+import { AssessQualityUseCase } from '../application/use-cases/assess-quality.js';
 import { ManageDeviceRegistryUseCase } from '../application/use-cases/manage-device-registry.js';
 import { ManageClaimsUseCase } from '../application/use-cases/manage-claims.js';
+import { GenerateComparisonTableUseCase } from '../application/use-cases/generate-comparison-table.js';
+import { ValidateClaimsUseCase } from '../application/use-cases/validate-claims.js';
 
 builder.queryField('soaAnalyses', (t) =>
   t.field({
@@ -235,6 +242,8 @@ builder.queryField('gridCells', (t) =>
     args: {
       gridId: t.arg.string({ required: true }),
       articleId: t.arg.string({ required: false }),
+      statusFilter: t.arg.stringList({ required: false }),
+      confidenceFilter: t.arg.stringList({ required: false }),
     },
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'soa', 'read');
@@ -243,6 +252,12 @@ builder.queryField('gridCells', (t) =>
       if (args.articleId) {
         where.articleId = args.articleId;
       }
+      if (args.statusFilter && args.statusFilter.length > 0) {
+        where.validationStatus = { in: args.statusFilter };
+      }
+      if (args.confidenceFilter && args.confidenceFilter.length > 0) {
+        where.confidenceLevel = { in: args.confidenceFilter };
+      }
 
       const cells = await ctx.prisma.gridCell.findMany({
         where,
@@ -250,6 +265,113 @@ builder.queryField('gridCells', (t) =>
       });
 
       return cells as any;
+    },
+  }),
+);
+
+// --- Confidence-based queries (Story 3.4) ---
+
+builder.queryField('lowConfidenceCells', (t) =>
+  t.field({
+    type: [GridCellObjectType],
+    args: {
+      gridId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'read');
+
+      const cells = await ctx.prisma.gridCell.findMany({
+        where: {
+          extractionGridId: args.gridId,
+          confidenceLevel: 'LOW',
+        },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      return cells as any;
+    },
+  }),
+);
+
+builder.queryField('cellSourceQuote', (t) =>
+  t.field({
+    type: 'JSON',
+    args: {
+      gridId: t.arg.string({ required: true }),
+      articleId: t.arg.string({ required: true }),
+      columnId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'read');
+
+      const cell = await ctx.prisma.gridCell.findFirst({
+        where: {
+          extractionGridId: args.gridId,
+          articleId: args.articleId,
+          gridColumnId: args.columnId,
+        },
+        include: {
+          gridColumn: {
+            select: { displayName: true },
+          },
+        },
+      });
+
+      if (!cell) {
+        return null;
+      }
+
+      // Get article reference
+      const article = await (ctx.prisma as any).article.findUnique({
+        where: { id: args.articleId },
+        select: {
+          title: true,
+          authors: true,
+          publicationYear: true,
+          journal: true,
+        },
+      });
+
+      return {
+        sourceQuote: (cell as any).sourceQuote,
+        articleReference: article
+          ? `${article.authors || 'Unknown'}, ${article.publicationYear || 'n.d.'}. ${article.title}. ${article.journal || ''}`
+          : 'Unknown reference',
+        pageNumber: (cell as any).sourcePageNumber,
+        pdfLocationUrl: (cell as any).sourcePageNumber
+          ? `/pdf-viewer?articleId=${args.articleId}&page=${(cell as any).sourcePageNumber}`
+          : null,
+      } as any;
+    },
+  }),
+);
+
+builder.queryField('confidenceStats', (t) =>
+  t.field({
+    type: 'JSON',
+    args: {
+      gridId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'read');
+
+      const cells = await ctx.prisma.gridCell.findMany({
+        where: { extractionGridId: args.gridId },
+        select: { confidenceLevel: true, confidenceScore: true },
+      });
+
+      const stats = {
+        total: cells.length,
+        high: cells.filter((c: any) => c.confidenceLevel === 'HIGH').length,
+        medium: cells.filter((c: any) => c.confidenceLevel === 'MEDIUM').length,
+        low: cells.filter((c: any) => c.confidenceLevel === 'LOW').length,
+        unscored: cells.filter((c: any) => c.confidenceLevel === 'UNSCORED').length,
+        averageScore:
+          cells.reduce((sum: number, c: any) => sum + (c.confidenceScore || 0), 0) /
+          (cells.length || 1),
+      };
+
+      return stats as any;
     },
   }),
 );
@@ -324,6 +446,31 @@ builder.queryField('qualityAssessments', (t) =>
   }),
 );
 
+builder.queryField('qualitySummary', (t) =>
+  t.field({
+    type: QualitySummaryType,
+    args: {
+      soaAnalysisId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'read');
+
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
+        where: { id: args.soaAnalysisId },
+      });
+
+      if (!soa) {
+        throw new NotFoundError('SoaAnalysis', args.soaAnalysisId);
+      }
+
+      await checkProjectMembership(ctx, soa.projectId);
+
+      const useCase = new AssessQualityUseCase(ctx.prisma);
+      return useCase.getCombinedSummary(args.soaAnalysisId) as any;
+    },
+  }),
+);
+
 // --- Similar Device queries (Story 3.9) ---
 
 builder.queryField('similarDevices', (t) =>
@@ -370,6 +517,31 @@ builder.queryField('deviceBenchmarks', (t) =>
   }),
 );
 
+builder.queryField('aggregatedBenchmarks', (t) =>
+  t.field({
+    type: [AggregatedBenchmarkType],
+    args: {
+      soaAnalysisId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'read');
+
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
+        where: { id: args.soaAnalysisId },
+      });
+
+      if (!soa) {
+        throw new NotFoundError('SoaAnalysis', args.soaAnalysisId);
+      }
+
+      await checkProjectMembership(ctx, soa.projectId);
+
+      const useCase = new ManageDeviceRegistryUseCase(ctx.prisma);
+      return useCase.aggregateBenchmarks(args.soaAnalysisId) as any;
+    },
+  }),
+);
+
 // --- Claims queries (Story 3.10) ---
 
 builder.queryField('claims', (t) =>
@@ -412,6 +584,56 @@ builder.queryField('claimArticleLinks', (t) =>
       });
 
       return links as any;
+    },
+  }),
+);
+
+builder.queryField('comparisonTable', (t) =>
+  t.field({
+    type: ComparisonTableType,
+    args: {
+      soaAnalysisId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'read');
+
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
+        where: { id: args.soaAnalysisId },
+      });
+
+      if (!soa) {
+        throw new NotFoundError('SoaAnalysis', args.soaAnalysisId);
+      }
+
+      await checkProjectMembership(ctx, soa.projectId);
+
+      const useCase = new GenerateComparisonTableUseCase(ctx.prisma);
+      return useCase.execute(args.soaAnalysisId) as any;
+    },
+  }),
+);
+
+builder.queryField('traceabilityReport', (t) =>
+  t.field({
+    type: TraceabilityReportType,
+    args: {
+      soaAnalysisId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'read');
+
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
+        where: { id: args.soaAnalysisId },
+      });
+
+      if (!soa) {
+        throw new NotFoundError('SoaAnalysis', args.soaAnalysisId);
+      }
+
+      await checkProjectMembership(ctx, soa.projectId);
+
+      const useCase = new ValidateClaimsUseCase(ctx.prisma);
+      return useCase.getTraceabilityReport(args.soaAnalysisId) as any;
     },
   }),
 );

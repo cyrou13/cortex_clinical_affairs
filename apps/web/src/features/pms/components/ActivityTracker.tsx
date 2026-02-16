@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@apollo/client/react';
 import { BookOpen, Search, ClipboardList, Users, Microscope, FileBarChart } from 'lucide-react';
 import { PmsStatusBadge } from './StatusBadge';
 import { GET_PMCF_ACTIVITIES } from '../graphql/queries';
-import { START_PMCF_ACTIVITY, COMPLETE_PMCF_ACTIVITY, UPDATE_PMCF_ACTIVITY } from '../graphql/mutations';
+import { START_PMCF_ACTIVITY, COMPLETE_PMCF_ACTIVITY } from '../graphql/mutations';
 
 interface PmcfActivity {
   id: string;
@@ -42,13 +42,14 @@ export function ActivityTracker({ cycleId }: ActivityTrackerProps) {
   const [completingId, setCompletingId] = useState<string | null>(null);
   const [completionForm, setCompletionForm] = useState({ findingsSummary: '', conclusions: '' });
 
-  const queryVars = statusFilter === 'ALL'
-    ? { cycleId }
-    : { cycleId, status: statusFilter };
+  const queryVars = statusFilter === 'ALL' ? { cycleId } : { cycleId, status: statusFilter };
 
-  const { data, loading, error } = useQuery<{ pmcfActivities: PmcfActivity[] }>(GET_PMCF_ACTIVITIES, {
-    variables: queryVars,
-  });
+  const { data, loading, error } = useQuery<{ pmcfActivities: PmcfActivity[] }>(
+    GET_PMCF_ACTIVITIES,
+    {
+      variables: queryVars,
+    },
+  );
 
   const [startActivity] = useMutation(START_PMCF_ACTIVITY, {
     refetchQueries: [{ query: GET_PMCF_ACTIVITIES, variables: queryVars }],
@@ -102,7 +103,9 @@ export function ActivityTracker({ cycleId }: ActivityTrackerProps) {
           className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-[var(--cortex-text-primary)]"
         >
           {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>{s === 'ALL' ? 'All statuses' : s.replace(/_/g, ' ')}</option>
+            <option key={s} value={s}>
+              {s === 'ALL' ? 'All statuses' : s.replace(/_/g, ' ')}
+            </option>
           ))}
         </select>
       </div>
@@ -145,7 +148,9 @@ export function ActivityTracker({ cycleId }: ActivityTrackerProps) {
                         {activity.status === 'PLANNED' && (
                           <button
                             data-testid={`start-activity-${activity.id}`}
-                            onClick={() => startActivity({ variables: { activityId: activity.id } })}
+                            onClick={() =>
+                              startActivity({ variables: { activityId: activity.id } })
+                            }
                             className="rounded-md bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100"
                           >
                             Start
@@ -168,7 +173,12 @@ export function ActivityTracker({ cycleId }: ActivityTrackerProps) {
                             data-testid="findings-input"
                             placeholder="Findings summary"
                             value={completionForm.findingsSummary}
-                            onChange={(e) => setCompletionForm({ ...completionForm, findingsSummary: e.target.value })}
+                            onChange={(e) =>
+                              setCompletionForm({
+                                ...completionForm,
+                                findingsSummary: e.target.value,
+                              })
+                            }
                             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                             rows={2}
                           />
@@ -176,7 +186,9 @@ export function ActivityTracker({ cycleId }: ActivityTrackerProps) {
                             data-testid="conclusions-input"
                             placeholder="Conclusions"
                             value={completionForm.conclusions}
-                            onChange={(e) => setCompletionForm({ ...completionForm, conclusions: e.target.value })}
+                            onChange={(e) =>
+                              setCompletionForm({ ...completionForm, conclusions: e.target.value })
+                            }
                             className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
                             rows={2}
                           />
@@ -190,7 +202,11 @@ export function ActivityTracker({ cycleId }: ActivityTrackerProps) {
                             <button
                               data-testid="submit-completion-btn"
                               onClick={() => handleComplete(activity.id)}
-                              disabled={completing || !completionForm.findingsSummary || !completionForm.conclusions}
+                              disabled={
+                                completing ||
+                                !completionForm.findingsSummary ||
+                                !completionForm.conclusions
+                              }
                               className="rounded-md bg-emerald-500 px-2.5 py-1 text-xs font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
                             >
                               {completing ? 'Saving...' : 'Submit'}

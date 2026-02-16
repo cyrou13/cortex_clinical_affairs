@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 /**
  * Epic 2 — Systematic Literature Search (SLS) Integration Tests
  *
@@ -164,7 +165,7 @@ describe('Session CRUD', () => {
 
     expect(result.errors).toBeDefined();
     expect(result.errors!.length).toBeGreaterThan(0);
-    expect(result.errors![0].message).toContain('Not a member');
+    expect(result.errors![0]!.message).toContain('Not a member');
   });
 });
 
@@ -364,7 +365,7 @@ describe('Query Management', () => {
     );
 
     expect(result.errors).toBeDefined();
-    expect(result.errors![0].message).toContain('locked');
+    expect(result.errors![0]!.message).toContain('locked');
   });
 });
 
@@ -503,7 +504,7 @@ describe('Article Management', () => {
     );
 
     expect(result.errors).toBeDefined();
-    expect(result.errors![0].message).toContain('Invalid status transition');
+    expect(result.errors![0]!.message).toContain('Invalid status transition');
   });
 });
 
@@ -760,7 +761,7 @@ describe('Screening', () => {
     });
     expect(decisions.length).toBeGreaterThanOrEqual(1);
 
-    const latestDecision = decisions[decisions.length - 1];
+    const latestDecision = decisions[decisions.length - 1]!;
     expect(latestDecision.decision).toBe('INCLUDED');
     expect(latestDecision.reason).toBe('Directly relevant to the clinical evaluation scope');
     expect(latestDecision.previousStatus).toBe('SCORED');
@@ -770,7 +771,7 @@ describe('Screening', () => {
   it('bulkScreenArticles processes multiple articles', async () => {
     // First transition article[1] and article[2] to SCORED
     await prisma.article.updateMany({
-      where: { id: { in: [articleIds[1], articleIds[2]] } },
+      where: { id: { in: [articleIds[1]!, articleIds[2]!] } },
       data: { status: 'SCORED' },
     });
 
@@ -813,7 +814,7 @@ describe('Screening', () => {
 
     // Verify articles are now EXCLUDED
     const updatedArticles = await prisma.article.findMany({
-      where: { id: { in: [articleIds[1], articleIds[2]] } },
+      where: { id: { in: [articleIds[1]!, articleIds[2]!] } },
     });
     for (const a of updatedArticles) {
       expect(a.status).toBe('EXCLUDED');

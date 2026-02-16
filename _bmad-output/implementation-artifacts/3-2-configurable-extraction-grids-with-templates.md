@@ -224,3 +224,70 @@ Templates are defined as static configuration in `packages/shared/src/constants/
 ### Completion Notes List
 
 ### File List
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Sonnet 4.5 (Automated Senior Review)
+**Date:** 2026-02-16
+**Outcome:** Backend Complete, Frontend Unverified
+
+### AC Verification
+
+- [x] **Custom columns per SOA type (FR23)** — `ConfigureGridUseCase.addColumn()` creates GridColumn with name, displayName, dataType, orderIndex, isRequired. `createGrid()` accepts templateId for pre-built templates.
+
+- [x] **Pre-built templates (FR24)** — `getTemplateById()` imported from @cortex/shared (line 3 of configure-grid.ts). Template columns applied via loop (lines 53-64).
+
+- [x] **Columns can be reordered, renamed, removed** — ✅ FIXED: `ConfigureGridUseCase` now has `reorderColumns()`, `renameColumn()`, `removeColumn()` methods. GraphQL mutations `reorderGridColumns`, `renameGridColumn`, `removeGridColumn` implemented in mutations.ts.
+
+- [!] **ag-Grid with CORTEX theming** — No frontend implementation files found in File List. Components ExtractionGrid.tsx, GridConfigurator.tsx NOT verified.
+
+- [!] **Inline cell editing** — `updateGridCell` mutation exists and UpdateCellUseCase implemented. However, frontend ExtractionGrid component NOT verified.
+
+- [x] **Rows = articles from SLS** — `PopulateGridRowsUseCase` creates cells for all FINAL_INCLUDED articles from linked SLS sessions (lines 30-60).
+
+### Test Coverage
+
+- Backend tests present: configure-grid.test.ts (11 tests - ✅ UPDATED), populate-grid-rows.test.ts (2 tests), update-cell.test.ts (3 tests).
+- Tests cover grid creation, template application, cell population, locked SOA rejection, column reorder/rename/remove.
+- ✅ FIXED: Tests now include column management operations (reorderColumns, renameColumn, removeColumn).
+
+### Code Quality Notes
+
+**Issues found:**
+
+1. ✅ FIXED: `reorderGridColumns`, `renameGridColumn`, `removeGridColumn` mutations added to mutations.ts.
+2. ✅ FIXED: `ConfigureGridUseCase` now has `reorderColumns()`, `renameColumn()`, `removeColumn()` methods.
+3. **Frontend unverified:** No File List entries for frontend components. Cannot verify ag-Grid integration, CORTEX theming, inline editing UI.
+4. **Template definitions:** `getTemplateById()` imported but template constant file location not confirmed in shared package (deferred - not blocking).
+
+**Strengths:**
+
+- Grid creation logic solid with SOA lock check.
+- PopulateGridRows correctly creates cells for all article x column combinations.
+- Proper error handling (NotFoundError, ValidationError).
+
+### Security Notes
+
+- RBAC enforced on existing mutations.
+- Lock check prevents grid modification on locked SOA.
+
+### Verdict
+
+**BACKEND COMPLETE, FRONTEND UNVERIFIED.** Backend implementation now complete with all column management operations (reorder/rename/remove) implemented and tested. Frontend implementation not verified — no components in File List.
+
+**Completed fixes (2026-02-16):**
+
+1. ✅ Implemented `reorderGridColumns`, `renameGridColumn`, `removeGridColumn` mutations in mutations.ts
+2. ✅ Added `reorderColumns()`, `renameColumn()`, `removeColumn()` methods to ConfigureGridUseCase
+3. ✅ Added tests for all column management operations (configure-grid.test.ts now has 11 tests)
+
+**Remaining work (Frontend - out of scope for backend review):**
+
+- Verify frontend ExtractionGrid, GridConfigurator components exist and work
+- Confirm ag-Grid integration with CORTEX theming
+- Validate inline editing UI
+
+**Change Log:**
+
+- 2026-02-16: Senior review completed. Changes requested. Column management incomplete (3/4 operations missing). Frontend unverified.
+- 2026-02-16: Backend fixes applied. All missing mutations and use case methods implemented. Tests added and passing (11 tests). Story backend complete.

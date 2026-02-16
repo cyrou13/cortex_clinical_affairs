@@ -5,29 +5,29 @@ function makePrisma(overrides?: {
   soaAnalysis?: Record<string, unknown> | null;
   links?: Array<Record<string, unknown>>;
   article?: Record<string, unknown> | null;
+  assessments?: Array<Record<string, unknown>>;
 }) {
   return {
     soaAnalysis: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.soaAnalysis !== undefined
-          ? overrides.soaAnalysis
-          : { id: 'soa-1', status: 'IN_PROGRESS' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.soaAnalysis !== undefined
+            ? overrides.soaAnalysis
+            : { id: 'soa-1', status: 'IN_PROGRESS' },
+        ),
     },
     soaSlsLink: {
-      findMany: vi.fn().mockResolvedValue(
-        overrides?.links ?? [{ slsSessionId: 'sess-1' }],
-      ),
+      findMany: vi.fn().mockResolvedValue(overrides?.links ?? [{ slsSessionId: 'sess-1' }]),
     },
     article: {
-      findFirst: vi.fn().mockResolvedValue(
-        overrides?.article !== undefined
-          ? overrides.article
-          : { id: 'art-1' },
-      ),
+      findFirst: vi
+        .fn()
+        .mockResolvedValue(overrides?.article !== undefined ? overrides.article : { id: 'art-1' }),
     },
     qualityAssessment: {
       create: vi.fn().mockResolvedValue({ id: 'qa-1' }),
+      findMany: vi.fn().mockResolvedValue(overrides?.assessments ?? []),
     },
   } as any;
 }
@@ -89,9 +89,7 @@ describe('AssessQualityUseCase', () => {
     const prisma = makePrisma({ soaAnalysis: null });
     const useCase = new AssessQualityUseCase(prisma);
 
-    await expect(
-      useCase.execute(validInput),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute(validInput)).rejects.toThrow('not found');
   });
 
   it('throws for locked SOA analysis', async () => {
@@ -100,18 +98,14 @@ describe('AssessQualityUseCase', () => {
     });
     const useCase = new AssessQualityUseCase(prisma);
 
-    await expect(
-      useCase.execute(validInput),
-    ).rejects.toThrow('locked');
+    await expect(useCase.execute(validInput)).rejects.toThrow('locked');
   });
 
   it('throws for article not found in linked sessions', async () => {
     const prisma = makePrisma({ article: null });
     const useCase = new AssessQualityUseCase(prisma);
 
-    await expect(
-      useCase.execute(validInput),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute(validInput)).rejects.toThrow('not found');
   });
 
   it('accepts INTERNAL_READING_GRID assessment type', async () => {
@@ -126,5 +120,46 @@ describe('AssessQualityUseCase', () => {
 
     expect(result.assessmentType).toBe('INTERNAL_READING_GRID');
     expect(result.dataContributionLevel).toBe('SUPPORTIVE');
+  });
+
+  it('returns combined summary with correct counts', async () => {
+    const assessments = [
+      { assessmentType: 'QUADAS_2', dataContributionLevel: 'PIVOTAL' },
+      { assessmentType: 'QUADAS_2', dataContributionLevel: 'SUPPORTIVE' },
+      { assessmentType: 'INTERNAL_READING_GRID', dataContributionLevel: 'PIVOTAL' },
+      { assessmentType: 'INTERNAL_READING_GRID', dataContributionLevel: 'BACKGROUND' },
+    ];
+    const prisma = makePrisma({ assessments });
+    const useCase = new AssessQualityUseCase(prisma);
+
+    const summary = await useCase.getCombinedSummary('soa-1');
+
+    expect(summary.totalAssessments).toBe(4);
+    expect(summary.quadas2Count).toBe(2);
+    expect(summary.readingGridCount).toBe(2);
+    expect(summary.contributionLevels.pivotal).toBe(2);
+    expect(summary.contributionLevels.supportive).toBe(1);
+    expect(summary.contributionLevels.background).toBe(1);
+  });
+
+  it('returns empty summary for no assessments', async () => {
+    const prisma = makePrisma({ assessments: [] });
+    const useCase = new AssessQualityUseCase(prisma);
+
+    const summary = await useCase.getCombinedSummary('soa-1');
+
+    expect(summary.totalAssessments).toBe(0);
+    expect(summary.quadas2Count).toBe(0);
+    expect(summary.readingGridCount).toBe(0);
+    expect(summary.contributionLevels.pivotal).toBe(0);
+    expect(summary.contributionLevels.supportive).toBe(0);
+    expect(summary.contributionLevels.background).toBe(0);
+  });
+
+  it('throws for missing SOA in combined summary', async () => {
+    const prisma = makePrisma({ soaAnalysis: null });
+    const useCase = new AssessQualityUseCase(prisma);
+
+    await expect(useCase.getCombinedSummary('soa-1')).rejects.toThrow('not found');
   });
 });

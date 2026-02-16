@@ -9,6 +9,8 @@ interface CreateCerUpdateDecisionInput {
   justification: string;
   materialChangesIdentified: boolean;
   materialChangesDescription?: string;
+  newGapDescriptions?: string[];
+  resolvedGapIds?: string[];
   userId: string;
 }
 
@@ -57,6 +59,8 @@ export class CreateCerUpdateDecisionUseCase {
         justification: input.justification.trim(),
         materialChangesIdentified: input.materialChangesIdentified,
         materialChangesDescription: input.materialChangesDescription ?? null,
+        newGapsIdentified: input.newGapDescriptions?.length ?? 0,
+        gapsResolved: input.resolvedGapIds?.length ?? 0,
         status: 'DRAFT',
         decidedBy: input.userId,
       },

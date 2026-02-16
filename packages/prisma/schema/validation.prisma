@@ -2,6 +2,7 @@
 
 enum ValidationStudyStatus {
   DRAFT
+  IN_PROGRESS
   LOCKED
 }
 
@@ -41,6 +42,8 @@ model ValidationStudy {
   status        ValidationStudyStatus @default(DRAFT)
   description   String?
   soaAnalysisId String?
+  parentStudyId String?
+  slsSessionId  String?
   createdById   String
   lockedAt      DateTime?
   lockedById    String?
@@ -53,6 +56,9 @@ model ValidationStudy {
   gsprMappings       GsprMapping[]
 
   @@index([projectId, status])
+  @@index([soaAnalysisId])
+  @@index([parentStudyId])
+  @@index([slsSessionId])
 }
 
 // --- Model 2: Protocol ---

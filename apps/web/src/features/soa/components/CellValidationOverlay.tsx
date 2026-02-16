@@ -13,8 +13,18 @@ export const VALIDATE_GRID_CELL = gql`
 `;
 
 export const CORRECT_GRID_CELL = gql`
-  mutation CorrectGridCell($gridId: String!, $articleId: String!, $columnId: String!, $newValue: String!) {
-    correctGridCell(gridId: $gridId, articleId: $articleId, columnId: $columnId, newValue: $newValue) {
+  mutation CorrectGridCell(
+    $gridId: String!
+    $articleId: String!
+    $columnId: String!
+    $newValue: String!
+  ) {
+    correctGridCell(
+      gridId: $gridId
+      articleId: $articleId
+      columnId: $columnId
+      newValue: $newValue
+    ) {
       cellId
       status
       value
@@ -23,7 +33,12 @@ export const CORRECT_GRID_CELL = gql`
 `;
 
 export const FLAG_GRID_CELL = gql`
-  mutation FlagGridCell($gridId: String!, $articleId: String!, $columnId: String!, $reason: String!) {
+  mutation FlagGridCell(
+    $gridId: String!
+    $articleId: String!
+    $columnId: String!
+    $reason: String!
+  ) {
     flagGridCell(gridId: $gridId, articleId: $articleId, columnId: $columnId, reason: $reason) {
       cellId
       status
@@ -52,7 +67,7 @@ export function CellValidationOverlay({
   gridId,
   articleId,
   columnId,
-  value,
+  _value,
   aiExtractedValue,
   validationStatus,
   confidenceLevel,
@@ -63,7 +78,7 @@ export function CellValidationOverlay({
   const [showFlagInput, setShowFlagInput] = useState(false);
 
   const [validate] = useMutation(VALIDATE_GRID_CELL);
-  const [correct] = useMutation(CORRECT_GRID_CELL);
+  const _correct = useMutation(CORRECT_GRID_CELL);
   const [flag] = useMutation(FLAG_GRID_CELL);
 
   const handleValidate = async () => {
@@ -118,7 +133,10 @@ export function CellValidationOverlay({
       </button>
 
       {showMenu && (
-        <div className="absolute right-0 top-full z-10 mt-1 w-36 rounded border bg-white py-1 shadow-lg" data-testid="validation-menu">
+        <div
+          className="absolute right-0 top-full z-10 mt-1 w-36 rounded border bg-white py-1 shadow-lg"
+          data-testid="validation-menu"
+        >
           <button
             type="button"
             onClick={handleValidate}
@@ -139,7 +157,10 @@ export function CellValidationOverlay({
       )}
 
       {showFlagInput && (
-        <div className="absolute right-0 top-full z-10 mt-1 w-48 rounded border bg-white p-2 shadow-lg" data-testid="flag-input">
+        <div
+          className="absolute right-0 top-full z-10 mt-1 w-48 rounded border bg-white p-2 shadow-lg"
+          data-testid="flag-input"
+        >
           <input
             type="text"
             value={flagReason}

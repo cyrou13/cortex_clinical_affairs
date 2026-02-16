@@ -300,6 +300,9 @@ model CerUpdateDecision {
   justification              String
   materialChangesIdentified  Boolean   @default(false)
   materialChangesDescription String?
+  newGapsIdentified          Int       @default(0)
+  gapsResolved               Int       @default(0)
+  triggeredCerVersionId      String?
   status                     String    @default("DRAFT")
   decidedBy                  String
   decidedAt                  DateTime?

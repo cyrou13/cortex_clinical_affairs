@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 vi.mock('@apollo/client', () => ({
   gql: (str: TemplateStringsArray) => str[0],
@@ -40,8 +40,12 @@ const mockDevices = {
 const emptyDevices = { similarDevices: [] };
 
 describe('DeviceRegistryPanel', () => {
-  const mockAddDevice = vi.fn().mockResolvedValue({ data: { addSimilarDevice: { deviceId: 'dev-new' } } });
-  const mockAddBenchmark = vi.fn().mockResolvedValue({ data: { addDeviceBenchmark: { benchmarkId: 'bm-new' } } });
+  const mockAddDevice = vi
+    .fn()
+    .mockResolvedValue({ data: { addSimilarDevice: { deviceId: 'dev-new' } } });
+  const mockAddBenchmark = vi
+    .fn()
+    .mockResolvedValue({ data: { addDeviceBenchmark: { benchmarkId: 'bm-new' } } });
 
   beforeEach(() => {
     vi.clearAllMocks();

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   validateReportPrerequisites,
   prepareValidationReportData,
@@ -248,9 +248,9 @@ describe('prepareValidationReportData', () => {
       getStudy: vi.fn().mockResolvedValue(null),
     });
 
-    await expect(
-      prepareValidationReportData(STUDY_ID, dataAccess),
-    ).rejects.toThrow('Study not found');
+    await expect(prepareValidationReportData(STUDY_ID, dataAccess)).rejects.toThrow(
+      'Study not found',
+    );
   });
 
   it('includes metadata in output', async () => {
@@ -288,9 +288,7 @@ describe('prepareClinicalBenefitData', () => {
 
     const data = await prepareClinicalBenefitData(STUDY_ID, dataAccess);
 
-    const mrmcSection = data.sections.find((s) =>
-      s.heading.includes('Multi-Reader Multi-Case'),
-    );
+    const mrmcSection = data.sections.find((s) => s.heading.includes('Multi-Reader Multi-Case'));
     expect(mrmcSection).toBeDefined();
     expect(mrmcSection!.content).toContain('3 reader(s)');
   });
@@ -300,9 +298,7 @@ describe('prepareClinicalBenefitData', () => {
 
     const data = await prepareClinicalBenefitData(STUDY_ID, dataAccess);
 
-    const standaloneSection = data.sections.find((s) =>
-      s.heading.includes('Standalone Analysis'),
-    );
+    const standaloneSection = data.sections.find((s) => s.heading.includes('Standalone Analysis'));
     expect(standaloneSection).toBeDefined();
   });
 
@@ -311,9 +307,7 @@ describe('prepareClinicalBenefitData', () => {
 
     const data = await prepareClinicalBenefitData(STUDY_ID, dataAccess);
 
-    const benefitSection = data.sections.find((s) =>
-      s.heading.includes('Benefit Quantification'),
-    );
+    const benefitSection = data.sections.find((s) => s.heading.includes('Benefit Quantification'));
     expect(benefitSection).toBeDefined();
   });
 
@@ -339,9 +333,9 @@ describe('prepareClinicalBenefitData', () => {
       getStudy: vi.fn().mockResolvedValue(null),
     });
 
-    await expect(
-      prepareClinicalBenefitData(STUDY_ID, dataAccess),
-    ).rejects.toThrow('Study not found');
+    await expect(prepareClinicalBenefitData(STUDY_ID, dataAccess)).rejects.toThrow(
+      'Study not found',
+    );
   });
 
   it('marks metadata.isMRMC correctly', async () => {

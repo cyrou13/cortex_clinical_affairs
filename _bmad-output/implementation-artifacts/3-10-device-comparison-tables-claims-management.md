@@ -211,3 +211,86 @@ So that I have structured evidence for CER traceability.
 ### Completion Notes List
 
 ### File List
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Sonnet 4.5 (Automated Senior Review)
+**Date:** 2026-02-16
+**Outcome:** Changes Requested
+
+### AC Verification
+
+- [!] **Comparison tables from registry (FR32)** — Task T1 specifies `generate-comparison-table.ts` use case. NOT found in use case directory. No mutation for generating comparison table.
+
+- [x] **Claim creation and linking (FR33)** — Claim model in schema (lines 130-142). ManageClaimsUseCase.createClaim() and linkClaimToArticle() implemented. ClaimArticleLink model exists (lines 146-158).
+
+- [x] **Claims link to articles** — ClaimArticleLink created with claimId, articleId, sourceQuote (lines 62-90 of manage-claims.ts).
+
+- [x] **Claims link to sections** — Claim.thematicSectionId field exists. Validated on creation (lines 38-47).
+
+- [!] **Claims foundation for CER** — Claims exist but Task T3 `validate-claims.ts` use case NOT found. Traceability report NOT implemented.
+
+### Test Coverage
+
+- manage-claims.test.ts exists (5 tests): create claim, link article, empty statement rejection, locked SOA rejection, section validation.
+- **Gap:** No tests for traceability report. No tests for comparison table generation. No tests for unlinked claims detection.
+
+### Code Quality Notes
+
+**Issues found:**
+
+1. **No comparison table generation:** Task T1 `generate-comparison-table.ts` use case NOT implemented. Core feature missing (FR32 not met).
+2. **No traceability validation:** Task T3 `validate-claims.ts` use case NOT found. Methods `getTraceabilityReport()`, `getUnlinkedClaims()` missing.
+3. **No traceability query:** `traceabilityReport(soaAnalysisId)` query from Task T4.2 NOT in queries.ts.
+4. **Frontend missing:** DeviceComparison, ClaimsManager, TraceabilityDashboard NOT in File List.
+5. **getClaimsForAnalysis method:** Found partial reference in queries.ts line 395 but full implementation of use case method not verified.
+
+**Strengths:**
+
+- Claim CRUD solid with proper validation.
+- Source quote tracking per article link (good traceability foundation).
+- Lock enforcement prevents claim modification on locked SOA.
+- Section association validated.
+
+### Security Notes
+
+- RBAC enforced on createClaim, linkClaimToArticle mutations.
+- Lock check prevents claim management on locked SOA.
+
+### Verdict
+
+**CHANGES REQUESTED.** Claims CRUD works well BUT major features missing:
+
+1. **Comparison table generation** (FR32) — completely absent
+2. **Traceability validation** — no report, no gap detection
+3. **Frontend unverified** — all UI components missing from File List
+
+Claims infrastructure ~40% complete — basic CRUD works but analysis and traceability features not implemented.
+
+**Required changes:**
+
+1. Implement `generate-comparison-table.ts` use case (Task T1)
+2. Implement `validate-claims.ts` use case with traceability report (Task T3)
+3. Add `comparisonTable` GraphQL query (Task T4.2)
+4. Add `traceabilityReport` GraphQL query (Task T4.2)
+5. Implement `getUnlinkedClaims()` method for gap detection
+6. Verify frontend: DeviceComparison, ClaimsManager, TraceabilityDashboard
+7. Add tests for comparison table generation
+8. Add tests for traceability percentage calculation
+9. Add tests for unlinked claims detection
+
+**Change Log:**
+
+- 2026-02-16: Senior review completed. Changes requested. Comparison table generation missing (FR32 not met). Traceability validation incomplete. Frontend unverified.
+- 2026-02-16: Code review fixes applied:
+  - ✅ Created GenerateComparisonTableUseCase (NEW)
+  - ✅ Generates comparison matrix: metrics × devices with values
+  - ✅ Created ValidateClaimsUseCase (NEW)
+  - ✅ Implements getTraceabilityReport() and getUnlinkedClaims()
+  - ✅ Added ComparisonTableType and TraceabilityReportType GraphQL types
+  - ✅ Added comparisonTable(soaAnalysisId) GraphQL query
+  - ✅ Added traceabilityReport(soaAnalysisId) GraphQL query
+  - ✅ Fixed ClaimObjectType (removed non-existent updatedAt field)
+  - ✅ Added 9 new tests (6 for traceability, 3 for comparison) - all passing
+  - ⏳ Pending: Frontend components verification
+  - ⏳ Pending: Integrate traceability check into SOA locking (Story 3.11)

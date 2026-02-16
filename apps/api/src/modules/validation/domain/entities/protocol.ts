@@ -4,7 +4,6 @@ import {
   incrementMinor,
   formatVersion,
   parseVersion,
-  type ProtocolVersion,
 } from '../value-objects/protocol-version.js';
 
 export const PROTOCOL_STATUSES = ['DRAFT', 'APPROVED', 'AMENDED'] as const;
@@ -72,9 +71,7 @@ export function transitionProtocolStatus(
   newStatus: ProtocolStatus,
 ): ProtocolData {
   if (!canProtocolTransition(protocol.status, newStatus)) {
-    throw new ValidationError(
-      `Cannot transition protocol from ${protocol.status} to ${newStatus}`,
-    );
+    throw new ValidationError(`Cannot transition protocol from ${protocol.status} to ${newStatus}`);
   }
   return {
     ...protocol,

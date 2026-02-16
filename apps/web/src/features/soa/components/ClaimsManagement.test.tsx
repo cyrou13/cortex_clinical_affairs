@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 vi.mock('@apollo/client', () => ({
   gql: (str: TemplateStringsArray) => str[0],
@@ -21,9 +21,7 @@ const mockClaims = {
       id: 'claim-1',
       statement: 'The device demonstrates equivalent safety to the predicate device.',
       status: 'ACTIVE',
-      linkedArticles: [
-        { id: 'art-1', title: 'Safety comparison study (2024)' },
-      ],
+      linkedArticles: [{ id: 'art-1', title: 'Safety comparison study (2024)' }],
     },
     {
       id: 'claim-2',
@@ -105,7 +103,9 @@ describe('ClaimsManagement', () => {
     mockUseQuery.mockReturnValue({ data: mockClaims, loading: false });
     render(<ClaimsManagement soaAnalysisId="soa-1" />);
 
-    expect(screen.getByTestId('linked-article-art-1')).toHaveTextContent('Safety comparison study (2024)');
+    expect(screen.getByTestId('linked-article-art-1')).toHaveTextContent(
+      'Safety comparison study (2024)',
+    );
   });
 
   it('shows empty state when no claims', () => {

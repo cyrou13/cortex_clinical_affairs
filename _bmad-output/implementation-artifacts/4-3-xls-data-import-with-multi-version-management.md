@@ -257,3 +257,100 @@ apps/web/src/features/validation/
 ### Completion Notes List
 
 ### File List
+
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/api/src/modules/validation/infrastructure/services/xls-parser-service.ts` (inferred)
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/api/src/modules/validation/application/use-cases/import-xls.ts`
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/web/src/features/validation/components/XlsImporter.tsx`
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/web/src/features/validation/components/ImportVersionList.tsx`
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/web/src/features/validation/components/ImportVersionDiff.tsx`
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.6 (Automated)
+**Date:** 2026-02-16
+**Outcome:** Changes Requested
+
+### AC Verification
+
+- [x] **XLS schema validation** — `import-xls.ts` lines 49-54 call `validateXlsData` with study-type-specific schema. Validation errors throw `ValidationError`.
+- [x] **Multi-version management** — `DataImport` model has `version` field auto-incremented (lines 56-63). Each import gets next version number.
+- [x] **Active version selection** — `isActive` boolean flag on DataImport. Lines 82-90 deactivate previous imports when new one created. Only one active at a time.
+- [!] **Diff between versions** — `ImportVersionDiff.tsx` component exists but no backend `computeDiff` use case found as specified in tasks (T3.4). Diff computation logic not verified.
+- [!] **Rollback capability** — No `rollbackToVersion` use case found in implementation. AC FR38d not fulfilled.
+- [x] **Inline validation errors** — Schema validation returns structured errors with row/column info.
+- [!] **Async import with progress tracking** — No BullMQ worker found. Import is synchronous in `import-xls.ts`. FR44a/FR44b not met.
+
+### Test Coverage
+
+- Unit tests:
+  - `import-xls.test.ts` — Import flow and version management
+- Frontend tests:
+  - `XlsImporter.test.tsx` — File upload UI
+  - `ImportVersionList.test.tsx` — Version display
+  - `ImportVersionDiff.test.tsx` — Diff rendering
+- **Gap**: No BullMQ worker test, no diff computation test, no rollback test
+
+### Code Quality Notes
+
+**Strengths:**
+
+- Version auto-increment logic is clean and race-condition safe
+- Lock check prevents import on locked studies (line 42)
+- Proper Prisma.InputJsonValue casting for JSON data
+- Schema validation separated into service layer
+
+**Critical Issues:**
+
+1. **Async processing missing**: Import runs synchronously in API process, not via BullMQ worker as specified
+   - Story requires async import with progress tracking (FR44a, FR44b)
+   - Architecture mandates BullMQ for file processing to avoid blocking API
+   - Current implementation could timeout on large files
+
+2. **Diff computation missing**: No use case for `computeDiff(versionA, versionB)` as specified in T3.4
+   - Frontend component exists but backend logic not implemented
+   - Diff algorithm not verified (added rows, removed rows, modified cells)
+
+3. **Rollback missing**: No `rollbackToVersion` use case (AC FR38d)
+   - Cannot roll back to previous import version
+   - `ROLLED_BACK` status mentioned in story but not used
+
+4. **REST endpoint missing**: Story specifies `POST /api/validation-studies/:studyId/imports` for file upload
+   - Current implementation appears to be synchronous mutation
+   - File upload should use REST + TanStack Query per architecture
+
+### Security Notes
+
+- File size limit validation not seen in code
+- File type validation (`.xls`, `.xlsx` only) not verified
+- MinIO storage path mentioned in story but not seen in implementation
+
+### Verdict
+
+**Changes Requested** — Critical gaps in async processing and version management:
+
+1. **Blocker**: Implement BullMQ worker for async XLS processing
+   - Create queue `validation:import-xls`
+   - Worker at `apps/workers/src/processors/validation/import-xls.ts`
+   - Progress events via domain events
+   - File stored in MinIO before processing
+
+2. **Blocker**: Implement version diff computation
+   - Create `manage-import-versions.ts` use case with `computeDiff`
+   - Algorithm: match rows by subject_id, classify as ADDED/REMOVED/MODIFIED
+
+3. **Major**: Implement rollback functionality
+   - `rollbackToVersion(dataImportId)` use case
+   - Set target version to ACTIVE, mark current as ROLLED_BACK
+
+4. **Major**: Add REST file upload endpoint
+   - `POST /api/validation-studies/:studyId/imports` multipart form data
+   - File size limit (50MB) and type validation
+   - Upload to MinIO, enqueue BullMQ job
+
+Without async processing, this could cause production issues with large files.
+
+---
+
+### Change Log
+
+- 2026-02-16: Initial automated senior developer review completed — CHANGES REQUIRED

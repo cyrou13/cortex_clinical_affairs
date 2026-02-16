@@ -117,4 +117,79 @@ export class ManageDeviceRegistryUseCase {
 
     return devices;
   }
+
+  async aggregateBenchmarks(soaAnalysisId: string) {
+    const soa = await this.prisma.soaAnalysis.findUnique({
+      where: { id: soaAnalysisId },
+      select: { id: true },
+    });
+
+    if (!soa) {
+      throw new NotFoundError('SoaAnalysis', soaAnalysisId);
+    }
+
+    // Get all benchmarks for all similar devices in this SOA
+    const devices = await this.prisma.similarDevice.findMany({
+      where: { soaAnalysisId },
+      include: {
+        benchmarks: true,
+      },
+    });
+
+    // Group benchmarks by metric name
+    const metricGroups: Record<
+      string,
+      Array<{ value: number; deviceId: string; unit: string }>
+    > = {};
+
+    for (const device of devices) {
+      for (const benchmark of device.benchmarks) {
+        if (!metricGroups[benchmark.metricName]) {
+          metricGroups[benchmark.metricName] = [];
+        }
+
+        // Parse numeric value
+        const numericValue = parseFloat(benchmark.metricValue);
+        if (!isNaN(numericValue)) {
+          metricGroups[benchmark.metricName]!.push({
+            value: numericValue,
+            deviceId: device.id,
+            unit: benchmark.unit,
+          });
+        }
+      }
+    }
+
+    // Calculate statistics for each metric
+    const aggregatedMetrics = Object.entries(metricGroups).map(([metricName, values]) => {
+      const numericValues = values.map((v) => v.value);
+      const sortedValues = [...numericValues].sort((a, b) => a - b);
+
+      const min = sortedValues[0] ?? 0;
+      const max = sortedValues[sortedValues.length - 1] ?? 0;
+      const sum = numericValues.reduce((acc, val) => acc + val, 0);
+      const mean = numericValues.length > 0 ? sum / numericValues.length : 0;
+      const median =
+        sortedValues.length > 0
+          ? sortedValues.length % 2 === 0
+            ? (sortedValues[sortedValues.length / 2 - 1]! +
+                sortedValues[sortedValues.length / 2]!) /
+              2
+            : sortedValues[Math.floor(sortedValues.length / 2)]!
+          : 0;
+
+      return {
+        metricName,
+        min,
+        max,
+        mean,
+        median,
+        range: max - min,
+        deviceCount: new Set(values.map((v) => v.deviceId)).size,
+        unit: values[0]?.unit ?? '',
+      };
+    });
+
+    return aggregatedMetrics;
+  }
 }

@@ -305,3 +305,102 @@ apps/api/src/modules/validation/
 ### Completion Notes List
 
 ### File List
+
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/workers/src/shared/docx/hybrid-engine.ts`
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/workers/src/shared/docx/docx-builder.ts`
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/workers/src/processors/validation/generate-reports.ts`
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.6 (Automated)
+**Date:** 2026-02-16
+**Outcome:** Changes Requested
+
+### AC Verification
+
+- [!] **Carbone.io template processing** — No Carbone implementation found. Story requires "Carbone.io processes DOCX templates with JSON data injection" but implementation uses stubbed serialization only.
+- [x] **docx npm programmatic generation** — `docx-builder.ts` implements builder pattern with `createTable`, `createHeading`, `createParagraph`, `createNumberedList`, `createBulletList`, `createPageBreak` methods.
+- [!] **Hybrid merge strategy** — HybridEngine exists but no actual merge. Line 215-218 in `hybrid-engine.ts` shows stub: returns JSON buffer instead of DOCX binary. No Carbone base + docx sections merge.
+- [!] **MDR-compliant templates** — No templates directory found. `apps/workers/src/shared/docx/templates/` does not exist (ls command returned empty).
+- [x] **Multiple document types** — DOCUMENT_TYPES array defines all required types (lines 15-28): VALIDATION_REPORT, CLINICAL_BENEFIT, ALGORITHMIC_FAIRNESS, LABELING_VALIDATION, BENEFIT_QUANTIFICATION, PATCH_VALIDATION, FDA_18CVS, CER_MDR, CEP, PCCP, PMCF_REPORT, PSUR.
+- [!] **<5 minute generation for 100+ pages** — Cannot verify performance without actual DOCX generation. Stub returns immediately.
+- [x] **Async generation via BullMQ** — `generate-reports.ts` implements BullMQ processor with progress tracking (25%, 50%, 75%, 100%).
+
+### Test Coverage
+
+- Unit tests:
+  - `hybrid-engine.test.ts` — Engine orchestration
+  - `docx-builder.test.ts` — Builder methods
+- **Gap**: No integration test with actual Carbone/docx npm libraries
+
+### Code Quality Notes
+
+**Strengths:**
+
+- Clean architecture: HybridEngine orchestrates, DocxBuilder handles structure
+- Document type registry pattern is excellent (lines 167-180)
+- Progress reporting in worker (lines 58-108)
+- BaseProcessor pattern for task management
+- Pluggable data preparator functions
+
+**Critical Issues:**
+
+1. **No actual DOCX generation**: Implementation is entirely stubbed
+   - Line 217: `return Buffer.from(serialized, 'utf-8')` returns JSON, not DOCX
+   - Comment says "Stub serialization: in production this would use docx/carbone"
+   - This is a placeholder, not working code
+
+2. **Carbone not installed or configured**:
+   - No `carbone` package in dependencies
+   - No LibreOffice configuration
+   - No template rendering implementation
+
+3. **Templates missing**: No template files in `apps/workers/src/shared/docx/templates/`
+   - Story requires 7 templates to be created
+   - Cannot generate regulatory documents without templates
+
+4. **No MDR formatting**: Stub builder doesn't enforce regulatory formatting
+   - Times New Roman 12pt, margins, page numbering not implemented
+   - MDR-specific styling not applied
+
+### Security Notes
+
+- No security concerns with architecture
+- Template injection risk when Carbone is added (ensure proper data sanitization)
+
+### Verdict
+
+**Changes Requested** — This is scaffolding only, not a working implementation:
+
+1. **Blocker**: Implement actual DOCX generation
+   - Install `carbone` 5.x package
+   - Install `docx` 9.x package
+   - Replace stub serialization (line 217) with actual docx npm `Packer.toBuffer()`
+   - Implement Carbone template rendering in hybrid merge
+
+2. **Blocker**: Create MDR-compliant templates
+   - Create `apps/workers/src/shared/docx/templates/` directory
+   - Add all 7 required .docx templates with proper MDR formatting
+   - validation-report.docx, fda-18cvs.docx, cer-mdr.docx, cep.docx, pccp.docx, pmcf-report.docx, psur.docx
+
+3. **Blocker**: Implement hybrid merge
+   - Carbone renders base template
+   - docx npm generates dynamic sections
+   - Merge at insertion points marked with `{d.INSERT_DYNAMIC_SECTION_X}`
+
+4. **Major**: Add LibreOffice to Docker image
+   - Update worker Dockerfile with libreoffice-core, libreoffice-writer
+   - Configure Carbone converterFactoryStart path
+
+5. **Major**: Implement MDR formatting in DocxBuilder
+   - Times New Roman 12pt body, Arial headings
+   - 2.5cm margins, page numbering, header/footer
+   - Document ID, version, watermark support
+
+Current implementation is proof-of-concept only. Cannot generate actual regulatory documents.
+
+---
+
+### Change Log
+
+- 2026-02-16: Initial automated senior developer review completed — MAJOR CHANGES REQUIRED

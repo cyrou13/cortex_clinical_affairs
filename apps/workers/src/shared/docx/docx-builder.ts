@@ -184,7 +184,7 @@ export class DocxBuilder {
   createNumberedList(items: string[]): DocxList {
     const list: DocxList = {
       type: 'numbered-list',
-      items: items.map((text, index) => ({ text, level: 0 })),
+      items: items.map((text, _index) => ({ text, level: 0 })),
       style: {
         font: MDR_STYLES.body.font,
         size: MDR_STYLES.body.size,

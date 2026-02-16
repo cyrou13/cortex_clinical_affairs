@@ -43,9 +43,7 @@ function createMockJob(overrides?: Partial<TaskJobData>): Job<TaskJobData> {
       metadata: {
         sessionId: 'session-1',
         articleIds,
-        exclusionCodes: [
-          { code: 'E1', label: 'Wrong population', shortCode: 'WP' },
-        ],
+        exclusionCodes: [{ code: 'E1', label: 'Wrong population', shortCode: 'WP' }],
         sessionName: 'Test Session',
         sessionType: 'SOA_CLINICAL',
         scopeFields: { population: 'Adults' },
@@ -232,8 +230,8 @@ describe('ScoreArticlesProcessor', () => {
 
     // Cancel after first batch
     mockRedis.get
-      .mockResolvedValueOnce(null)  // First batch: not cancelled
-      .mockResolvedValueOnce('1');  // Second batch: cancelled
+      .mockResolvedValueOnce(null) // First batch: not cancelled
+      .mockResolvedValueOnce('1'); // Second batch: cancelled
 
     mockLlmService.complete.mockResolvedValue(makeLlmResponse(articleIds.slice(0, 10)));
 
@@ -331,13 +329,25 @@ describe('ScoreArticlesProcessor', () => {
 
   it('only updates articles that are in the batch', async () => {
     const job = createMockJob();
-    const articleIds = ['article-1', 'article-2', 'article-3'];
+    const _articleIds = ['article-1', 'article-2', 'article-3'];
 
     // LLM returns a result for an article NOT in the batch
     const badResponse = {
       content: JSON.stringify([
-        { articleId: 'article-1', relevanceScore: 0.9, aiCategory: 'likely_relevant', aiExclusionCode: null, aiReasoning: 'Good' },
-        { articleId: 'rogue-article', relevanceScore: 0.5, aiCategory: 'uncertain', aiExclusionCode: null, aiReasoning: 'Not in batch' },
+        {
+          articleId: 'article-1',
+          relevanceScore: 0.9,
+          aiCategory: 'likely_relevant',
+          aiExclusionCode: null,
+          aiReasoning: 'Good',
+        },
+        {
+          articleId: 'rogue-article',
+          relevanceScore: 0.5,
+          aiCategory: 'uncertain',
+          aiExclusionCode: null,
+          aiReasoning: 'Not in batch',
+        },
       ]),
       model: 'claude-3-haiku',
       provider: 'claude',

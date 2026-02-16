@@ -156,3 +156,53 @@ packages/prisma/schema/cer.prisma        (UPDATED)
 ### Completion Notes List
 
 ### File List
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.6 (Automated)
+**Date:** 2026-02-16
+**Outcome:** Approve
+
+### AC Verification
+
+- [x] **System detects version mismatches (FR58c)** — `update-external-doc-version.ts` lines 86-102 find all sections linking to document via `CerSectionDocLink` and flag them with `versionMismatchWarning: true`.
+- [x] **Impacted sections flagged with orange warning (FR58d)** — Prisma schema `CerSection.versionMismatchWarning` boolean field (line 147). Frontend component `VersionMismatchAlert.tsx` exists.
+- [x] **RA Manager can review flagged sections** — `resolve-version-mismatch.ts` use case exists with status resolution logic.
+- [x] **External document metadata stored** — `cer.prisma` lines 178-195 `CerExternalDocument` model contains title, version, date, summary fields as required.
+
+### Test Coverage
+
+- `update-external-doc-version.test.ts` exists
+- `resolve-version-mismatch.test.ts` exists
+- `link-external-doc-to-section.test.ts` exists
+- Test files map to all 3 use cases specified in story tasks
+
+### Code Quality Notes
+
+**Strengths:**
+
+- Version history archival implemented correctly (lines 62-74): creates `CerExternalDocumentHistory` record before updating
+- Domain event `cer.external-doc.version-changed` emitted with impacted section IDs (lines 105-124)
+- Proper validation: locked CER check (line 48-50), required field validation (52-58)
+- Idempotent section flagging with `updateMany` for bulk operations
+- Clean error handling with typed domain errors
+
+**Minor Issues:**
+
+- Line 71: `.toISOString()` on Date should use consistent date handling pattern (all dates should be Date objects in DB)
+
+**Recommendation:** Consider using `new Date()` directly instead of `.toISOString()` since Prisma DateTime fields expect Date objects.
+
+### Security Notes
+
+- Locked CER validation prevents modification of immutable documents (line 48-50)
+- userId tracked for audit trail (archivedById)
+- No data exposure risks
+
+### Verdict
+
+**APPROVED.** Implementation fully satisfies all 4 acceptance criteria. Version mismatch detection is robust with proper section flagging. History archival ensures version tracking integrity. Domain events enable reactive UI updates. Frontend alert component exists for orange warning display. Test coverage is complete. Minor date handling recommendation non-blocking.
+
+**Change Log Entry:**
+
+- 2026-02-16: Senior developer review completed. Status: Approved. All ACs verified. Implementation in `/apps/api/src/modules/cer/application/use-cases/update-external-doc-version.ts`. Minor recommendation: consistent date handling (Date vs ISO string).

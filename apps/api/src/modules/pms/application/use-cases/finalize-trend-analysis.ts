@@ -10,7 +10,11 @@ interface FinalizeTrendAnalysisResult {
 export class FinalizeTrendAnalysisUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async execute(trendAnalysisId: string, conclusions: string, userId: string): Promise<FinalizeTrendAnalysisResult> {
+  async execute(
+    trendAnalysisId: string,
+    conclusions: string,
+    _userId: string,
+  ): Promise<FinalizeTrendAnalysisResult> {
     const analysis = await this.prisma.trendAnalysis.findUnique({
       where: { id: trendAnalysisId },
     });

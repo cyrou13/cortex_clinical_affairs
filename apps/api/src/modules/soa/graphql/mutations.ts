@@ -175,6 +175,55 @@ builder.mutationField('addGridColumn', (t) =>
   }),
 );
 
+builder.mutationField('reorderGridColumns', (t) =>
+  t.field({
+    type: 'JSON',
+    args: {
+      gridId: t.arg.string({ required: true }),
+      columnIds: t.arg.stringList({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      const useCase = new ConfigureGridUseCase(ctx.prisma);
+      return useCase.reorderColumns(args.gridId, args.columnIds) as any;
+    },
+  }),
+);
+
+builder.mutationField('renameGridColumn', (t) =>
+  t.field({
+    type: 'JSON',
+    args: {
+      gridId: t.arg.string({ required: true }),
+      columnId: t.arg.string({ required: true }),
+      newName: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      const useCase = new ConfigureGridUseCase(ctx.prisma);
+      return useCase.renameColumn(args.gridId, args.columnId, args.newName) as any;
+    },
+  }),
+);
+
+builder.mutationField('removeGridColumn', (t) =>
+  t.field({
+    type: 'JSON',
+    args: {
+      gridId: t.arg.string({ required: true }),
+      columnId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      const useCase = new ConfigureGridUseCase(ctx.prisma);
+      return useCase.removeColumn(args.gridId, args.columnId) as any;
+    },
+  }),
+);
+
 builder.mutationField('populateGridRows', (t) =>
   t.field({
     type: PopulateGridRowsResultType,
@@ -305,6 +354,31 @@ builder.mutationField('flagCell', (t) =>
         args.reason,
         ctx.user!.id,
       ) as any;
+    },
+  }),
+);
+
+builder.mutationField('flagLowConfidenceCells', (t) =>
+  t.field({
+    type: 'JSON',
+    args: {
+      gridId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      const result = await ctx.prisma.gridCell.updateMany({
+        where: {
+          extractionGridId: args.gridId,
+          confidenceLevel: 'LOW',
+          validationStatus: 'PENDING',
+        },
+        data: {
+          validationStatus: 'FLAGGED',
+        },
+      });
+
+      return { flaggedCount: result.count } as any;
     },
   }),
 );

@@ -7,11 +7,7 @@ import {
   GET_VIGILANCE_DATABASES,
   GET_PMS_RESPONSIBILITIES,
 } from '../graphql/queries';
-import {
-  UPDATE_PMS_PLAN,
-  APPROVE_PMS_PLAN,
-  ACTIVATE_PMS_PLAN,
-} from '../graphql/mutations';
+import { APPROVE_PMS_PLAN, ACTIVATE_PMS_PLAN } from '../graphql/mutations';
 import { PmsStatusBadge } from './StatusBadge';
 
 interface PmsPlan {
@@ -50,8 +46,18 @@ type TabId = 'config' | 'vigilance' | 'responsibilities';
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode; testId: string }[] = [
   { id: 'config', label: 'Configuration', icon: <Settings size={16} />, testId: 'tab-config' },
-  { id: 'vigilance', label: 'Vigilance DBs', icon: <Database size={16} />, testId: 'tab-vigilance' },
-  { id: 'responsibilities', label: 'Responsibilities', icon: <Users size={16} />, testId: 'tab-responsibilities' },
+  {
+    id: 'vigilance',
+    label: 'Vigilance DBs',
+    icon: <Database size={16} />,
+    testId: 'tab-vigilance',
+  },
+  {
+    id: 'responsibilities',
+    label: 'Responsibilities',
+    icon: <Users size={16} />,
+    testId: 'tab-responsibilities',
+  },
 ];
 
 interface PmsPlanDetailProps {
@@ -96,10 +102,7 @@ export function PmsPlanDetail({ planId }: PmsPlanDetailProps) {
   // Loading state
   if (planLoading) {
     return (
-      <div
-        className="flex items-center justify-center p-12"
-        data-testid="plan-loading"
-      >
+      <div className="flex items-center justify-center p-12" data-testid="plan-loading">
         <p className="text-[var(--cortex-text-muted)]">Loading plan...</p>
       </div>
     );
@@ -108,13 +111,8 @@ export function PmsPlanDetail({ planId }: PmsPlanDetailProps) {
   // Error state
   if (planError) {
     return (
-      <div
-        className="flex items-center justify-center p-12"
-        data-testid="plan-error"
-      >
-        <p className="text-[var(--cortex-error)]">
-          Failed to load plan: {planError.message}
-        </p>
+      <div className="flex items-center justify-center p-12" data-testid="plan-error">
+        <p className="text-[var(--cortex-error)]">Failed to load plan: {planError.message}</p>
       </div>
     );
   }
@@ -122,10 +120,7 @@ export function PmsPlanDetail({ planId }: PmsPlanDetailProps) {
   // Not found state
   if (!planData?.pmsPlan) {
     return (
-      <div
-        className="flex items-center justify-center p-12"
-        data-testid="plan-not-found"
-      >
+      <div className="flex items-center justify-center p-12" data-testid="plan-not-found">
         <p className="text-[var(--cortex-text-secondary)]">Plan not found.</p>
       </div>
     );
@@ -141,17 +136,13 @@ export function PmsPlanDetail({ planId }: PmsPlanDetailProps) {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-semibold text-[var(--cortex-text-primary)]">
-              PMS Plan
-            </h1>
+            <h1 className="text-2xl font-semibold text-[var(--cortex-text-primary)]">PMS Plan</h1>
             <PmsStatusBadge status={plan.status} />
           </div>
           <p className="mt-1 text-sm text-[var(--cortex-text-secondary)]">
             Created {new Date(plan.createdAt).toLocaleDateString()}
-            {plan.approvedAt &&
-              ` — Approved ${new Date(plan.approvedAt).toLocaleDateString()}`}
-            {plan.activatedAt &&
-              ` — Activated ${new Date(plan.activatedAt).toLocaleDateString()}`}
+            {plan.approvedAt && ` — Approved ${new Date(plan.approvedAt).toLocaleDateString()}`}
+            {plan.activatedAt && ` — Activated ${new Date(plan.activatedAt).toLocaleDateString()}`}
           </p>
         </div>
 
@@ -206,13 +197,9 @@ export function PmsPlanDetail({ planId }: PmsPlanDetailProps) {
       </div>
 
       {/* Tab content */}
-      {activeTab === 'config' && (
-        <ConfigurationTab plan={plan} />
-      )}
+      {activeTab === 'config' && <ConfigurationTab plan={plan} />}
 
-      {activeTab === 'vigilance' && (
-        <VigilanceTab databases={vigilanceDbs} />
-      )}
+      {activeTab === 'vigilance' && <VigilanceTab databases={vigilanceDbs} />}
 
       {activeTab === 'responsibilities' && (
         <ResponsibilitiesTab responsibilities={responsibilities} />
@@ -234,15 +221,11 @@ function ConfigurationTab({ plan }: { plan: PmsPlan }) {
       <dl className="space-y-4 text-sm">
         <div>
           <dt className="text-[var(--cortex-text-muted)]">Update Frequency</dt>
-          <dd className="mt-0.5 text-[var(--cortex-text-primary)]">
-            {plan.updateFrequency}
-          </dd>
+          <dd className="mt-0.5 text-[var(--cortex-text-primary)]">{plan.updateFrequency}</dd>
         </div>
 
         <div>
-          <dt className="text-[var(--cortex-text-muted)]">
-            Data Collection Methods
-          </dt>
+          <dt className="text-[var(--cortex-text-muted)]">Data Collection Methods</dt>
           <dd className="mt-1 flex flex-wrap gap-1.5">
             {plan.dataCollectionMethods.map((method) => (
               <span
@@ -265,9 +248,7 @@ function ConfigurationTab({ plan }: { plan: PmsPlan }) {
         {plan.cerVersionId && (
           <div>
             <dt className="text-[var(--cortex-text-muted)]">CER Version</dt>
-            <dd className="mt-0.5 text-[var(--cortex-text-primary)]">
-              {plan.cerVersionId}
-            </dd>
+            <dd className="mt-0.5 text-[var(--cortex-text-primary)]">{plan.cerVersionId}</dd>
           </div>
         )}
 
@@ -312,9 +293,7 @@ function VigilanceTab({ databases }: { databases: VigilanceDatabase[] }) {
             <span
               className={cn(
                 'inline-flex rounded-full px-2 py-0.5 text-xs font-medium',
-                db.enabled
-                  ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-gray-100 text-gray-500',
+                db.enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500',
               )}
             >
               {db.enabled ? 'Enabled' : 'Disabled'}
@@ -342,11 +321,7 @@ function VigilanceTab({ databases }: { databases: VigilanceDatabase[] }) {
 /*  Tab: Responsibilities                                              */
 /* ------------------------------------------------------------------ */
 
-function ResponsibilitiesTab({
-  responsibilities,
-}: {
-  responsibilities: PmsResponsibility[];
-}) {
+function ResponsibilitiesTab({ responsibilities }: { responsibilities: PmsResponsibility[] }) {
   if (responsibilities.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[var(--cortex-border)] p-12">
@@ -359,7 +334,10 @@ function ResponsibilitiesTab({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-[var(--cortex-border)] bg-white shadow-sm" data-testid="responsibilities-panel">
+    <div
+      className="overflow-hidden rounded-lg border border-[var(--cortex-border)] bg-white shadow-sm"
+      data-testid="responsibilities-panel"
+    >
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-[var(--cortex-border)] bg-gray-50">
@@ -379,16 +357,9 @@ function ResponsibilitiesTab({
         </thead>
         <tbody>
           {responsibilities.map((resp) => (
-            <tr
-              key={resp.id}
-              className="border-b border-[var(--cortex-border)] last:border-b-0"
-            >
-              <td className="px-4 py-3 text-[var(--cortex-text-primary)]">
-                {resp.activityType}
-              </td>
-              <td className="px-4 py-3 text-[var(--cortex-text-secondary)]">
-                {resp.role}
-              </td>
+            <tr key={resp.id} className="border-b border-[var(--cortex-border)] last:border-b-0">
+              <td className="px-4 py-3 text-[var(--cortex-text-primary)]">{resp.activityType}</td>
+              <td className="px-4 py-3 text-[var(--cortex-text-secondary)]">{resp.role}</td>
               <td className="px-4 py-3 font-mono text-xs text-[var(--cortex-text-muted)]">
                 {resp.userId}
               </td>

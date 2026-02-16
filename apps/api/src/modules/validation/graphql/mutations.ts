@@ -20,6 +20,7 @@ import { CreateStudyUseCase } from '../application/use-cases/create-study.js';
 import { DefineProtocolUseCase } from '../application/use-cases/define-protocol.js';
 import { AmendProtocolUseCase } from '../application/use-cases/amend-protocol.js';
 import { LinkSoaBenchmarksUseCase } from '../application/use-cases/link-soa-benchmarks.js';
+import { LaunchMiniLiteratureSearchUseCase } from '../application/use-cases/launch-mini-literature-search.js';
 import { ImportXlsUseCase } from '../application/use-cases/import-xls.js';
 import { ManageImportVersionsUseCase } from '../application/use-cases/manage-import-versions.js';
 import { MapResultsUseCase } from '../application/use-cases/map-results.js';
@@ -71,6 +72,27 @@ builder.mutationField('linkSoaBenchmarks', (t) =>
         validationStudyId: args.validationStudyId,
         soaAnalysisId: args.soaAnalysisId,
       }) as any;
+    },
+  }),
+);
+
+builder.mutationField('launchMiniLiteratureSearch', (t) =>
+  t.field({
+    type: 'String',
+    args: {
+      validationStudyId: t.arg.string({ required: true }),
+      searchTerm: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'validation', 'write');
+
+      const useCase = new LaunchMiniLiteratureSearchUseCase(ctx.prisma);
+      const result = await useCase.execute({
+        validationStudyId: args.validationStudyId,
+        searchTerm: args.searchTerm,
+        userId: ctx.user!.id,
+      });
+      return result.slsSessionId;
     },
   }),
 );

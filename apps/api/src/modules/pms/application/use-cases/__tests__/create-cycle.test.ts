@@ -17,11 +17,14 @@ function makePrisma(overrides: Record<string, unknown> = {}): PrismaClient {
         pmsPlanId: 'plan-1',
         status: 'PLANNED',
       }),
+      findMany: vi.fn().mockResolvedValue([]),
     },
     pmsResponsibility: {
-      findMany: vi.fn().mockResolvedValue([
-        { activityType: 'LITERATURE_UPDATE', userId: 'user-2', description: 'Review literature' },
-      ]),
+      findMany: vi
+        .fn()
+        .mockResolvedValue([
+          { activityType: 'LITERATURE_UPDATE', userId: 'user-2', description: 'Review literature' },
+        ]),
     },
     pmcfActivity: {
       create: vi.fn().mockResolvedValue({}),
@@ -111,14 +114,54 @@ describe('CreateCycleUseCase', () => {
     });
     useCase = new CreateCycleUseCase(prisma, mockEventBus as any);
 
-    await expect(useCase.execute(validInput)).rejects.toThrow(
-      'must be APPROVED or ACTIVE',
-    );
+    await expect(useCase.execute(validInput)).rejects.toThrow('must be APPROVED or ACTIVE');
   });
 
   it('throws ValidationError when end date is before start date', async () => {
     await expect(
       useCase.execute({ ...validInput, startDate: '2026-06-01', endDate: '2026-01-01' }),
     ).rejects.toThrow('End date must be after start date');
+  });
+
+  it('throws ValidationError when cycle dates overlap with existing cycle', async () => {
+    prisma = makePrisma({
+      pmsCycle: {
+        create: vi.fn().mockResolvedValue({
+          id: 'cycle-1',
+          pmsPlanId: 'plan-1',
+          status: 'PLANNED',
+        }),
+        findMany: vi.fn().mockResolvedValue([
+          {
+            id: 'existing-cycle',
+            name: 'Existing Cycle Q1',
+            startDate: new Date('2026-01-01'),
+            endDate: new Date('2026-03-31'),
+          },
+        ]),
+      },
+    });
+    useCase = new CreateCycleUseCase(prisma, mockEventBus as any);
+
+    await expect(useCase.execute(validInput)).rejects.toThrow('overlaps with existing cycle');
+  });
+
+  it('allows non-overlapping cycles', async () => {
+    prisma = makePrisma({
+      pmsCycle: {
+        create: vi.fn().mockResolvedValue({
+          id: 'cycle-2',
+          pmsPlanId: 'plan-1',
+          status: 'PLANNED',
+        }),
+        findMany: vi.fn().mockResolvedValue([]), // Non-overlapping: empty array
+      },
+    });
+    useCase = new CreateCycleUseCase(prisma, mockEventBus as any);
+
+    const result = await useCase.execute(validInput);
+
+    expect(result.pmsCycleId).toBeDefined();
+    expect(result.status).toBe('PLANNED');
   });
 });

@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@apollo/client/react';
 import { Plus, Upload, AlertTriangle } from 'lucide-react';
 import { PmsStatusBadge } from './StatusBadge';
 import { GET_COMPLAINTS } from '../graphql/queries';
-import { CREATE_COMPLAINT, UPDATE_COMPLAINT, IMPORT_COMPLAINTS } from '../graphql/mutations';
+import { CREATE_COMPLAINT, IMPORT_COMPLAINTS } from '../graphql/mutations';
 
 interface Complaint {
   id: string;
@@ -59,8 +59,13 @@ export function ComplaintsDashboard({ cycleId }: ComplaintsDashboardProps) {
   const [showImport, setShowImport] = useState(false);
   const [importJson, setImportJson] = useState('');
   const [newComplaint, setNewComplaint] = useState({
-    date: '', reportDate: '', description: '', deviceIdentifier: '',
-    severity: 'LOW', classification: '', isIncident: false,
+    date: '',
+    reportDate: '',
+    description: '',
+    deviceIdentifier: '',
+    severity: 'LOW',
+    classification: '',
+    isIncident: false,
   });
 
   const queryVars: Record<string, string> = { cycleId };
@@ -84,8 +89,13 @@ export function ComplaintsDashboard({ cycleId }: ComplaintsDashboardProps) {
       variables: { pmsCycleId: cycleId, ...newComplaint },
     });
     setNewComplaint({
-      date: '', reportDate: '', description: '', deviceIdentifier: '',
-      severity: 'LOW', classification: '', isIncident: false,
+      date: '',
+      reportDate: '',
+      description: '',
+      deviceIdentifier: '',
+      severity: 'LOW',
+      classification: '',
+      isIncident: false,
     });
     setShowAddForm(false);
   };
@@ -127,19 +137,25 @@ export function ComplaintsDashboard({ cycleId }: ComplaintsDashboardProps) {
       {/* Metrics */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div data-testid="metric-total" className="rounded-lg bg-white p-4 shadow-sm">
-          <p className="text-2xl font-semibold text-[var(--cortex-text-primary)]">{complaints.length}</p>
+          <p className="text-2xl font-semibold text-[var(--cortex-text-primary)]">
+            {complaints.length}
+          </p>
           <p className="text-xs text-[var(--cortex-text-muted)]">Total Complaints</p>
         </div>
         <div data-testid="metric-incidents" className="rounded-lg bg-white p-4 shadow-sm">
           <div className="flex items-center gap-2">
             {totalIncidents > 0 && <AlertTriangle size={16} className="text-red-500" />}
-            <p className="text-2xl font-semibold text-[var(--cortex-text-primary)]">{totalIncidents}</p>
+            <p className="text-2xl font-semibold text-[var(--cortex-text-primary)]">
+              {totalIncidents}
+            </p>
           </div>
           <p className="text-xs text-[var(--cortex-text-muted)]">Incidents</p>
         </div>
         {['HIGH', 'CRITICAL'].map((sev) => (
           <div key={sev} className="rounded-lg bg-white p-4 shadow-sm">
-            <p className="text-2xl font-semibold text-[var(--cortex-text-primary)]">{bySeverity[sev] ?? 0}</p>
+            <p className="text-2xl font-semibold text-[var(--cortex-text-primary)]">
+              {bySeverity[sev] ?? 0}
+            </p>
             <p className="text-xs text-[var(--cortex-text-muted)]">{sev}</p>
           </div>
         ))}
@@ -149,7 +165,10 @@ export function ComplaintsDashboard({ cycleId }: ComplaintsDashboardProps) {
       <div className="flex flex-wrap items-center gap-3">
         <button
           data-testid="add-complaint-btn"
-          onClick={() => { setShowAddForm(!showAddForm); setShowImport(false); }}
+          onClick={() => {
+            setShowAddForm(!showAddForm);
+            setShowImport(false);
+          }}
           className="inline-flex items-center gap-1.5 rounded-md bg-[var(--cortex-blue-500)] px-3 py-1.5 text-sm font-medium text-white hover:bg-[var(--cortex-blue-600)]"
         >
           <Plus size={16} />
@@ -157,7 +176,10 @@ export function ComplaintsDashboard({ cycleId }: ComplaintsDashboardProps) {
         </button>
         <button
           data-testid="import-btn"
-          onClick={() => { setShowImport(!showImport); setShowAddForm(false); }}
+          onClick={() => {
+            setShowImport(!showImport);
+            setShowAddForm(false);
+          }}
           className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-[var(--cortex-text-primary)] hover:bg-gray-50"
         >
           <Upload size={16} />
@@ -171,7 +193,9 @@ export function ComplaintsDashboard({ cycleId }: ComplaintsDashboardProps) {
             className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
           >
             {SEVERITY_OPTIONS.map((s) => (
-              <option key={s} value={s}>{s === 'ALL' ? 'All severities' : s}</option>
+              <option key={s} value={s}>
+                {s === 'ALL' ? 'All severities' : s}
+              </option>
             ))}
           </select>
           <select
@@ -181,7 +205,9 @@ export function ComplaintsDashboard({ cycleId }: ComplaintsDashboardProps) {
             className="rounded-md border border-gray-300 px-3 py-1.5 text-sm"
           >
             {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>{s === 'ALL' ? 'All statuses' : s}</option>
+              <option key={s} value={s}>
+                {s === 'ALL' ? 'All statuses' : s}
+              </option>
             ))}
           </select>
         </div>
@@ -191,42 +217,79 @@ export function ComplaintsDashboard({ cycleId }: ComplaintsDashboardProps) {
       {showAddForm && (
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
           <div className="grid grid-cols-2 gap-3">
-            <input type="date" placeholder="Date" value={newComplaint.date}
+            <input
+              type="date"
+              placeholder="Date"
+              value={newComplaint.date}
               onChange={(e) => setNewComplaint({ ...newComplaint, date: e.target.value })}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm" />
-            <input type="date" placeholder="Report Date" value={newComplaint.reportDate}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+            <input
+              type="date"
+              placeholder="Report Date"
+              value={newComplaint.reportDate}
               onChange={(e) => setNewComplaint({ ...newComplaint, reportDate: e.target.value })}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm" />
-            <input placeholder="Device Identifier" value={newComplaint.deviceIdentifier}
-              onChange={(e) => setNewComplaint({ ...newComplaint, deviceIdentifier: e.target.value })}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm" />
-            <select value={newComplaint.severity}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+            <input
+              placeholder="Device Identifier"
+              value={newComplaint.deviceIdentifier}
+              onChange={(e) =>
+                setNewComplaint({ ...newComplaint, deviceIdentifier: e.target.value })
+              }
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
+            <select
+              value={newComplaint.severity}
               onChange={(e) => setNewComplaint({ ...newComplaint, severity: e.target.value })}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm">
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            >
               {SEVERITY_OPTIONS.filter((s) => s !== 'ALL').map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s} value={s}>
+                  {s}
+                </option>
               ))}
             </select>
-            <input placeholder="Classification" value={newComplaint.classification}
+            <input
+              placeholder="Classification"
+              value={newComplaint.classification}
               onChange={(e) => setNewComplaint({ ...newComplaint, classification: e.target.value })}
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm" />
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            />
             <label className="flex items-center gap-2 text-sm text-[var(--cortex-text-primary)]">
-              <input type="checkbox" checked={newComplaint.isIncident}
-                onChange={(e) => setNewComplaint({ ...newComplaint, isIncident: e.target.checked })} />
+              <input
+                type="checkbox"
+                checked={newComplaint.isIncident}
+                onChange={(e) => setNewComplaint({ ...newComplaint, isIncident: e.target.checked })}
+              />
               Is Incident
             </label>
-            <textarea placeholder="Description" value={newComplaint.description}
+            <textarea
+              placeholder="Description"
+              value={newComplaint.description}
               onChange={(e) => setNewComplaint({ ...newComplaint, description: e.target.value })}
-              className="col-span-2 rounded-md border border-gray-300 px-3 py-2 text-sm" rows={2} />
+              className="col-span-2 rounded-md border border-gray-300 px-3 py-2 text-sm"
+              rows={2}
+            />
           </div>
           <div className="mt-3 flex justify-end gap-2">
-            <button onClick={() => setShowAddForm(false)}
-              className="rounded-md px-3 py-1.5 text-sm text-[var(--cortex-text-secondary)] hover:bg-gray-100">
+            <button
+              onClick={() => setShowAddForm(false)}
+              className="rounded-md px-3 py-1.5 text-sm text-[var(--cortex-text-secondary)] hover:bg-gray-100"
+            >
               Cancel
             </button>
-            <button data-testid="submit-complaint-btn" onClick={handleCreate}
-              disabled={creating || !newComplaint.date || !newComplaint.description || !newComplaint.deviceIdentifier}
-              className="rounded-md bg-[var(--cortex-blue-500)] px-3 py-1.5 text-sm font-medium text-white hover:bg-[var(--cortex-blue-600)] disabled:opacity-50">
+            <button
+              data-testid="submit-complaint-btn"
+              onClick={handleCreate}
+              disabled={
+                creating ||
+                !newComplaint.date ||
+                !newComplaint.description ||
+                !newComplaint.deviceIdentifier
+              }
+              className="rounded-md bg-[var(--cortex-blue-500)] px-3 py-1.5 text-sm font-medium text-white hover:bg-[var(--cortex-blue-600)] disabled:opacity-50"
+            >
               {creating ? 'Creating...' : 'Create'}
             </button>
           </div>
@@ -236,17 +299,27 @@ export function ComplaintsDashboard({ cycleId }: ComplaintsDashboardProps) {
       {/* Import Panel */}
       {showImport && (
         <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-          <textarea data-testid="import-json-input" placeholder="Paste JSON array of complaints..."
-            value={importJson} onChange={(e) => setImportJson(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono" rows={4} />
+          <textarea
+            data-testid="import-json-input"
+            placeholder="Paste JSON array of complaints..."
+            value={importJson}
+            onChange={(e) => setImportJson(e.target.value)}
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-mono"
+            rows={4}
+          />
           <div className="mt-3 flex justify-end gap-2">
-            <button onClick={() => setShowImport(false)}
-              className="rounded-md px-3 py-1.5 text-sm text-[var(--cortex-text-secondary)] hover:bg-gray-100">
+            <button
+              onClick={() => setShowImport(false)}
+              className="rounded-md px-3 py-1.5 text-sm text-[var(--cortex-text-secondary)] hover:bg-gray-100"
+            >
               Cancel
             </button>
-            <button data-testid="submit-import-btn" onClick={handleImport}
+            <button
+              data-testid="submit-import-btn"
+              onClick={handleImport}
               disabled={importing || !importJson.trim()}
-              className="rounded-md bg-[var(--cortex-blue-500)] px-3 py-1.5 text-sm font-medium text-white hover:bg-[var(--cortex-blue-600)] disabled:opacity-50">
+              className="rounded-md bg-[var(--cortex-blue-500)] px-3 py-1.5 text-sm font-medium text-white hover:bg-[var(--cortex-blue-600)] disabled:opacity-50"
+            >
               {importing ? 'Importing...' : 'Import'}
             </button>
           </div>
@@ -255,7 +328,10 @@ export function ComplaintsDashboard({ cycleId }: ComplaintsDashboardProps) {
 
       {/* Complaints Table */}
       {complaints.length === 0 ? (
-        <div data-testid="complaints-empty" className="rounded-lg bg-white p-8 text-center shadow-sm">
+        <div
+          data-testid="complaints-empty"
+          className="rounded-lg bg-white p-8 text-center shadow-sm"
+        >
           <p className="text-sm text-[var(--cortex-text-muted)]">No complaints recorded.</p>
         </div>
       ) : (
@@ -274,8 +350,11 @@ export function ComplaintsDashboard({ cycleId }: ComplaintsDashboardProps) {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {complaints.map((complaint) => (
-                <tr key={complaint.id} data-testid={`complaint-row-${complaint.id}`}
-                  className="hover:bg-gray-50">
+                <tr
+                  key={complaint.id}
+                  data-testid={`complaint-row-${complaint.id}`}
+                  className="hover:bg-gray-50"
+                >
                   <td className="whitespace-nowrap px-4 py-3 text-[var(--cortex-text-primary)]">
                     {formatDate(complaint.date)}
                   </td>
@@ -286,7 +365,9 @@ export function ComplaintsDashboard({ cycleId }: ComplaintsDashboardProps) {
                     {complaint.deviceIdentifier}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${SEVERITY_COLORS[complaint.severity] ?? 'bg-gray-100 text-gray-700'}`}>
+                    <span
+                      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${SEVERITY_COLORS[complaint.severity] ?? 'bg-gray-100 text-gray-700'}`}
+                    >
                       {complaint.severity}
                     </span>
                   </td>
@@ -298,7 +379,11 @@ export function ComplaintsDashboard({ cycleId }: ComplaintsDashboardProps) {
                   </td>
                   <td className="px-4 py-3 text-center">
                     {complaint.isIncident && (
-                      <AlertTriangle size={16} className="inline text-red-500" aria-label="Incident" />
+                      <AlertTriangle
+                        size={16}
+                        className="inline text-red-500"
+                        aria-label="Incident"
+                      />
                     )}
                   </td>
                 </tr>

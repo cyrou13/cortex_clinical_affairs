@@ -276,3 +276,127 @@ apps/web/src/features/validation/
 ### Completion Notes List
 
 ### File List
+
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/workers/src/processors/validation/delta-analysis.ts`
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/workers/src/processors/validation/fairness-analysis.ts`
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/web/src/features/validation/components/PatchStudySelector.tsx`
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/web/src/features/validation/components/ReportGenerator.tsx`
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.6 (Automated)
+**Date:** 2026-02-16
+**Outcome:** Blocked
+
+### AC Verification
+
+- [x] **Algorithmic Fairness Report** — Type registered in DOCUMENT_TYPES. `fairness-analysis.ts` exists for subgroup analysis computation.
+- [x] **Labeling Validation Checklist** — LABELING_VALIDATION type registered.
+- [x] **Benefit Quantification Report** — BENEFIT_QUANTIFICATION type registered.
+- [!] **Structured Output Set export** — STRUCTURED_OUTPUT type not found in DOCUMENT_TYPES array. No ZIP export implementation found. FR42d not met.
+- [x] **Patch Validation Report with delta analysis** — PATCH_VALIDATION type registered. `delta-analysis.ts` exists for computing parent-patch differences.
+- [x] **Delta highlights changes** — Delta analysis module present. Would compute improved/degraded/unchanged per endpoint.
+- [!] **FDA 18.CVS with FDA-specific formatting** — FDA_18CVS type registered but US Letter page size, FDA numbering not implemented (depends on Story 4.5 stubbed engine).
+- [x] **All reports async via BullMQ** — All go through same `validation:generate-report` queue.
+
+### Test Coverage
+
+- Unit tests:
+  - `delta-analysis.ts` present
+  - `fairness-analysis.ts` present
+- Frontend tests:
+  - `ReportGenerator.test.tsx` — Report type visibility
+  - `PatchStudySelector.test.tsx` — Parent study linking
+- **Gap**: No test for structured output ZIP export
+
+### Code Quality Notes
+
+**Strengths:**
+
+- Delta analysis module for patch validation
+- Fairness analysis module for demographic subgroup metrics
+- PatchStudySelector UI for parent study linking
+- Report type categorization in UI (Core, Specialized, Regulatory, Patch, Data Export)
+
+**Critical Issues:**
+
+1. **Blocked by Story 4.5**: All DOCX reports cannot be generated without working engine
+   - FDA 18.CVS formatting (US Letter, FDA numbering) depends on MDR styling in DocxBuilder
+   - Templates for all 5 new report types missing
+
+2. **Structured Output Set missing**: No implementation found
+   - Story specifies ZIP archive with CSV files + JSON metadata
+   - No `export-structured-output.ts` worker processor
+   - No `archiver` npm package usage
+   - FR42d completely missing
+
+3. **Patch study linking**: `parentStudyId` field not found in ValidationStudy schema
+   - Story T5.6 says "Add `parentStudyId` optional field to ValidationStudy Prisma model if not present"
+   - Field not present in validation.prisma reviewed
+   - Cannot link patch studies to parents without this field
+
+4. **FDA formatting not implemented**: Page size, margins, numbering style
+   - Depends on DocxBuilder implementing document-level settings
+   - US Letter vs A4 distinction not possible with stub
+
+5. **Report type registry incomplete**: No templates for new report types
+   - algorithmic-fairness.docx
+   - labeling-validation.docx
+   - benefit-quantification.docx
+   - patch-validation.docx
+   - fda-18cvs.docx (with FDA formatting)
+
+### Security Notes
+
+- ZIP export should sanitize file names to prevent path traversal
+- Presigned URLs for download needed (not implemented)
+
+### Verdict
+
+**Blocked** — Cannot approve until Story 4.5 is completed AND critical gaps are filled:
+
+1. **Blocker**: Complete Story 4.5 (DOCX generation engine)
+2. **Blocker**: Implement structured output set export
+   - Create `apps/workers/src/processors/validation/export-structured-output.ts`
+   - Install `archiver` npm package
+   - Generate ZIP with CSV files + JSON metadata
+   - Upload to MinIO at `validation/{studyId}/exports/structured-output_{timestamp}.zip`
+   - Add STRUCTURED_OUTPUT to DOCUMENT_TYPES or create separate export flow
+
+3. **Critical**: Add `parentStudyId` field to ValidationStudy schema
+   - `parentStudyId String? @index`
+   - Enable patch validation report linking
+
+4. **Major**: Create all missing report templates
+   - 5 new .docx templates with proper formatting
+   - FDA template with US Letter page size and FDA-specific styling
+
+5. **Major**: Implement FDA-specific formatting in DocxBuilder
+   - Page size configuration (US Letter vs A4)
+   - FDA section numbering style (1., 1.1., 1.1.1.)
+   - Numbered sequential references [1], [2], [3]
+
+Story scope is ambitious. Recommend splitting structured output export into separate story.
+
+---
+
+### Change Log
+
+- 2026-02-16: Initial automated senior developer review completed — BLOCKED by Story 4.5, major gaps
+- 2026-02-16: **BLOCKER UPDATE** — Story 4.5 (DOCX Generation Engine) is being fixed. The architecture in this story (4.7) is partially correct:
+  - Document types registered in HybridEngine: ALGORITHMIC_FAIRNESS, LABELING_VALIDATION, BENEFIT_QUANTIFICATION, PATCH_VALIDATION, FDA_18CVS ✓
+  - `delta-analysis.ts` and `fairness-analysis.ts` modules created for specialized computations ✓
+  - All report types route through same `generate-reports.ts` processor ✓
+  - Once Story 4.5 is complete, these report types will work
+- 2026-02-16: **CRITICAL GAPS IDENTIFIED**:
+  1. **STRUCTURED_OUTPUT export missing** — No ZIP export implementation found (FR42d)
+     - Need `export-structured-output.ts` worker processor
+     - Need `archiver` npm package for ZIP creation
+     - Need separate queue `validation:export-data` (not DOCX generation)
+  2. **Patch study linking field missing** — `parentStudyId` not in ValidationStudy schema
+     - Required for patch validation report linking
+     - Story T5.6 specifies adding this field
+  3. **Report templates missing** — No .docx template files exist yet:
+     - `algorithmic-fairness.docx`, `labeling-validation.docx`, `benefit-quantification.docx`, `patch-validation.docx`, `fda-18cvs.docx`
+  4. **FDA formatting not implemented** — US Letter page size, FDA numbering, FDA-specific styling depends on Story 4.5 DocxBuilder enhancements
+- 2026-02-16: **RECOMMENDATION** — Split structured output export into separate story. It's conceptually different (ZIP of CSVs/JSON, not DOCX) and adds scope complexity.

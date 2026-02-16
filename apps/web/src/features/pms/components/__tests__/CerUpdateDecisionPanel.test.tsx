@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 
 vi.mock('@apollo/client', () => ({
   gql: (str: TemplateStringsArray) => str[0],
@@ -19,7 +19,9 @@ vi.mock('lucide-react', () => ({
 }));
 
 vi.mock('../StatusBadge', () => ({
-  PmsStatusBadge: ({ status }: { status: string }) => <span data-testid="status-badge">{status}</span>,
+  PmsStatusBadge: ({ status }: { status: string }) => (
+    <span data-testid="status-badge">{status}</span>
+  ),
 }));
 
 vi.mock('../../../shared/utils/cn', () => ({
@@ -51,10 +53,7 @@ describe('CerUpdateDecisionPanel', () => {
     vi.clearAllMocks();
   });
 
-  function setupMocks(overrides?: {
-    loading?: boolean;
-    decision?: typeof mockDecision | null;
-  }) {
+  function setupMocks(overrides?: { loading?: boolean; decision?: typeof mockDecision | null }) {
     const { loading = false, decision = mockDecision } = overrides ?? {};
 
     mockUseQuery.mockReturnValueOnce({

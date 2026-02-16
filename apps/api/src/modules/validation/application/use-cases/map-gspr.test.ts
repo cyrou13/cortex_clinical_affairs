@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MapGsprUseCase, type GsprComplianceStatus } from './map-gspr.js';
+import { MapGsprUseCase } from './map-gspr.js';
 
 const STUDY_ID = 'study-1';
 const USER_ID = 'user-1';
@@ -12,18 +12,20 @@ function makePrisma(overrides?: {
 }) {
   return {
     validationStudy: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.study !== undefined
-          ? overrides.study
-          : { id: STUDY_ID, status: 'IN_PROGRESS' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.study !== undefined
+            ? overrides.study
+            : { id: STUDY_ID, status: 'IN_PROGRESS' },
+        ),
     },
     gsprMapping: {
-      findFirst: vi.fn().mockResolvedValue(
-        overrides?.existingMapping !== undefined
-          ? overrides.existingMapping
-          : null,
-      ),
+      findFirst: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.existingMapping !== undefined ? overrides.existingMapping : null,
+        ),
       create: vi.fn().mockResolvedValue({
         id: MAPPING_ID,
         validationStudyId: STUDY_ID,

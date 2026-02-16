@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 /**
  * Epic 3 - SOA (State of the Art) Integration Tests
  *
@@ -265,7 +266,7 @@ describe('Epic 3 - SOA Module', () => {
     // The use-case has a known issue: ThematicSection model lacks updatedAt column.
     // Accept either a success or a graceful error.
     if (updateResult.errors) {
-      expect(updateResult.errors[0].message).toContain('Unknown argument');
+      expect(updateResult.errors[0]!.message).toContain('Unknown argument');
     } else {
       expect(updateResult.data?.updateSectionContent.sectionId).toBe(thematicSectionId);
     }
@@ -435,7 +436,7 @@ describe('Epic 3 - SOA Module', () => {
     // thematicSection relation that is not defined on the Claim Prisma model.
     // Accept either a success or a graceful error.
     if (result.errors) {
-      expect(result.errors[0].message).toContain('thematicSection');
+      expect(result.errors[0]!.message).toContain('thematicSection');
     } else {
       expect(result.data?.claims).toHaveLength(1);
       expect(result.data!.claims[0].soaAnalysisId).toBe(soaAnalysisId);

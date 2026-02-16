@@ -31,6 +31,13 @@ enum DataContributionLevel {
   BACKGROUND
 }
 
+enum ConfidenceLevel {
+  UNSCORED
+  LOW
+  MEDIUM
+  HIGH
+}
+
 // --- Model 1: SoaAnalysis (root aggregate) ---
 
 model SoaAnalysis {
@@ -82,6 +89,7 @@ model ThematicSection {
   orderIndex       Int
   status           ThematicSectionStatus @default(DRAFT)
   narrativeContent Json?
+  narrativeAiDraft Json?
   updatedById      String?
 
   soaAnalysis SoaAnalysis @relation(fields: [soaAnalysisId], references: [id])
@@ -193,21 +201,28 @@ model GridColumn {
 // --- Model 10: GridCell ---
 
 model GridCell {
-  id               String                   @id @default(uuid())
-  extractionGridId String
-  articleId        String
-  gridColumnId     String
-  value            String?
-  validationStatus GridCellValidationStatus @default(PENDING)
-  validatedById    String?
-  validatedAt      DateTime?
-  createdAt        DateTime                 @default(now())
+  id                String                   @id @default(uuid())
+  extractionGridId  String
+  articleId         String
+  gridColumnId      String
+  value             String?
+  aiExtractedValue  String?
+  confidenceLevel   ConfidenceLevel?
+  confidenceScore   Int?
+  sourceQuote       String?
+  sourcePageNumber  Int?
+  pdfLocationData   Json?
+  validationStatus  GridCellValidationStatus @default(PENDING)
+  validatedById     String?
+  validatedAt       DateTime?
+  createdAt         DateTime                 @default(now())
 
   extractionGrid ExtractionGrid @relation(fields: [extractionGridId], references: [id])
   gridColumn     GridColumn     @relation(fields: [gridColumnId], references: [id])
 
   @@index([extractionGridId])
   @@index([gridColumnId])
+  @@index([confidenceLevel])
 }
 
 // --- Model 11: QualityAssessment ---

@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 /**
  * Epics 4, 5, 6 - Validation, CER, PMS Integration Tests
  *

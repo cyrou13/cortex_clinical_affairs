@@ -162,4 +162,70 @@ describe('ManageDeviceRegistryUseCase', () => {
       }),
     );
   });
+
+  it('aggregates benchmarks with correct statistics', async () => {
+    const devices = [
+      {
+        id: 'dev-1',
+        benchmarks: [
+          { metricName: 'Sensitivity', metricValue: '90', unit: '%' },
+          { metricName: 'Specificity', metricValue: '85', unit: '%' },
+        ],
+      },
+      {
+        id: 'dev-2',
+        benchmarks: [
+          { metricName: 'Sensitivity', metricValue: '95', unit: '%' },
+          { metricName: 'Specificity', metricValue: '88', unit: '%' },
+        ],
+      },
+      {
+        id: 'dev-3',
+        benchmarks: [{ metricName: 'Sensitivity', metricValue: '92', unit: '%' }],
+      },
+    ];
+
+    const prisma = makePrisma({ devices });
+    const useCase = new ManageDeviceRegistryUseCase(prisma);
+
+    const result = await useCase.aggregateBenchmarks(SOA_ID);
+
+    // Find the Sensitivity metric
+    const sensitivityMetric = result.find((m) => m.metricName === 'Sensitivity');
+    expect(sensitivityMetric).toBeDefined();
+    expect(sensitivityMetric!.min).toBe(90);
+    expect(sensitivityMetric!.max).toBe(95);
+    expect(sensitivityMetric!.mean).toBeCloseTo(92.33, 2);
+    expect(sensitivityMetric!.median).toBe(92);
+    expect(sensitivityMetric!.range).toBe(5);
+    expect(sensitivityMetric!.deviceCount).toBe(3);
+
+    // Find the Specificity metric
+    const specificityMetric = result.find((m) => m.metricName === 'Specificity');
+    expect(specificityMetric).toBeDefined();
+    expect(specificityMetric!.min).toBe(85);
+    expect(specificityMetric!.max).toBe(88);
+    expect(specificityMetric!.deviceCount).toBe(2);
+  });
+
+  it('returns empty array when no benchmarks exist', async () => {
+    const devices = [
+      { id: 'dev-1', benchmarks: [] },
+      { id: 'dev-2', benchmarks: [] },
+    ];
+
+    const prisma = makePrisma({ devices });
+    const useCase = new ManageDeviceRegistryUseCase(prisma);
+
+    const result = await useCase.aggregateBenchmarks(SOA_ID);
+
+    expect(result).toEqual([]);
+  });
+
+  it('throws NotFoundError when SOA not found for aggregateBenchmarks', async () => {
+    const prisma = makePrisma({ soa: null });
+    const useCase = new ManageDeviceRegistryUseCase(prisma);
+
+    await expect(useCase.aggregateBenchmarks('missing')).rejects.toThrow('not found');
+  });
 });

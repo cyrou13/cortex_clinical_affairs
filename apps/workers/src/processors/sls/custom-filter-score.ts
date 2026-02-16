@@ -1,7 +1,8 @@
 import type { Job } from 'bullmq';
 import { PrismaClient } from '@prisma/client';
-import { BaseProcessor, type TaskJobData } from '../../shared/base-processor.js';
-import { LlmService, type LlmResponse } from '../../shared/llm/index.js';
+import type { TaskJobData } from '../../shared/base-processor.js';
+import { BaseProcessor } from '../../shared/base-processor.js';
+import type { LlmService, LlmResponse } from '../../shared/llm/index.js';
 
 interface CustomFilterScoreMetadata {
   sessionId: string;
@@ -81,21 +82,23 @@ export class CustomFilterScoreProcessor extends BaseProcessor {
       const batch = articles.slice(i, i + BATCH_SIZE);
 
       // Score each article in the batch
-      const scorePromises = batch.map(async (article: { id: string; title: string; abstract: string | null }) => {
-        try {
-          const score = await this.scoreArticle(article, criterion);
-          await (prisma as any).article.update({
-            where: { id: article.id },
-            data: { customFilterScore: score },
-          });
-        } catch {
-          // If scoring fails for an article, set score to null and continue
-          await (prisma as any).article.update({
-            where: { id: article.id },
-            data: { customFilterScore: null },
-          });
-        }
-      });
+      const scorePromises = batch.map(
+        async (article: { id: string; title: string; abstract: string | null }) => {
+          try {
+            const score = await this.scoreArticle(article, criterion);
+            await (prisma as any).article.update({
+              where: { id: article.id },
+              data: { customFilterScore: score },
+            });
+          } catch {
+            // If scoring fails for an article, set score to null and continue
+            await (prisma as any).article.update({
+              where: { id: article.id },
+              data: { customFilterScore: null },
+            });
+          }
+        },
+      );
 
       await Promise.all(scorePromises);
 
@@ -139,15 +142,11 @@ Rate how well this article matches the criterion on a scale of 0-100, where:
 
 Respond with ONLY a JSON object in this format: {"score": <number>}`;
 
-    const response: LlmResponse = await this.llmService.complete(
-      'scoring',
-      prompt,
-      {
-        temperature: 0.1,
-        maxTokens: 50,
-        responseFormat: 'json',
-      },
-    );
+    const response: LlmResponse = await this.llmService.complete('scoring', prompt, {
+      temperature: 0.1,
+      maxTokens: 50,
+      responseFormat: 'json',
+    });
 
     try {
       const parsed = JSON.parse(response.content);

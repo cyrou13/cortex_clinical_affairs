@@ -44,9 +44,7 @@ describe('PmsStatusBadge', () => {
   });
 
   it('applies custom className prop', () => {
-    const { container } = render(
-      <PmsStatusBadge status="DRAFT" className="custom-class" />
-    );
+    render(<PmsStatusBadge status="DRAFT" className="custom-class" />);
     const badge = screen.getByTestId('status-badge');
     expect(badge.className).toContain('custom-class');
   });

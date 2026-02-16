@@ -27,6 +27,17 @@ interface AssessQualityResult {
   dataContributionLevel: DataContributionLevel;
 }
 
+interface QualitySummary {
+  totalAssessments: number;
+  quadas2Count: number;
+  readingGridCount: number;
+  contributionLevels: {
+    pivotal: number;
+    supportive: number;
+    background: number;
+  };
+}
+
 export class AssessQualityUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -95,5 +106,53 @@ export class AssessQualityUseCase {
       assessmentType: input.assessmentType as AssessmentType,
       dataContributionLevel: input.dataContributionLevel as DataContributionLevel,
     };
+  }
+
+  async getCombinedSummary(soaAnalysisId: string): Promise<QualitySummary> {
+    const soaAnalysis = await this.prisma.soaAnalysis.findUnique({
+      where: { id: soaAnalysisId },
+      select: { id: true },
+    });
+
+    if (!soaAnalysis) {
+      throw new NotFoundError('SoaAnalysis', soaAnalysisId);
+    }
+
+    const assessments = await this.prisma.qualityAssessment.findMany({
+      where: { soaAnalysisId },
+      select: {
+        assessmentType: true,
+        dataContributionLevel: true,
+      },
+    });
+
+    const summary: QualitySummary = {
+      totalAssessments: assessments.length,
+      quadas2Count: 0,
+      readingGridCount: 0,
+      contributionLevels: {
+        pivotal: 0,
+        supportive: 0,
+        background: 0,
+      },
+    };
+
+    for (const assessment of assessments) {
+      if (assessment.assessmentType === 'QUADAS_2') {
+        summary.quadas2Count++;
+      } else if (assessment.assessmentType === 'INTERNAL_READING_GRID') {
+        summary.readingGridCount++;
+      }
+
+      if (assessment.dataContributionLevel === 'PIVOTAL') {
+        summary.contributionLevels.pivotal++;
+      } else if (assessment.dataContributionLevel === 'SUPPORTIVE') {
+        summary.contributionLevels.supportive++;
+      } else if (assessment.dataContributionLevel === 'BACKGROUND') {
+        summary.contributionLevels.background++;
+      }
+    }
+
+    return summary;
   }
 }

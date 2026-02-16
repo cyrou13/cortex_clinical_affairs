@@ -1,14 +1,11 @@
 import type { Job } from 'bullmq';
 import type { PrismaClient } from '@prisma/client';
-import { BaseProcessor, type TaskJobData } from '../../shared/base-processor.js';
-import { LlmService } from '../../shared/llm/index.js';
-import {
-  buildScoringPrompt,
-  parseScoringResponse,
-  type ScoringArticle,
-  type ScoringContext,
-  type ExclusionCodeEntry,
-} from './scoring-prompt.js';
+import type { Redis } from 'ioredis';
+import type { TaskJobData } from '../../shared/base-processor.js';
+import { BaseProcessor } from '../../shared/base-processor.js';
+import type { LlmService } from '../../shared/llm/index.js';
+import type { ScoringArticle, ScoringContext, ExclusionCodeEntry } from './scoring-prompt.js';
+import { buildScoringPrompt, parseScoringResponse } from './scoring-prompt.js';
 
 const BATCH_SIZE = 10;
 
@@ -27,11 +24,7 @@ export class ScoreArticlesProcessor extends BaseProcessor {
   private llmService: LlmService;
   private prisma: PrismaClient;
 
-  constructor(
-    redis: import('ioredis').Redis,
-    llmService?: LlmService,
-    prisma?: PrismaClient,
-  ) {
+  constructor(redis: Redis, llmService?: LlmService, prisma?: PrismaClient) {
     super(redis);
     // Allow injection for testing; real usage will set these externally or via factory
     this.llmService = llmService!;
@@ -111,15 +104,11 @@ export class ScoreArticlesProcessor extends BaseProcessor {
       const batchStart = batchIndex * BATCH_SIZE;
       const batchArticles: ScoringArticle[] = articles.slice(batchStart, batchStart + BATCH_SIZE);
 
-      await this.reportProgress(
-        job,
-        Math.round((processedCount / totalArticles) * 100),
-        {
-          total: totalArticles,
-          current: processedCount,
-          message: `Scoring batch ${batchIndex + 1}/${totalBatches} (${batchArticles.length} articles)`,
-        },
-      );
+      await this.reportProgress(job, Math.round((processedCount / totalArticles) * 100), {
+        total: totalArticles,
+        current: processedCount,
+        message: `Scoring batch ${batchIndex + 1}/${totalBatches} (${batchArticles.length} articles)`,
+      });
 
       try {
         // Build prompt for this batch
@@ -164,15 +153,11 @@ export class ScoreArticlesProcessor extends BaseProcessor {
       } catch (err) {
         // Log error but continue with next batch
         const errorMessage = err instanceof Error ? err.message : String(err);
-        await this.reportProgress(
-          job,
-          Math.round((processedCount / totalArticles) * 100),
-          {
-            total: totalArticles,
-            current: processedCount,
-            message: `Error in batch ${batchIndex + 1}: ${errorMessage}. Continuing...`,
-          },
-        );
+        await this.reportProgress(job, Math.round((processedCount / totalArticles) * 100), {
+          total: totalArticles,
+          current: processedCount,
+          message: `Error in batch ${batchIndex + 1}: ${errorMessage}. Continuing...`,
+        });
         // Mark batch articles as failed - skip them but count them
         processedCount += batchArticles.length;
       }
@@ -194,9 +179,6 @@ export class ScoreArticlesProcessor extends BaseProcessor {
       totalArticles,
     });
 
-    await this.redis.publish(
-      `task:progress:${job.data.createdBy}`,
-      completionEvent,
-    );
+    await this.redis.publish(`task:progress:${job.data.createdBy}`, completionEvent);
   }
 }

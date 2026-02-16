@@ -2,7 +2,8 @@
   "extends": "@cortex/config-typescript/node.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "types": ["vitest/globals"]
   },
   "include": ["src"]
 }

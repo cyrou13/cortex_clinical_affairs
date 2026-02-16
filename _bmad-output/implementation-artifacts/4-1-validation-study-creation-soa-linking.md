@@ -257,3 +257,83 @@ packages/prisma/schema/validation.prisma
 ### Completion Notes List
 
 ### File List
+
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/packages/prisma/schema/validation.prisma`
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/api/src/modules/validation/domain/entities/validation-study.ts`
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/api/src/modules/validation/domain/value-objects/study-type.ts`
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/api/src/modules/validation/application/use-cases/create-study.ts`
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/api/src/modules/validation/graphql/types.ts`
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/web/src/features/validation/components/StudyConfigurator.tsx`
+- `/Users/cyril/Documents/dev/cortex-clinical-affairs/apps/web/src/features/validation/components/ValidationDashboard.tsx`
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.6 (Automated)
+**Date:** 2026-02-16
+**Outcome:** Changes Requested
+
+### AC Verification
+
+- [x] **Study type selection (STANDALONE, MRMC)** — Implemented in `study-type.ts` with proper enum validation. `StudyConfigurator.tsx` provides UI selector.
+- [x] **SOA linking with auto-imported benchmarks** — `create-study.ts` validates SOA is LOCKED and calls `LinkSoaBenchmarksUseCase` to auto-import benchmarks. Creates `AcceptanceCriterion` records.
+- [!] **Mini literature search for MRMC studies** — Schema includes `MiniLiteratureSearch` reference but no use case implementation found for launching SLS sessions. Frontend UI for "Launch Mini Literature Search" not verified in components.
+- [x] **Prisma schema for Validation entities** — `validation.prisma` defines all required models: `ValidationStudy`, `Protocol`, `ProtocolAmendment`, `DataImport`, `AcceptanceCriterion`, `GsprMapping`, `ResultsMapping`, `ValidationResult`. Proper indexes on `projectId`, `status`.
+- [x] **Validation module dashboard** — `ValidationDashboard.tsx` displays study status with linked SOA benchmarks.
+- [x] **Upstream dependency check** — `create-study.ts` line 46-57 validates SOA exists and status is LOCKED, throws proper error if not.
+
+### Test Coverage
+
+- Unit tests present for:
+  - `validation-study.test.ts` — Entity business logic
+  - `study-type.test.ts` — Value object validation
+  - `create-study.test.ts` — Use case with SOA lock check
+- Frontend tests:
+  - `StudyConfigurator.test.tsx` — Component rendering
+  - `ValidationDashboard.test.tsx` — Dashboard display
+- **Test count**: 22 validation test files found
+- **Gap**: No integration test for mini literature search linking (FR35a, FR35b)
+
+### Code Quality Notes
+
+**Strengths:**
+
+- Excellent DDD structure: entities, value objects, use cases properly separated
+- Proper error handling with typed errors (`NotFoundError`, `ValidationError`)
+- UUID v7 generation using `crypto.randomUUID()`
+- Clean separation between domain logic and infrastructure
+- GraphQL types follow Pothos pattern correctly with `objectRef` + `objectType`
+- All `.ts` imports use `.js` extension (NodeNext module resolution)
+
+**Issues:**
+
+1. **Prisma schema deviation**: AC specifies `status` enum should be `DRAFT, IN_PROGRESS, LOCKED` but implementation only has `DRAFT, LOCKED` (missing `IN_PROGRESS`)
+2. **Mini SLS linking incomplete**: No mutation or use case found for `launchMiniLiteratureSearch` despite being in AC and tasks
+3. **MiniLiteratureSearch model**: Schema mentions it but model not defined in `validation.prisma`
+
+### Security Notes
+
+- Proper RBAC enforcement expected at GraphQL resolver level (mentioned in dev notes)
+- User IDs properly tracked in `createdById` fields
+- No SQL injection risk (using Prisma ORM)
+- Upstream validation prevents creating studies with unlocked SOA (good security boundary)
+
+### Verdict
+
+**Changes Requested** — Core functionality is solid but AC gaps exist:
+
+1. **Critical**: Implement mini literature search linking for MRMC studies (FR35a, FR35b)
+   - Add `launchMiniLiteratureSearch` mutation in GraphQL layer
+   - Create use case to link SLS session with validation study
+   - Add `MiniLiteratureSearch` model to Prisma schema or document cross-reference pattern
+
+2. **Medium**: Fix Prisma status enum to include `IN_PROGRESS` state as per AC
+
+3. **Minor**: Add integration test for end-to-end study creation with SOA benchmark import
+
+Once these gaps are addressed, approve for production.
+
+---
+
+### Change Log
+
+- 2026-02-16: Initial automated senior developer review completed

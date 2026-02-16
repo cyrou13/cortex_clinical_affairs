@@ -7,18 +7,20 @@ function makePrisma(overrides?: {
 }) {
   return {
     extractionGrid: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.grid !== undefined
-          ? overrides.grid
-          : { id: 'grid-1', soaAnalysis: { status: 'IN_PROGRESS' } },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.grid !== undefined
+            ? overrides.grid
+            : { id: 'grid-1', soaAnalysis: { status: 'IN_PROGRESS' } },
+        ),
     },
     gridCell: {
-      findFirst: vi.fn().mockResolvedValue(
-        overrides?.cell !== undefined
-          ? overrides.cell
-          : { id: 'cell-1', value: null },
-      ),
+      findFirst: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.cell !== undefined ? overrides.cell : { id: 'cell-1', value: null },
+        ),
       update: vi.fn().mockResolvedValue({ id: 'cell-1', value: 'new value' }),
     },
   } as any;
@@ -96,7 +98,7 @@ describe('UpdateCellUseCase', () => {
     const prisma = makePrisma();
     const useCase = new UpdateCellUseCase(prisma);
 
-    const result = await useCase.execute({
+    const _result = await useCase.execute({
       gridId: 'grid-1',
       articleId: 'art-1',
       columnId: 'col-1',
