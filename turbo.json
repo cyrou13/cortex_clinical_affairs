@@ -16,6 +16,10 @@
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", "e2e/**"]
     },
+    "test:integration": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "src/test/integration/**"]
+    },
     "check-types": {
       "dependsOn": ["^check-types"]
     },
