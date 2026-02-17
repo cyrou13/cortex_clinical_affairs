@@ -146,7 +146,9 @@ describe('SessionCreateForm', () => {
 
   it('calls createSession mutation on valid submit', async () => {
     mockCreateSession.mockResolvedValue({
-      data: { createSlsSession: { id: 'new-sess-1', name: 'Test', type: 'AD_HOC', status: 'DRAFT' } },
+      data: {
+        createSlsSession: { id: 'new-sess-1', name: 'Test', type: 'AD_HOC', status: 'DRAFT' },
+      },
     });
 
     render(<SessionCreateForm {...defaultProps} />);
@@ -170,12 +172,10 @@ describe('SessionCreateForm', () => {
 
     expect(mockCreateSession).toHaveBeenCalledWith({
       variables: {
-        input: {
-          projectId: 'proj-1',
-          name: 'Test Session',
-          type: 'AD_HOC',
-          scopeFields: {},
-        },
+        projectId: 'proj-1',
+        name: 'Test Session',
+        type: 'AD_HOC',
+        scopeFields: undefined,
       },
     });
   });
@@ -183,7 +183,9 @@ describe('SessionCreateForm', () => {
   it('calls onCreated with session id after successful creation', async () => {
     const onCreated = vi.fn();
     mockCreateSession.mockResolvedValue({
-      data: { createSlsSession: { id: 'new-sess-1', name: 'Test', type: 'AD_HOC', status: 'DRAFT' } },
+      data: {
+        createSlsSession: { id: 'new-sess-1', name: 'Test', type: 'AD_HOC', status: 'DRAFT' },
+      },
     });
 
     render(<SessionCreateForm {...defaultProps} onCreated={onCreated} />);
