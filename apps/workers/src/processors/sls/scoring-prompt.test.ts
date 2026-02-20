@@ -10,8 +10,12 @@ import {
 const makeArticle = (overrides?: Partial<ScoringArticle>): ScoringArticle => ({
   id: 'article-1',
   title: 'Efficacy of spinal fusion for degenerative disc disease',
-  abstract: 'This study evaluated outcomes of lumbar spinal fusion in 200 patients with degenerative disc disease.',
-  authors: [{ lastName: 'Smith', firstName: 'John' }, { lastName: 'Doe', firstName: 'Jane' }],
+  abstract:
+    'This study evaluated outcomes of lumbar spinal fusion in 200 patients with degenerative disc disease.',
+  authors: [
+    { lastName: 'Smith', firstName: 'John' },
+    { lastName: 'Doe', firstName: 'Jane' },
+  ],
   journal: 'Journal of Spine Surgery',
   publicationDate: new Date('2023-06-15'),
   ...overrides,
@@ -238,7 +242,8 @@ describe('parseScoringResponse', () => {
   });
 
   it('handles markdown code fences', () => {
-    const response = '```json\n[{"articleId":"a1","relevanceScore":0.5,"aiCategory":"uncertain","aiExclusionCode":null,"aiReasoning":"Needs review."}]\n```';
+    const response =
+      '```json\n[{"articleId":"a1","relevanceScore":0.5,"aiCategory":"uncertain","aiExclusionCode":null,"aiReasoning":"Needs review."}]\n```';
 
     const results = parseScoringResponse(response);
 
@@ -248,7 +253,8 @@ describe('parseScoringResponse', () => {
   });
 
   it('handles code fences without json language tag', () => {
-    const response = '```\n[{"articleId":"a1","relevanceScore":0.5,"aiCategory":"uncertain","aiExclusionCode":null,"aiReasoning":"Needs review."}]\n```';
+    const response =
+      '```\n[{"articleId":"a1","relevanceScore":0.5,"aiCategory":"uncertain","aiExclusionCode":null,"aiReasoning":"Needs review."}]\n```';
 
     const results = parseScoringResponse(response);
 
@@ -256,9 +262,9 @@ describe('parseScoringResponse', () => {
   });
 
   it('throws on non-array response', () => {
-    const response = JSON.stringify({ articleId: 'a1' });
+    const response = JSON.stringify({ foo: 'bar' });
 
-    expect(() => parseScoringResponse(response)).toThrow('Expected JSON array');
+    expect(() => parseScoringResponse(response)).toThrow('Unexpected JSON structure');
   });
 
   it('throws on missing articleId', () => {
@@ -279,7 +285,12 @@ describe('parseScoringResponse', () => {
 
   it('throws on negative relevanceScore', () => {
     const response = JSON.stringify([
-      { articleId: 'a1', relevanceScore: -0.1, aiCategory: 'likely_irrelevant', aiReasoning: 'test' },
+      {
+        articleId: 'a1',
+        relevanceScore: -0.1,
+        aiCategory: 'likely_irrelevant',
+        aiReasoning: 'test',
+      },
     ]);
 
     expect(() => parseScoringResponse(response)).toThrow('Invalid relevanceScore');
@@ -308,7 +319,13 @@ describe('parseScoringResponse', () => {
 
   it('coerces aiExclusionCode to string', () => {
     const response = JSON.stringify([
-      { articleId: 'a1', relevanceScore: 0.2, aiCategory: 'likely_irrelevant', aiExclusionCode: 3, aiReasoning: 'test' },
+      {
+        articleId: 'a1',
+        relevanceScore: 0.2,
+        aiCategory: 'likely_irrelevant',
+        aiExclusionCode: 3,
+        aiReasoning: 'test',
+      },
     ]);
 
     const results = parseScoringResponse(response);

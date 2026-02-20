@@ -1,4 +1,6 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, type MouseEvent, useState, useEffect, useCallback, useMemo } from 'react';
+import { useQuery } from '@apollo/client/react';
+import { gql } from '@apollo/client';
 import {
   LayoutDashboard,
   Search,
@@ -8,35 +10,161 @@ import {
   Activity,
   Users,
   Settings,
+  HelpCircle,
   PanelLeftClose,
   PanelLeft,
+  ArrowLeft,
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useSidebarStore } from '../../stores/sidebar-store';
 import { useBreakpoint } from '../hooks/use-breakpoint';
 import { PipelineProgressBar } from '../components/PipelineProgressBar';
+import { Breadcrumb, type BreadcrumbItem } from '../components/Breadcrumb';
+import { navigate } from '../../router';
 
-const navItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, href: '/projects' },
-  { id: 'sls', label: 'SLS', icon: Search, href: '/sls' },
-  { id: 'soa', label: 'SOA', icon: BarChart3, href: '/soa' },
-  { id: 'validation', label: 'Validation', icon: FlaskConical, href: '/validation' },
-  { id: 'cer', label: 'CER', icon: FileText, href: '/cer' },
-  { id: 'pms', label: 'PMS', icon: Activity, href: '/pms' },
-];
+const PROJECT_NAME_QUERY = gql`
+  query ProjectNameForBreadcrumb($id: String!) {
+    projectDashboard(id: $id) {
+      name
+      deviceName
+    }
+  }
+`;
 
 const adminItems = [
   { id: 'users', label: 'Users', icon: Users, href: '/admin/users' },
   { id: 'settings', label: 'Settings', icon: Settings, href: '/admin/settings' },
+  { id: 'help', label: 'Help', icon: HelpCircle, href: '/help' },
 ];
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
+function extractProjectId(path: string): string | null {
+  const match = path.match(/^\/projects\/([^/]+)/);
+  return match?.[1] ?? null;
+}
+
+function deriveActiveModule(path: string, projectId: string | null): string | null {
+  if (!projectId) return path.startsWith('/projects') ? 'dashboard' : null;
+  if (path.includes('/sls-sessions')) return 'sls';
+  if (path.includes('/soa')) return 'soa';
+  if (path.includes('/validation')) return 'validation';
+  if (path.includes('/cer')) return 'cer';
+  if (path.includes('/pms')) return 'pms';
+  return 'project';
+}
+
+function getModuleLabel(path: string): string | null {
+  if (path.includes('/sls-sessions')) return 'SLS';
+  if (path.includes('/soa')) return 'SOA';
+  if (path.includes('/validation')) return 'Validation';
+  if (path.includes('/cer')) return 'CER';
+  if (path.includes('/pms')) return 'PMS';
+  return null;
+}
+
+function getAdminPageLabel(path: string): string | null {
+  if (path.includes('/admin/users')) return 'Users';
+  if (path.includes('/admin/settings')) return 'Settings';
+  if (path.includes('/admin/llm-config')) return 'LLM Configuration';
+  if (path.includes('/admin/audit')) return 'Audit';
+  return null;
+}
+
 export function AppLayout({ children }: AppLayoutProps) {
-  const { isCollapsed, toggle, activeModule } = useSidebarStore();
+  const { isCollapsed, toggle } = useSidebarStore();
   const breakpoint = useBreakpoint();
+
+  const [pathname, setPathname] = useState(window.location.pathname);
+
+  useEffect(() => {
+    const handlePopState = () => setPathname(window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const projectId = extractProjectId(pathname);
+  const activeModule = deriveActiveModule(pathname, projectId);
+
+  const { data: projectData } = useQuery<{
+    projectDashboard: { name: string; deviceName: string };
+  }>(PROJECT_NAME_QUERY, {
+    variables: { id: projectId! },
+    skip: !projectId,
+  });
+
+  const projectName = projectData?.projectDashboard?.name;
+
+  const breadcrumbItems = useMemo((): BreadcrumbItem[] => {
+    if (pathname === '/help') {
+      return [{ label: 'Help' }];
+    }
+
+    if (pathname.startsWith('/admin')) {
+      const items: BreadcrumbItem[] = [{ label: 'Admin' }];
+      const adminLabel = getAdminPageLabel(pathname);
+      if (adminLabel) items.push({ label: adminLabel });
+      return items;
+    }
+
+    const items: BreadcrumbItem[] = [{ label: 'Projects', href: '/projects' }];
+
+    if (projectId) {
+      items.push({
+        label: projectName ?? '...',
+        href: `/projects/${projectId}`,
+      });
+
+      const moduleLabel = getModuleLabel(pathname);
+      if (moduleLabel) {
+        items.push({ label: moduleLabel });
+      }
+    }
+
+    return items;
+  }, [pathname, projectId, projectName]);
+
+  const navItems = useMemo(() => {
+    if (projectId) {
+      return [
+        { id: 'project', label: 'Project', icon: LayoutDashboard, href: `/projects/${projectId}` },
+        { id: 'sls', label: 'SLS', icon: Search, href: `/projects/${projectId}/sls-sessions` },
+        { id: 'soa', label: 'SOA', icon: BarChart3, href: `/projects/${projectId}/soa` },
+        {
+          id: 'validation',
+          label: 'Validation',
+          icon: FlaskConical,
+          href: `/projects/${projectId}/validation`,
+        },
+        { id: 'cer', label: 'CER', icon: FileText, href: `/projects/${projectId}/cer` },
+        { id: 'pms', label: 'PMS', icon: Activity, href: `/projects/${projectId}/pms` },
+      ];
+    }
+    return [{ id: 'dashboard', label: 'Projects', icon: LayoutDashboard, href: '/projects' }];
+  }, [projectId]);
+
+  const handleNavClick = useCallback((e: MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    navigate(href);
+  }, []);
+
+  const handlePipelineClick = useCallback(
+    (nodeId: string) => {
+      if (!projectId) return;
+      const moduleRoutes: Record<string, string> = {
+        sls: `/projects/${projectId}/sls-sessions`,
+        soa: `/projects/${projectId}/soa`,
+        validation: `/projects/${projectId}/validation`,
+        cer: `/projects/${projectId}/cer`,
+        pms: `/projects/${projectId}/pms`,
+      };
+      const route = moduleRoutes[nodeId];
+      if (route) navigate(route);
+    },
+    [projectId],
+  );
 
   if (breakpoint === 'too-small') {
     return (
@@ -48,7 +176,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     );
   }
 
-  const effectiveCollapsed = isCollapsed || breakpoint === 'compact';
+  const effectiveCollapsed = isCollapsed;
   const sidebarWidth = effectiveCollapsed ? 64 : 240;
 
   return (
@@ -59,10 +187,19 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Topbar */}
       <header
-        className="flex h-14 items-center border-b border-[var(--cortex-border)] bg-white px-4"
-        style={{ paddingLeft: sidebarWidth + 16 }}
+        className="flex h-12 items-center border-b border-[var(--cortex-border)] bg-white px-5"
+        style={{ paddingLeft: sidebarWidth + 20 }}
+        data-testid="topbar"
       >
-        <PipelineProgressBar />
+        <div className="flex flex-1 items-center justify-between">
+          <Breadcrumb items={breadcrumbItems} />
+
+          {projectId && (
+            <div className="ml-6 flex-shrink-0">
+              <PipelineProgressBar onNodeClick={handlePipelineClick} />
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
@@ -75,10 +212,8 @@ export function AppLayout({ children }: AppLayoutProps) {
           )}
           style={{ width: sidebarWidth, minWidth: sidebarWidth }}
         >
-          <div className="flex h-14 items-center justify-between px-4">
-            {!effectiveCollapsed && (
-              <span className="text-sm font-bold tracking-wide">CORTEX</span>
-            )}
+          <div className="flex h-12 items-center justify-between px-4">
+            {!effectiveCollapsed && <span className="text-sm font-bold tracking-wide">CORTEX</span>}
             <button
               type="button"
               onClick={toggle}
@@ -89,6 +224,20 @@ export function AppLayout({ children }: AppLayoutProps) {
             </button>
           </div>
 
+          {/* Back to projects link (when inside a project) */}
+          {projectId && (
+            <div className="px-2 pb-1">
+              <a
+                href="/projects"
+                onClick={(e) => handleNavClick(e, '/projects')}
+                className="flex items-center gap-2 rounded-md px-3 py-1.5 text-xs text-white/50 hover:bg-white/10 hover:text-white/80"
+              >
+                <ArrowLeft size={14} />
+                {!effectiveCollapsed && <span>All Projects</span>}
+              </a>
+            </div>
+          )}
+
           <div className="flex-1 space-y-1 px-2 py-2">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -97,6 +246,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <a
                   key={item.id}
                   href={item.href}
+                  onClick={(e) => handleNavClick(e, item.href)}
                   className={cn(
                     'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
                     isActive
@@ -119,6 +269,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <a
                   key={item.id}
                   href={item.href}
+                  onClick={(e) => handleNavClick(e, item.href)}
                   className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-white/60 hover:bg-white/10 hover:text-white"
                 >
                   <Icon size={18} />

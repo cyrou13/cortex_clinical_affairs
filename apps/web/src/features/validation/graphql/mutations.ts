@@ -3,8 +3,20 @@ import { gql } from '@apollo/client';
 // --- Story 4.1 ---
 
 export const CREATE_VALIDATION_STUDY = gql`
-  mutation CreateValidationStudy($projectId: String!, $name: String!, $type: String!, $description: String, $soaAnalysisId: String!) {
-    createValidationStudy(projectId: $projectId, name: $name, type: $type, description: $description, soaAnalysisId: $soaAnalysisId) {
+  mutation CreateValidationStudy(
+    $projectId: String!
+    $name: String!
+    $type: String!
+    $description: String
+    $soaAnalysisId: String
+  ) {
+    createValidationStudy(
+      projectId: $projectId
+      name: $name
+      type: $type
+      description: $description
+      soaAnalysisId: $soaAnalysisId
+    ) {
       validationStudyId
       name
       type
@@ -26,8 +38,20 @@ export const LINK_SOA_BENCHMARKS = gql`
 // --- Story 4.2 ---
 
 export const DEFINE_PROTOCOL = gql`
-  mutation DefineProtocol($validationStudyId: String!, $summary: String, $endpoints: String, $sampleSizeJustification: String, $statisticalStrategy: String) {
-    defineProtocol(validationStudyId: $validationStudyId, summary: $summary, endpoints: $endpoints, sampleSizeJustification: $sampleSizeJustification, statisticalStrategy: $statisticalStrategy) {
+  mutation DefineProtocol(
+    $validationStudyId: String!
+    $summary: String
+    $endpoints: String
+    $sampleSizeJustification: String
+    $statisticalStrategy: String
+  ) {
+    defineProtocol(
+      validationStudyId: $validationStudyId
+      summary: $summary
+      endpoints: $endpoints
+      sampleSizeJustification: $sampleSizeJustification
+      statisticalStrategy: $statisticalStrategy
+    ) {
       protocolId
       version
       status
@@ -37,8 +61,22 @@ export const DEFINE_PROTOCOL = gql`
 `;
 
 export const AMEND_PROTOCOL = gql`
-  mutation AmendProtocol($protocolId: String!, $reason: String!, $summary: String, $endpoints: String, $sampleSizeJustification: String, $statisticalStrategy: String) {
-    amendProtocol(protocolId: $protocolId, reason: $reason, summary: $summary, endpoints: $endpoints, sampleSizeJustification: $sampleSizeJustification, statisticalStrategy: $statisticalStrategy) {
+  mutation AmendProtocol(
+    $protocolId: String!
+    $reason: String!
+    $summary: String
+    $endpoints: String
+    $sampleSizeJustification: String
+    $statisticalStrategy: String
+  ) {
+    amendProtocol(
+      protocolId: $protocolId
+      reason: $reason
+      summary: $summary
+      endpoints: $endpoints
+      sampleSizeJustification: $sampleSizeJustification
+      statisticalStrategy: $statisticalStrategy
+    ) {
       protocolId
       fromVersion
       toVersion
@@ -51,8 +89,18 @@ export const AMEND_PROTOCOL = gql`
 // --- Story 4.3 ---
 
 export const IMPORT_XLS = gql`
-  mutation ImportXls($validationStudyId: String!, $fileName: String!, $headers: [String!]!, $rawRows: JSON!) {
-    importXls(validationStudyId: $validationStudyId, fileName: $fileName, headers: $headers, rawRows: $rawRows) {
+  mutation ImportXls(
+    $validationStudyId: String!
+    $fileName: String!
+    $headers: [String!]!
+    $rawRows: JSON!
+  ) {
+    importXls(
+      validationStudyId: $validationStudyId
+      fileName: $fileName
+      headers: $headers
+      rawRows: $rawRows
+    ) {
       dataImportId
       version
       rowCount
@@ -107,8 +155,20 @@ export const MAP_RESULTS = gql`
 // --- Story 4.8 ---
 
 export const MAP_GSPR = gql`
-  mutation MapGspr($validationStudyId: String!, $gsprId: String!, $status: String!, $justification: String, $evidenceReferences: [String!]) {
-    mapGspr(validationStudyId: $validationStudyId, gsprId: $gsprId, status: $status, justification: $justification, evidenceReferences: $evidenceReferences) {
+  mutation MapGspr(
+    $validationStudyId: String!
+    $gsprId: String!
+    $status: String!
+    $justification: String
+    $evidenceReferences: [String!]
+  ) {
+    mapGspr(
+      validationStudyId: $validationStudyId
+      gsprId: $gsprId
+      status: $status
+      justification: $justification
+      evidenceReferences: $evidenceReferences
+    ) {
       id
       validationStudyId
       gsprId
@@ -132,5 +192,11 @@ export const LOCK_VALIDATION_STUDY = gql`
       lockedAt
       snapshotId
     }
+  }
+`;
+
+export const DELETE_VALIDATION_STUDY = gql`
+  mutation DeleteValidationStudy($validationStudyId: String!) {
+    deleteValidationStudy(validationStudyId: $validationStudyId)
   }
 `;

@@ -8,7 +8,7 @@ interface SidebarState {
 }
 
 export const useSidebarStore = create<SidebarState>((set) => ({
-  isCollapsed: false,
+  isCollapsed: typeof window !== 'undefined' && window.innerWidth < 1440,
   activeModule: null,
   toggle: () => set((state) => ({ isCollapsed: !state.isCollapsed })),
   setActiveModule: (module) => set({ activeModule: module }),

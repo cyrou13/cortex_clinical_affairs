@@ -6,9 +6,11 @@ vi.mock('@apollo/client', () => ({
 }));
 
 const mockUseMutation = vi.fn();
+const mockUseQuery = vi.fn();
 
 vi.mock('@apollo/client/react', () => ({
   useMutation: (...args: unknown[]) => mockUseMutation(...args),
+  useQuery: (...args: unknown[]) => mockUseQuery(...args),
 }));
 
 import { PmsPlanForm } from './PmsPlanForm';
@@ -17,9 +19,9 @@ describe('PmsPlanForm', () => {
   const mockCreate = vi.fn().mockResolvedValue({
     data: {
       createPmsPlan: {
-        id: 'plan-1',
-        name: 'Test Plan',
-        frequency: 'ANNUAL',
+        pmsPlanId: 'plan-1',
+        projectId: 'proj-1',
+        cerVersionId: 'cer-1',
         status: 'DRAFT',
       },
     },
@@ -28,43 +30,54 @@ describe('PmsPlanForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseMutation.mockReturnValue([mockCreate, { loading: false }]);
+    mockUseQuery.mockReturnValue({
+      data: {
+        cerVersions: [
+          {
+            id: 'cer-1',
+            versionNumber: 1,
+            regulatoryContext: 'CE_MDR',
+            status: 'LOCKED',
+            lockedAt: '2026-01-01',
+          },
+          {
+            id: 'cer-2',
+            versionNumber: 2,
+            regulatoryContext: 'FDA_510K',
+            status: 'DRAFT',
+            lockedAt: null,
+          },
+        ],
+      },
+    });
   });
 
   it('renders form fields', () => {
-    render(<PmsPlanForm />);
+    render(<PmsPlanForm projectId="proj-1" />);
 
-    expect(screen.getByTestId('plan-name-input')).toBeInTheDocument();
-    expect(screen.getByTestId('device-id-input')).toBeInTheDocument();
+    expect(screen.getByTestId('cer-version-select')).toBeInTheDocument();
     expect(screen.getByTestId('frequency-select')).toBeInTheDocument();
-    expect(screen.getByTestId('start-date-input')).toBeInTheDocument();
-    expect(screen.getByTestId('gap-registry-checkbox')).toBeInTheDocument();
     expect(screen.getByTestId('submit-btn')).toBeInTheDocument();
   });
 
-  it('submit button disabled when fields empty', () => {
-    render(<PmsPlanForm />);
+  it('submit button disabled when CER not selected', () => {
+    render(<PmsPlanForm projectId="proj-1" />);
 
     expect(screen.getByTestId('submit-btn')).toBeDisabled();
   });
 
-  it('enables submit button when all required fields filled', () => {
-    render(<PmsPlanForm />);
+  it('enables submit button when CER selected', () => {
+    render(<PmsPlanForm projectId="proj-1" />);
 
-    fireEvent.change(screen.getByTestId('plan-name-input'), {
-      target: { value: 'My Plan' },
-    });
-    fireEvent.change(screen.getByTestId('device-id-input'), {
-      target: { value: 'device-1' },
-    });
-    fireEvent.change(screen.getByTestId('start-date-input'), {
-      target: { value: '2026-03-01' },
+    fireEvent.change(screen.getByTestId('cer-version-select'), {
+      target: { value: 'cer-1' },
     });
 
     expect(screen.getByTestId('submit-btn')).not.toBeDisabled();
   });
 
   it('renders all frequency options', () => {
-    render(<PmsPlanForm />);
+    render(<PmsPlanForm projectId="proj-1" />);
 
     const select = screen.getByTestId('frequency-select');
     const options = select.querySelectorAll('option');
@@ -76,40 +89,23 @@ describe('PmsPlanForm', () => {
     expect(options[3]).toHaveValue('MONTHLY');
   });
 
-  it('gap registry enabled by default', () => {
-    render(<PmsPlanForm />);
+  it('renders data collection method checkboxes', () => {
+    render(<PmsPlanForm projectId="proj-1" />);
 
-    expect(screen.getByTestId('gap-registry-checkbox')).toBeChecked();
-    expect(screen.getByTestId('gap-threshold-input')).toBeInTheDocument();
+    expect(screen.getByTestId('method-VIGILANCE_DATABASE')).toBeInTheDocument();
+    expect(screen.getByTestId('method-LITERATURE_REVIEW')).toBeInTheDocument();
+    expect(screen.getByTestId('method-COMPLAINT_ANALYSIS')).toBeInTheDocument();
   });
 
-  it('hides gap threshold when disabled', () => {
-    render(<PmsPlanForm />);
-
-    fireEvent.click(screen.getByTestId('gap-registry-checkbox'));
-
-    expect(screen.getByTestId('gap-registry-checkbox')).not.toBeChecked();
-    expect(screen.queryByTestId('gap-threshold-input')).not.toBeInTheDocument();
-  });
-
-  it('calls mutation on submit', async () => {
+  it('calls mutation on submit with correct variables', async () => {
     const onSuccess = vi.fn();
-    render(<PmsPlanForm onSuccess={onSuccess} />);
+    render(<PmsPlanForm projectId="proj-1" onSuccess={onSuccess} />);
 
-    fireEvent.change(screen.getByTestId('plan-name-input'), {
-      target: { value: 'My Plan' },
-    });
-    fireEvent.change(screen.getByTestId('device-id-input'), {
-      target: { value: 'device-1' },
+    fireEvent.change(screen.getByTestId('cer-version-select'), {
+      target: { value: 'cer-1' },
     });
     fireEvent.change(screen.getByTestId('frequency-select'), {
       target: { value: 'QUARTERLY' },
-    });
-    fireEvent.change(screen.getByTestId('start-date-input'), {
-      target: { value: '2026-03-01' },
-    });
-    fireEvent.change(screen.getByTestId('gap-threshold-input'), {
-      target: { value: '15' },
     });
 
     fireEvent.click(screen.getByTestId('submit-btn'));
@@ -117,16 +113,10 @@ describe('PmsPlanForm', () => {
     await waitFor(() => {
       expect(mockCreate).toHaveBeenCalledWith({
         variables: {
-          input: {
-            name: 'My Plan',
-            deviceId: 'device-1',
-            frequency: 'QUARTERLY',
-            startDate: '2026-03-01',
-            gapRegistryConfig: {
-              enabled: true,
-              threshold: 15,
-            },
-          },
+          projectId: 'proj-1',
+          cerVersionId: 'cer-1',
+          updateFrequency: 'QUARTERLY',
+          dataCollectionMethods: ['VIGILANCE_DATABASE', 'LITERATURE_REVIEW'],
         },
       });
     });
@@ -136,7 +126,7 @@ describe('PmsPlanForm', () => {
 
   it('renders cancel button when onCancel provided', () => {
     const onCancel = vi.fn();
-    render(<PmsPlanForm onCancel={onCancel} />);
+    render(<PmsPlanForm projectId="proj-1" onCancel={onCancel} />);
 
     const cancelBtn = screen.getByTestId('cancel-btn');
     expect(cancelBtn).toBeInTheDocument();
@@ -145,21 +135,21 @@ describe('PmsPlanForm', () => {
     expect(onCancel).toHaveBeenCalled();
   });
 
-  it('pre-fills device id when provided', () => {
-    render(<PmsPlanForm deviceId="device-123" />);
-
-    expect(screen.getByTestId('device-id-input')).toHaveValue('device-123');
-  });
-
   it('shows loading state', () => {
     mockUseMutation.mockReturnValue([mockCreate, { loading: true }]);
-    render(<PmsPlanForm />);
-
-    fireEvent.change(screen.getByTestId('plan-name-input'), {
-      target: { value: 'My Plan' },
-    });
+    render(<PmsPlanForm projectId="proj-1" />);
 
     expect(screen.getByTestId('submit-btn')).toHaveTextContent('Creating...');
-    expect(screen.getByTestId('submit-btn')).toBeDisabled();
+  });
+
+  it('disables non-locked CER versions in dropdown', () => {
+    render(<PmsPlanForm projectId="proj-1" />);
+
+    const select = screen.getByTestId('cer-version-select');
+    const options = select.querySelectorAll('option');
+
+    // option 0: placeholder, option 1: cer-1 (LOCKED), option 2: cer-2 (DRAFT)
+    expect(options[1]).not.toBeDisabled();
+    expect(options[2]).toBeDisabled();
   });
 });

@@ -4,6 +4,7 @@ import {
   SlsSessionObjectType,
   SlsQueryObjectType,
   ExecuteQueryResultType,
+  GenerateQueryResultType,
   ImportArticlesResultType,
   ArticleObjectType,
   LaunchScoringResultType,
@@ -51,6 +52,7 @@ import { MinioStorageService } from '../infrastructure/services/minio-storage-se
 import { AddManualArticleUseCase } from '../application/use-cases/add-manual-article.js';
 import { MineReferencesUseCase } from '../application/use-cases/mine-references.js';
 import { ApproveMinedReferenceUseCase } from '../application/use-cases/approve-mined-reference.js';
+import { GenerateQueryFromTextUseCase } from '../application/use-cases/generate-query-from-text.js';
 
 builder.mutationField('createSlsSession', (t) =>
   t.field({
@@ -151,6 +153,8 @@ builder.mutationField('createQuery', (t) =>
       sessionId: t.arg.string({ required: true }),
       name: t.arg.string({ required: true }),
       queryString: t.arg.string({ required: true }),
+      dateFrom: t.arg.string({ required: false }),
+      dateTo: t.arg.string({ required: false }),
     },
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'sls', 'write');
@@ -167,7 +171,16 @@ builder.mutationField('createQuery', (t) =>
       await checkProjectMembership(ctx, session.projectId);
 
       const useCase = new ConstructQueryUseCase(ctx.prisma);
-      return useCase.execute(args, ctx.user!.id) as any;
+      return useCase.execute(
+        {
+          sessionId: args.sessionId,
+          name: args.name,
+          queryString: args.queryString,
+          dateFrom: args.dateFrom ?? undefined,
+          dateTo: args.dateTo ?? undefined,
+        },
+        ctx.user!.id,
+      ) as any;
     },
   }),
 );
@@ -178,6 +191,8 @@ builder.mutationField('updateQuery', (t) =>
     args: {
       id: t.arg.string({ required: true }),
       queryString: t.arg.string({ required: true }),
+      dateFrom: t.arg.string({ required: false }),
+      dateTo: t.arg.string({ required: false }),
     },
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'sls', 'write');
@@ -202,7 +217,15 @@ builder.mutationField('updateQuery', (t) =>
       await checkProjectMembership(ctx, session.projectId);
 
       const useCase = new UpdateQueryUseCase(ctx.prisma);
-      return useCase.execute(args.id, { queryString: args.queryString }, ctx.user!.id) as any;
+      return useCase.execute(
+        args.id,
+        {
+          queryString: args.queryString,
+          dateFrom: args.dateFrom,
+          dateTo: args.dateTo,
+        },
+        ctx.user!.id,
+      ) as any;
     },
   }),
 );
@@ -292,6 +315,38 @@ builder.mutationField('deleteQuery', (t) =>
       });
 
       return deleted as any;
+    },
+  }),
+);
+
+// --- Generate Query from Text mutation ---
+
+builder.mutationField('generateQueryFromText', (t) =>
+  t.field({
+    type: GenerateQueryResultType,
+    args: {
+      sessionId: t.arg.string({ required: true }),
+      description: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'sls', 'write');
+
+      // Check project membership via session
+      const session = await ctx.prisma.slsSession.findUnique({
+        where: { id: args.sessionId },
+      });
+
+      if (!session) {
+        throw new NotFoundError('SlsSession', args.sessionId);
+      }
+
+      await checkProjectMembership(ctx, session.projectId);
+
+      const useCase = new GenerateQueryFromTextUseCase(ctx.prisma);
+      return useCase.execute(
+        { sessionId: args.sessionId, description: args.description },
+        ctx.user!.id,
+      ) as any;
     },
   }),
 );
@@ -1004,8 +1059,11 @@ builder.mutationField('launchPdfRetrieval', (t) =>
         await redis.publish(
           'task:enqueued',
           JSON.stringify({
-            ...data,
+            taskId: data.taskId,
             type: queue,
+            status: 'PENDING',
+            metadata: data,
+            createdBy: data.userId,
           }),
         );
         return data.taskId as string;
@@ -1139,8 +1197,11 @@ builder.mutationField('launchReferenceMining', (t) =>
         await redis.publish(
           'task:enqueued',
           JSON.stringify({
-            ...data,
+            taskId: data.taskId,
             type: queue,
+            status: 'PENDING',
+            metadata: data,
+            createdBy: data.userId,
           }),
         );
         return data.taskId as string;
@@ -1286,6 +1347,48 @@ builder.mutationField('bulkApproveMinedReferences', (t) =>
         approvedCount,
         totalRequested: args.referenceIds.length,
       } as any;
+    },
+  }),
+);
+
+// --- Delete SLS Session ---
+
+builder.mutationField('deleteSlsSession', (t) =>
+  t.field({
+    type: 'Boolean',
+    args: {
+      sessionId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'sls', 'write');
+
+      const session = await ctx.prisma.slsSession.findUnique({
+        where: { id: args.sessionId },
+      });
+
+      if (!session) {
+        throw new NotFoundError('SlsSession', args.sessionId);
+      }
+
+      await checkProjectMembership(ctx, session.projectId);
+
+      if (session.status === 'LOCKED') {
+        throw new ValidationError('Cannot delete a locked SLS session');
+      }
+
+      await ctx.prisma.$transaction([
+        ctx.prisma.minedReference.deleteMany({ where: { sessionId: args.sessionId } }),
+        (ctx.prisma as any).customAiFilter.deleteMany({ where: { sessionId: args.sessionId } }),
+        ctx.prisma.exclusionCode.deleteMany({ where: { sessionId: args.sessionId } }),
+        (ctx.prisma as any).queryExecution.deleteMany({
+          where: { query: { sessionId: args.sessionId } },
+        }),
+        ctx.prisma.article.deleteMany({ where: { sessionId: args.sessionId } }),
+        ctx.prisma.slsQuery.deleteMany({ where: { sessionId: args.sessionId } }),
+        ctx.prisma.slsSession.delete({ where: { id: args.sessionId } }),
+      ]);
+
+      return true;
     },
   }),
 );

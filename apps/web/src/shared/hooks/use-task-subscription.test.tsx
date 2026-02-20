@@ -43,7 +43,7 @@ vi.mock('../../stores/toast-store', () => ({
 vi.mock('../../features/async-tasks/task-display', () => ({
   getTaskDisplay: (type: string) => {
     const map: Record<string, { icon: () => null; name: string }> = {
-      'sls:score-articles': { icon: () => null, name: 'AI Screening' },
+      'sls.score-articles': { icon: () => null, name: 'AI Screening' },
     };
     return map[type] ?? { icon: () => null, name: 'Background Task' };
   },
@@ -73,7 +73,7 @@ describe('useTaskSubscription', () => {
 
     const event = {
       taskId: 'task-1',
-      type: 'sls:score-articles',
+      type: 'sls.score-articles',
       status: 'RUNNING',
       progress: 50,
       total: 100,
@@ -94,7 +94,7 @@ describe('useTaskSubscription', () => {
 
     const event = {
       taskId: 'task-1',
-      type: 'sls:score-articles',
+      type: 'sls.score-articles',
       status: 'COMPLETED',
       progress: 100,
       total: 100,
@@ -119,7 +119,7 @@ describe('useTaskSubscription', () => {
 
     const event = {
       taskId: 'task-2',
-      type: 'sls:score-articles',
+      type: 'sls.score-articles',
       status: 'FAILED',
       progress: 30,
       total: 100,

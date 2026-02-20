@@ -12,11 +12,7 @@ export class TaskService {
   /**
    * Creates an AsyncTask DB record with PENDING status and publishes to Redis.
    */
-  async enqueueTask(
-    type: string,
-    data: Record<string, unknown> | undefined,
-    userId: string,
-  ) {
+  async enqueueTask(type: string, data: Record<string, unknown> | undefined, userId: string) {
     const task = await this.prisma.asyncTask.create({
       data: {
         type,
@@ -48,7 +44,7 @@ export class TaskService {
   /**
    * Cancels a task by setting its status to CANCELLED.
    */
-  async cancelTask(taskId: string, userId: string) {
+  async cancelTask(taskId: string, _userId: string) {
     const task = await this.prisma.asyncTask.findUnique({
       where: { id: taskId },
     });
@@ -74,10 +70,7 @@ export class TaskService {
         progress: updated.progress,
         message: 'Task cancelled',
       };
-      await this.redis.publish(
-        `task:progress:${task.createdBy}`,
-        JSON.stringify(event),
-      );
+      await this.redis.publish(`task:progress:${task.createdBy}`, JSON.stringify(event));
     } catch (err) {
       logger.error({ err, taskId }, 'Failed to publish task cancellation event');
     }
@@ -157,12 +150,66 @@ export class TaskService {
         current,
         message,
       };
-      await this.redis.publish(
-        `task:progress:${task.createdBy}`,
-        JSON.stringify(event),
-      );
+      await this.redis.publish(`task:progress:${task.createdBy}`, JSON.stringify(event));
     } catch (err) {
       logger.error({ err, taskId }, 'Failed to publish task progress event');
+    }
+
+    return task;
+  }
+
+  /**
+   * Marks a task as COMPLETED and publishes a completion event to Redis.
+   */
+  async completeTask(taskId: string, message?: string) {
+    const task = await this.prisma.asyncTask.update({
+      where: { id: taskId },
+      data: {
+        status: 'COMPLETED',
+        progress: 100,
+        completedAt: new Date(),
+      },
+    });
+
+    try {
+      const event = {
+        taskId: task.id,
+        type: task.type,
+        status: 'COMPLETED' as const,
+        progress: 100,
+        message: message || 'Task completed',
+      };
+      await this.redis.publish(`task:progress:${task.createdBy}`, JSON.stringify(event));
+    } catch (err) {
+      logger.error({ err, taskId }, 'Failed to publish task completion event');
+    }
+
+    return task;
+  }
+
+  /**
+   * Marks a task as FAILED and publishes a failure event to Redis.
+   */
+  async failTask(taskId: string, message: string) {
+    const task = await this.prisma.asyncTask.update({
+      where: { id: taskId },
+      data: {
+        status: 'FAILED',
+        completedAt: new Date(),
+      },
+    });
+
+    try {
+      const event = {
+        taskId: task.id,
+        type: task.type,
+        status: 'FAILED' as const,
+        progress: task.progress,
+        message,
+      };
+      await this.redis.publish(`task:progress:${task.createdBy}`, JSON.stringify(event));
+    } catch (err) {
+      logger.error({ err, taskId }, 'Failed to publish task failure event');
     }
 
     return task;

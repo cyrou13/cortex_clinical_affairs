@@ -3,8 +3,18 @@ import { gql } from '@apollo/client';
 // --- Story 6.1 ---
 
 export const CREATE_PMS_PLAN = gql`
-  mutation CreatePmsPlan($projectId: String!, $cerVersionId: String!, $updateFrequency: String!, $dataCollectionMethods: [String!]!) {
-    createPmsPlan(projectId: $projectId, cerVersionId: $cerVersionId, updateFrequency: $updateFrequency, dataCollectionMethods: $dataCollectionMethods) {
+  mutation CreatePmsPlan(
+    $projectId: String!
+    $cerVersionId: String!
+    $updateFrequency: String!
+    $dataCollectionMethods: [String!]!
+  ) {
+    createPmsPlan(
+      projectId: $projectId
+      cerVersionId: $cerVersionId
+      updateFrequency: $updateFrequency
+      dataCollectionMethods: $dataCollectionMethods
+    ) {
       pmsPlanId
       projectId
       cerVersionId
@@ -14,8 +24,16 @@ export const CREATE_PMS_PLAN = gql`
 `;
 
 export const UPDATE_PMS_PLAN = gql`
-  mutation UpdatePmsPlan($pmsPlanId: String!, $updateFrequency: String, $dataCollectionMethods: [String!]) {
-    updatePmsPlan(pmsPlanId: $pmsPlanId, updateFrequency: $updateFrequency, dataCollectionMethods: $dataCollectionMethods) {
+  mutation UpdatePmsPlan(
+    $pmsPlanId: String!
+    $updateFrequency: String
+    $dataCollectionMethods: [String!]
+  ) {
+    updatePmsPlan(
+      pmsPlanId: $pmsPlanId
+      updateFrequency: $updateFrequency
+      dataCollectionMethods: $dataCollectionMethods
+    ) {
       pmsPlanId
       updateFrequency
       dataCollectionMethods
@@ -57,8 +75,20 @@ export const CONFIGURE_VIGILANCE_DATABASES = gql`
 `;
 
 export const ADD_RESPONSIBILITY = gql`
-  mutation AddResponsibility($pmsPlanId: String!, $activityType: String!, $userId: String!, $role: String!, $description: String) {
-    addResponsibility(pmsPlanId: $pmsPlanId, activityType: $activityType, userId: $userId, role: $role, description: $description) {
+  mutation AddResponsibility(
+    $pmsPlanId: String!
+    $activityType: String!
+    $userId: String!
+    $role: String!
+    $description: String
+  ) {
+    addResponsibility(
+      pmsPlanId: $pmsPlanId
+      activityType: $activityType
+      userId: $userId
+      role: $role
+      description: $description
+    ) {
       id
       pmsPlanId
       activityType
@@ -89,8 +119,22 @@ export const POPULATE_GAP_REGISTRY = gql`
 `;
 
 export const UPDATE_GAP_ENTRY = gql`
-  mutation UpdateGapEntry($gapEntryId: String!, $description: String, $severity: String, $recommendedActivity: String, $status: String, $resolutionNotes: String) {
-    updateGapEntry(gapEntryId: $gapEntryId, description: $description, severity: $severity, recommendedActivity: $recommendedActivity, status: $status, resolutionNotes: $resolutionNotes) {
+  mutation UpdateGapEntry(
+    $gapEntryId: String!
+    $description: String
+    $severity: String
+    $recommendedActivity: String
+    $status: String
+    $resolutionNotes: String
+  ) {
+    updateGapEntry(
+      gapEntryId: $gapEntryId
+      description: $description
+      severity: $severity
+      recommendedActivity: $recommendedActivity
+      status: $status
+      resolutionNotes: $resolutionNotes
+    ) {
       id
       pmsPlanId
       sourceModule
@@ -109,8 +153,18 @@ export const UPDATE_GAP_ENTRY = gql`
 `;
 
 export const ADD_GAP_ENTRY = gql`
-  mutation AddGapEntry($pmsPlanId: String!, $description: String!, $severity: String!, $recommendedActivity: String!) {
-    addGapEntry(pmsPlanId: $pmsPlanId, description: $description, severity: $severity, recommendedActivity: $recommendedActivity) {
+  mutation AddGapEntry(
+    $pmsPlanId: String!
+    $description: String!
+    $severity: String!
+    $recommendedActivity: String!
+  ) {
+    addGapEntry(
+      pmsPlanId: $pmsPlanId
+      description: $description
+      severity: $severity
+      recommendedActivity: $recommendedActivity
+    ) {
       id
       pmsPlanId
       sourceModule
@@ -128,8 +182,20 @@ export const ADD_GAP_ENTRY = gql`
 // --- Story 6.3 ---
 
 export const CREATE_PMS_CYCLE = gql`
-  mutation CreatePmsCycle($pmsPlanId: String!, $cerVersionId: String!, $name: String!, $startDate: String!, $endDate: String!) {
-    createPmsCycle(pmsPlanId: $pmsPlanId, cerVersionId: $cerVersionId, name: $name, startDate: $startDate, endDate: $endDate) {
+  mutation CreatePmsCycle(
+    $pmsPlanId: String!
+    $cerVersionId: String!
+    $name: String!
+    $startDate: String!
+    $endDate: String!
+  ) {
+    createPmsCycle(
+      pmsPlanId: $pmsPlanId
+      cerVersionId: $cerVersionId
+      name: $name
+      startDate: $startDate
+      endDate: $endDate
+    ) {
       pmsCycleId
       pmsPlanId
       name
@@ -170,8 +236,18 @@ export const START_PMCF_ACTIVITY = gql`
 `;
 
 export const COMPLETE_PMCF_ACTIVITY = gql`
-  mutation CompletePmcfActivity($activityId: String!, $findingsSummary: String!, $conclusions: String!, $dataCollected: JSON) {
-    completePmcfActivity(activityId: $activityId, findingsSummary: $findingsSummary, conclusions: $conclusions, dataCollected: $dataCollected) {
+  mutation CompletePmcfActivity(
+    $activityId: String!
+    $findingsSummary: String!
+    $conclusions: String!
+    $dataCollected: JSON
+  ) {
+    completePmcfActivity(
+      activityId: $activityId
+      findingsSummary: $findingsSummary
+      conclusions: $conclusions
+      dataCollected: $dataCollected
+    ) {
       activityId
       activityType
       status
@@ -180,8 +256,22 @@ export const COMPLETE_PMCF_ACTIVITY = gql`
 `;
 
 export const UPDATE_PMCF_ACTIVITY = gql`
-  mutation UpdatePmcfActivity($activityId: String!, $title: String, $description: String, $findingsSummary: String, $conclusions: String, $dataCollected: JSON) {
-    updatePmcfActivity(activityId: $activityId, title: $title, description: $description, findingsSummary: $findingsSummary, conclusions: $conclusions, dataCollected: $dataCollected) {
+  mutation UpdatePmcfActivity(
+    $activityId: String!
+    $title: String
+    $description: String
+    $findingsSummary: String
+    $conclusions: String
+    $dataCollected: JSON
+  ) {
+    updatePmcfActivity(
+      activityId: $activityId
+      title: $title
+      description: $description
+      findingsSummary: $findingsSummary
+      conclusions: $conclusions
+      dataCollected: $dataCollected
+    ) {
       activityId
       title
       status
@@ -203,8 +293,36 @@ export const REASSIGN_PMCF_ACTIVITY = gql`
 // --- Story 6.5 ---
 
 export const CREATE_COMPLAINT = gql`
-  mutation CreateComplaint($pmsCycleId: String!, $date: String!, $reportDate: String!, $description: String!, $deviceIdentifier: String!, $severity: String!, $classification: String!, $lotNumber: String, $serialNumber: String, $classificationDescription: String, $isIncident: Boolean, $regulatoryReportRequired: Boolean, $harmSeverity: String) {
-    createComplaint(pmsCycleId: $pmsCycleId, date: $date, reportDate: $reportDate, description: $description, deviceIdentifier: $deviceIdentifier, severity: $severity, classification: $classification, lotNumber: $lotNumber, serialNumber: $serialNumber, classificationDescription: $classificationDescription, isIncident: $isIncident, regulatoryReportRequired: $regulatoryReportRequired, harmSeverity: $harmSeverity) {
+  mutation CreateComplaint(
+    $pmsCycleId: String!
+    $date: String!
+    $reportDate: String!
+    $description: String!
+    $deviceIdentifier: String!
+    $severity: String!
+    $classification: String!
+    $lotNumber: String
+    $serialNumber: String
+    $classificationDescription: String
+    $isIncident: Boolean
+    $regulatoryReportRequired: Boolean
+    $harmSeverity: String
+  ) {
+    createComplaint(
+      pmsCycleId: $pmsCycleId
+      date: $date
+      reportDate: $reportDate
+      description: $description
+      deviceIdentifier: $deviceIdentifier
+      severity: $severity
+      classification: $classification
+      lotNumber: $lotNumber
+      serialNumber: $serialNumber
+      classificationDescription: $classificationDescription
+      isIncident: $isIncident
+      regulatoryReportRequired: $regulatoryReportRequired
+      harmSeverity: $harmSeverity
+    ) {
       id
       pmsCycleId
       date
@@ -220,8 +338,24 @@ export const CREATE_COMPLAINT = gql`
 `;
 
 export const UPDATE_COMPLAINT = gql`
-  mutation UpdateComplaint($complaintId: String!, $description: String, $severity: String, $classification: String, $status: String, $resolution: String, $correctiveAction: String) {
-    updateComplaint(complaintId: $complaintId, description: $description, severity: $severity, classification: $classification, status: $status, resolution: $resolution, correctiveAction: $correctiveAction) {
+  mutation UpdateComplaint(
+    $complaintId: String!
+    $description: String
+    $severity: String
+    $classification: String
+    $status: String
+    $resolution: String
+    $correctiveAction: String
+  ) {
+    updateComplaint(
+      complaintId: $complaintId
+      description: $description
+      severity: $severity
+      classification: $classification
+      status: $status
+      resolution: $resolution
+      correctiveAction: $correctiveAction
+    ) {
       id
       status
       updatedFields
@@ -267,8 +401,22 @@ export const FINALIZE_TREND_ANALYSIS = gql`
 `;
 
 export const CREATE_INSTALLED_BASE_ENTRY = gql`
-  mutation CreateInstalledBaseEntry($pmsCycleId: String!, $periodStart: String!, $periodEnd: String!, $totalUnitsShipped: Int!, $activeDevices: Int!, $regionBreakdown: JSON) {
-    createInstalledBaseEntry(pmsCycleId: $pmsCycleId, periodStart: $periodStart, periodEnd: $periodEnd, totalUnitsShipped: $totalUnitsShipped, activeDevices: $activeDevices, regionBreakdown: $regionBreakdown) {
+  mutation CreateInstalledBaseEntry(
+    $pmsCycleId: String!
+    $periodStart: String!
+    $periodEnd: String!
+    $totalUnitsShipped: Int!
+    $activeDevices: Int!
+    $regionBreakdown: JSON
+  ) {
+    createInstalledBaseEntry(
+      pmsCycleId: $pmsCycleId
+      periodStart: $periodStart
+      periodEnd: $periodEnd
+      totalUnitsShipped: $totalUnitsShipped
+      activeDevices: $activeDevices
+      regionBreakdown: $regionBreakdown
+    ) {
       id
       pmsCycleId
       periodStart
@@ -313,8 +461,22 @@ export const GENERATE_PSUR = gql`
 // --- Story 6.9 ---
 
 export const CREATE_CER_UPDATE_DECISION = gql`
-  mutation CreateCerUpdateDecision($pmsCycleId: String!, $benefitRiskReAssessment: String!, $conclusion: String!, $justification: String!, $materialChangesIdentified: Boolean!, $materialChangesDescription: String) {
-    createCerUpdateDecision(pmsCycleId: $pmsCycleId, benefitRiskReAssessment: $benefitRiskReAssessment, conclusion: $conclusion, justification: $justification, materialChangesIdentified: $materialChangesIdentified, materialChangesDescription: $materialChangesDescription) {
+  mutation CreateCerUpdateDecision(
+    $pmsCycleId: String!
+    $benefitRiskReAssessment: String!
+    $conclusion: String!
+    $justification: String!
+    $materialChangesIdentified: Boolean!
+    $materialChangesDescription: String
+  ) {
+    createCerUpdateDecision(
+      pmsCycleId: $pmsCycleId
+      benefitRiskReAssessment: $benefitRiskReAssessment
+      conclusion: $conclusion
+      justification: $justification
+      materialChangesIdentified: $materialChangesIdentified
+      materialChangesDescription: $materialChangesDescription
+    ) {
       id
       pmsCycleId
       conclusion
@@ -334,5 +496,11 @@ export const FINALIZE_CER_UPDATE_DECISION = gql`
       status
       decidedAt
     }
+  }
+`;
+
+export const DELETE_PMS_PLAN = gql`
+  mutation DeletePmsPlan($pmsPlanId: String!) {
+    deletePmsPlan(pmsPlanId: $pmsPlanId)
   }
 `;

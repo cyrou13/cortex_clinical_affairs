@@ -17,11 +17,6 @@ export class ScreenArticleUseCase {
 
     const { articleId, decision, exclusionCodeId, reason } = parsed.data;
 
-    // Validate exclusion code required for EXCLUDED
-    if (decision === 'EXCLUDED' && !exclusionCodeId) {
-      throw new ValidationError('Exclusion code is required when excluding an article');
-    }
-
     // Fetch article
     const article = await this.prisma.article.findUnique({
       where: { id: articleId },
@@ -29,6 +24,16 @@ export class ScreenArticleUseCase {
 
     if (!article) {
       throw new NotFoundError('Article', articleId);
+    }
+
+    // Validate exclusion code required for EXCLUDED (only if codes are configured)
+    if (decision === 'EXCLUDED' && !exclusionCodeId) {
+      const codeCount = await this.prisma.exclusionCode.count({
+        where: { sessionId: article.sessionId, isHidden: false },
+      });
+      if (codeCount > 0) {
+        throw new ValidationError('Exclusion code is required when excluding an article');
+      }
     }
 
     // Validate session is not LOCKED
@@ -49,9 +54,7 @@ export class ScreenArticleUseCase {
 
     // Validate lifecycle transition
     if (!validateTransition(article.status as ArticleStatusEnum, newStatus)) {
-      throw new ValidationError(
-        `Invalid status transition from ${article.status} to ${newStatus}`,
-      );
+      throw new ValidationError(`Invalid status transition from ${article.status} to ${newStatus}`);
     }
 
     // Determine if this is an AI override

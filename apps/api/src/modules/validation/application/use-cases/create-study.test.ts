@@ -8,16 +8,18 @@ function makePrisma(overrides?: {
 }) {
   return {
     project: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.project !== undefined ? overrides.project : { id: 'proj-1' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(overrides?.project !== undefined ? overrides.project : { id: 'proj-1' }),
     },
     soaAnalysis: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.soa !== undefined
-          ? overrides.soa
-          : { id: 'soa-1', status: 'LOCKED', projectId: 'proj-1' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.soa !== undefined
+            ? overrides.soa
+            : { id: 'soa-1', status: 'LOCKED', projectId: 'proj-1' },
+        ),
     },
     validationStudy: {
       create: vi.fn().mockResolvedValue({ id: 'study-1' }),
@@ -26,7 +28,13 @@ function makePrisma(overrides?: {
       findMany: vi.fn().mockResolvedValue(
         overrides?.soaBenchmarks ?? [
           { id: 'bm-1', name: 'Sensitivity', threshold: 0.9, unit: '%', metricType: 'SENSITIVITY' },
-          { id: 'bm-2', name: 'Specificity', threshold: 0.85, unit: '%', metricType: 'SPECIFICITY' },
+          {
+            id: 'bm-2',
+            name: 'Specificity',
+            threshold: 0.85,
+            unit: '%',
+            metricType: 'SPECIFICITY',
+          },
         ],
       ),
     },
@@ -197,6 +205,25 @@ describe('CreateStudyUseCase', () => {
     });
 
     expect(result.benchmarkCount).toBe(0);
+  });
+
+  it('creates study without SOA link', async () => {
+    const prisma = makePrisma();
+    const useCase = new CreateStudyUseCase(prisma);
+
+    const result = await useCase.execute({
+      projectId: 'proj-1',
+      name: 'Standalone Study',
+      type: 'STANDALONE',
+      userId: 'user-1',
+    });
+
+    expect(result.validationStudyId).toBeDefined();
+    expect(result.name).toBe('Standalone Study');
+    expect(result.soaAnalysisId).toBeUndefined();
+    expect(result.benchmarkCount).toBe(0);
+    expect(prisma.soaAnalysis.findUnique).not.toHaveBeenCalled();
+    expect(prisma.acceptanceCriterion.create).not.toHaveBeenCalled();
   });
 
   it('trims the study name', async () => {

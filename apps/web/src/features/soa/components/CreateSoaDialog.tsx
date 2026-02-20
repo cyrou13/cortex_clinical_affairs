@@ -23,8 +23,20 @@ export const CHECK_DEPENDENCY = gql`
 `;
 
 export const CREATE_SOA = gql`
-  mutation CreateSoaAnalysis($input: CreateSoaInput!) {
-    createSoaAnalysis(input: $input) {
+  mutation CreateSoaAnalysis(
+    $projectId: String!
+    $name: String!
+    $type: String!
+    $description: String
+    $slsSessionIds: [String!]!
+  ) {
+    createSoaAnalysis(
+      projectId: $projectId
+      name: $name
+      type: $type
+      description: $description
+      slsSessionIds: $slsSessionIds
+    ) {
       soaAnalysisId
       name
       type
@@ -52,9 +64,16 @@ interface CreateSoaDialogProps {
   open: boolean;
   onClose: () => void;
   onCreated?: (soaId: string) => void;
+  preselectedSessionIds?: string[];
 }
 
-export function CreateSoaDialog({ projectId, open, onClose, onCreated }: CreateSoaDialogProps) {
+export function CreateSoaDialog({
+  projectId,
+  open,
+  onClose,
+  onCreated,
+  preselectedSessionIds,
+}: CreateSoaDialogProps) {
   const [name, setName] = useState('');
   const [soaType, setSoaType] = useState('CLINICAL');
   const [selectedSessions, setSelectedSessions] = useState<string[]>([]);
@@ -69,15 +88,20 @@ export function CreateSoaDialog({ projectId, open, onClose, onCreated }: CreateS
     skip: !open || soaType !== 'SIMILAR_DEVICE',
   });
 
-  const [createSoa, { loading: creating }] = useMutation<any>(CREATE_SOA);
+  const [createSoa, { loading: creating }] = useMutation<any>(CREATE_SOA, {
+    errorPolicy: 'none',
+  });
+  const [createError, setCreateError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      setSelectedSessions(preselectedSessionIds ?? []);
+    } else {
       setName('');
       setSoaType('CLINICAL');
       setSelectedSessions([]);
     }
-  }, [open]);
+  }, [open, preselectedSessionIds]);
 
   const sessions = sessionsData?.lockedSlsSessions ?? [];
   const warnings = depData?.checkDeviceSoaDependency?.warnings ?? [];
@@ -90,19 +114,22 @@ export function CreateSoaDialog({ projectId, open, onClose, onCreated }: CreateS
   };
 
   const handleSubmit = async () => {
-    const result = await createSoa({
-      variables: {
-        input: {
+    setCreateError(null);
+    try {
+      const result = await createSoa({
+        variables: {
           projectId,
           name: name.trim(),
           type: soaType,
           slsSessionIds: selectedSessions,
         },
-      },
-    });
-    if (result.data?.createSoaAnalysis) {
-      onCreated?.(result.data.createSoaAnalysis.soaAnalysisId);
-      onClose();
+      });
+      if (result.data?.createSoaAnalysis) {
+        onCreated?.(result.data.createSoaAnalysis.soaAnalysisId);
+        onClose();
+      }
+    } catch (err: any) {
+      setCreateError(err.message ?? 'Failed to create SOA analysis');
     }
   };
 
@@ -113,10 +140,11 @@ export function CreateSoaDialog({ projectId, open, onClose, onCreated }: CreateS
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
       data-testid="create-soa-dialog"
     >
-      <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
-        <div className="mb-4 flex items-center justify-between">
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-xl bg-white shadow-xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-[var(--cortex-border)] px-6 py-4">
           <div className="flex items-center gap-2">
-            <FlaskConical size={20} className="text-[var(--cortex-primary)]" />
+            <FlaskConical size={20} className="text-[var(--cortex-blue-500)]" />
             <h2 className="text-lg font-semibold text-[var(--cortex-text-primary)]">
               Create SOA Analysis
             </h2>
@@ -131,7 +159,8 @@ export function CreateSoaDialog({ projectId, open, onClose, onCreated }: CreateS
           </button>
         </div>
 
-        <div className="space-y-4">
+        {/* Scrollable body */}
+        <div className="flex-1 space-y-4 overflow-y-auto px-6 py-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-[var(--cortex-text-muted)]">
               Name
@@ -156,7 +185,7 @@ export function CreateSoaDialog({ projectId, open, onClose, onCreated }: CreateS
                   key={t.value}
                   className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 text-sm ${
                     soaType === t.value
-                      ? 'border-[var(--cortex-primary)] bg-blue-50'
+                      ? 'border-[var(--cortex-blue-500)] bg-blue-50'
                       : 'border-[var(--cortex-border)]'
                   }`}
                 >
@@ -166,7 +195,7 @@ export function CreateSoaDialog({ projectId, open, onClose, onCreated }: CreateS
                     value={t.value}
                     checked={soaType === t.value}
                     onChange={() => setSoaType(t.value)}
-                    className="accent-[var(--cortex-primary)]"
+                    className="accent-[var(--cortex-blue-500)]"
                     data-testid={`soa-type-${t.value}`}
                   />
                   <div>
@@ -223,7 +252,14 @@ export function CreateSoaDialog({ projectId, open, onClose, onCreated }: CreateS
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end gap-2">
+        {createError && (
+          <div className="mx-6 mb-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {createError}
+          </div>
+        )}
+
+        {/* Footer — always visible */}
+        <div className="flex justify-end gap-2 border-t border-[var(--cortex-border)] px-6 py-4">
           <button
             type="button"
             onClick={onClose}
@@ -236,7 +272,7 @@ export function CreateSoaDialog({ projectId, open, onClose, onCreated }: CreateS
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="rounded bg-[var(--cortex-primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded bg-[var(--cortex-blue-500)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--cortex-blue-600)] disabled:cursor-not-allowed disabled:opacity-50"
             data-testid="create-soa-btn"
           >
             {creating ? 'Creating...' : 'Create Analysis'}

@@ -16,31 +16,31 @@ vi.mock('@apollo/client/react', () => ({
 import { ClaimsManagement } from './ClaimsManagement';
 
 const mockClaims = {
-  soaClaims: [
+  claims: [
     {
       id: 'claim-1',
-      statement: 'The device demonstrates equivalent safety to the predicate device.',
-      status: 'ACTIVE',
-      linkedArticles: [{ id: 'art-1', title: 'Safety comparison study (2024)' }],
+      statementText: 'The device demonstrates equivalent safety to the predicate device.',
+      thematicSectionId: null,
+      createdAt: '2024-01-01',
     },
     {
       id: 'claim-2',
-      statement: 'Clinical performance meets or exceeds regulatory benchmarks.',
-      status: 'DRAFT',
-      linkedArticles: [],
+      statementText: 'Clinical performance meets or exceeds regulatory benchmarks.',
+      thematicSectionId: null,
+      createdAt: '2024-01-02',
     },
   ],
 };
 
-const emptyClaims = { soaClaims: [] };
+const emptyClaims = { claims: [] };
 
 describe('ClaimsManagement', () => {
-  const mockCreateClaim = vi.fn().mockResolvedValue({
-    data: { createSoaClaim: { claimId: 'claim-new', statement: 'New claim' } },
-  });
-  const mockLinkArticle = vi.fn().mockResolvedValue({
-    data: { linkArticleToClaim: { claimId: 'claim-1', articleId: 'art-2' } },
-  });
+  const mockCreateClaim = vi.fn().mockResolvedValue({ data: { createClaim: { id: 'claim-new' } } });
+  const mockLinkArticle = vi
+    .fn()
+    .mockResolvedValue({
+      data: { linkClaimToArticle: { claimId: 'claim-1', articleId: 'art-2' } },
+    });
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -96,15 +96,6 @@ describe('ClaimsManagement', () => {
 
     expect(screen.getByTestId('claim-statement-claim-1')).toHaveTextContent(
       'The device demonstrates equivalent safety to the predicate device.',
-    );
-  });
-
-  it('displays linked articles', () => {
-    mockUseQuery.mockReturnValue({ data: mockClaims, loading: false });
-    render(<ClaimsManagement soaAnalysisId="soa-1" />);
-
-    expect(screen.getByTestId('linked-article-art-1')).toHaveTextContent(
-      'Safety comparison study (2024)',
     );
   });
 

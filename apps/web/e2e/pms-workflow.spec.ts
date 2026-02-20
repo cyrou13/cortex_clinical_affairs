@@ -1,351 +1,209 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('PMS Workflow — Epic 6', () => {
-  test('PMS dashboard loads with plan cards', async ({ page }) => {
+  test('PMS index page loads', async ({ page }) => {
     await page.goto('/projects/proj-1/pms');
 
+    const indexPage = page.getByTestId('pms-index-page');
+    await expect(indexPage).toBeVisible();
+
+    // Page may show dashboard, error, or loading state
     const dashboard = page.getByTestId('pms-dashboard');
+    const error = page.getByTestId('pms-error');
     const loading = page.getByTestId('pms-loading');
-
-    await expect(dashboard.or(loading).first()).toBeVisible();
-
-    if (await dashboard.isVisible()) {
-      const planCard = page.locator('[data-testid^="plan-card-"]').first();
-      const empty = page.getByTestId('pms-empty');
-      // Either plan cards or empty state should be visible
-      await expect(planCard.or(empty).first()).toBeVisible();
-    }
+    await expect(dashboard.or(error).or(loading).first()).toBeVisible();
   });
 
-  test('PMS dashboard shows empty state when no plans exist', async ({ page }) => {
+  test('PMS index page shows create button', async ({ page }) => {
     await page.goto('/projects/proj-1/pms');
 
-    const dashboard = page.getByTestId('pms-dashboard');
-    const loading = page.getByTestId('pms-loading');
-
-    await expect(dashboard.or(loading).first()).toBeVisible();
-
-    if (await dashboard.isVisible()) {
-      const empty = page.getByTestId('pms-empty');
-      // Empty state may or may not be visible depending on data
-      if (await empty.isVisible()) {
-        await expect(empty).toBeVisible();
-      }
-    }
+    await expect(page.getByTestId('pms-index-page')).toBeVisible();
+    await expect(page.getByTestId('create-plan-btn')).toBeVisible();
   });
 
-  test('PMS plan detail loads with configuration panel', async ({ page }) => {
+  test('PMS plan detail page loads with tabs', async ({ page }) => {
     await page.goto('/projects/proj-1/pms/plan-1');
 
-    const planDetail = page.getByTestId('plan-detail');
-    const loading = page.getByTestId('plan-loading');
-
-    await expect(planDetail.or(loading).first()).toBeVisible();
-
-    if (await planDetail.isVisible()) {
-      await expect(page.getByTestId('tab-config')).toBeVisible();
-      await expect(page.getByTestId('config-panel')).toBeVisible();
-    }
+    const planDetail = page.getByTestId('pms-plan-detail-page');
+    await expect(planDetail).toBeVisible();
+    await expect(page.getByTestId('tab-plan')).toBeVisible();
+    await expect(page.getByTestId('tab-monitoring')).toBeVisible();
+    await expect(page.getByTestId('tab-reports')).toBeVisible();
+    await expect(page.getByTestId('tab-gaps')).toBeVisible();
   });
 
-  test('PMS plan detail shows tab navigation', async ({ page }) => {
+  test('PMS plan detail shows back button', async ({ page }) => {
     await page.goto('/projects/proj-1/pms/plan-1');
 
-    const planDetail = page.getByTestId('plan-detail');
-    const loading = page.getByTestId('plan-loading');
-
-    await expect(planDetail.or(loading).first()).toBeVisible();
-
-    if (await planDetail.isVisible()) {
-      await expect(page.getByTestId('tab-config')).toBeVisible();
-      await expect(page.getByTestId('tab-vigilance')).toBeVisible();
-      await expect(page.getByTestId('tab-responsibilities')).toBeVisible();
-    }
+    const planDetail = page.getByTestId('pms-plan-detail-page');
+    await expect(planDetail).toBeVisible();
+    await expect(page.getByTestId('back-btn')).toBeVisible();
   });
 
-  test('PMS plan detail shows approve button when in DRAFT status', async ({ page }) => {
+  test('PMS plan tab is default active', async ({ page }) => {
     await page.goto('/projects/proj-1/pms/plan-1');
 
-    const planDetail = page.getByTestId('plan-detail');
-    const loading = page.getByTestId('plan-loading');
+    const planDetail = page.getByTestId('pms-plan-detail-page');
+    await expect(planDetail).toBeVisible();
 
-    await expect(planDetail.or(loading).first()).toBeVisible();
-
-    if (await planDetail.isVisible()) {
-      const approveBtn = page.getByTestId('approve-btn');
-      // Approve button may or may not be visible depending on plan status
-      if (await approveBtn.isVisible()) {
-        await expect(approveBtn).toBeVisible();
-      }
-    }
+    await expect(page.getByTestId('tab-plan')).toBeVisible();
   });
 
-  test('PMS plan detail shows activate button when in APPROVED status', async ({ page }) => {
+  test('PMS plan tab shows cycle selector', async ({ page }) => {
     await page.goto('/projects/proj-1/pms/plan-1');
 
-    const planDetail = page.getByTestId('plan-detail');
-    const loading = page.getByTestId('plan-loading');
+    const planDetail = page.getByTestId('pms-plan-detail-page');
+    await expect(planDetail).toBeVisible();
 
-    await expect(planDetail.or(loading).first()).toBeVisible();
-
-    if (await planDetail.isVisible()) {
-      const activateBtn = page.getByTestId('activate-btn');
-      // Activate button may or may not be visible depending on plan status
-      if (await activateBtn.isVisible()) {
-        await expect(activateBtn).toBeVisible();
-      }
-    }
+    await expect(page.getByTestId('cycle-select-input')).toBeVisible();
   });
 
-  test('vigilance tab displays panel or empty state', async ({ page }) => {
+  test('monitoring tab shows no-cycle message when no cycle selected', async ({ page }) => {
     await page.goto('/projects/proj-1/pms/plan-1');
 
-    const planDetail = page.getByTestId('plan-detail');
-    const loading = page.getByTestId('plan-loading');
+    const planDetail = page.getByTestId('pms-plan-detail-page');
+    await expect(planDetail).toBeVisible();
 
-    await expect(planDetail.or(loading).first()).toBeVisible();
-
-    if (await planDetail.isVisible()) {
-      const vigilanceTab = page.getByTestId('tab-vigilance');
-      await vigilanceTab.click();
-
-      const vigilancePanel = page.getByTestId('vigilance-panel');
-      // Panel may or may not be visible depending on data
-      if (await vigilancePanel.isVisible()) {
-        await expect(vigilancePanel).toBeVisible();
-      }
-    }
+    await page.getByTestId('tab-monitoring').click();
+    await expect(page.getByTestId('monitoring-no-cycle')).toBeVisible();
   });
 
-  test('responsibilities tab displays panel or empty state', async ({ page }) => {
+  test('reports tab shows no-cycle message when no cycle selected', async ({ page }) => {
     await page.goto('/projects/proj-1/pms/plan-1');
 
-    const planDetail = page.getByTestId('plan-detail');
-    const loading = page.getByTestId('plan-loading');
+    const planDetail = page.getByTestId('pms-plan-detail-page');
+    await expect(planDetail).toBeVisible();
 
-    await expect(planDetail.or(loading).first()).toBeVisible();
+    await page.getByTestId('tab-reports').click();
+    await expect(page.getByTestId('reports-no-cycle')).toBeVisible();
+  });
 
-    if (await planDetail.isVisible()) {
-      const responsibilitiesTab = page.getByTestId('tab-responsibilities');
-      await responsibilitiesTab.click();
+  test('gaps tab loads gap registry', async ({ page }) => {
+    await page.goto('/projects/proj-1/pms/plan-1');
 
-      const responsibilitiesPanel = page.getByTestId('responsibilities-panel');
-      // Panel may or may not be visible depending on data
-      if (await responsibilitiesPanel.isVisible()) {
-        await expect(responsibilitiesPanel).toBeVisible();
-      }
+    const planDetail = page.getByTestId('pms-plan-detail-page');
+    await expect(planDetail).toBeVisible();
+
+    await page.getByTestId('tab-gaps').click();
+    await expect(page.getByTestId('tab-gaps')).toBeVisible();
+  });
+
+  test('tab navigation works across all tabs', async ({ page }) => {
+    await page.goto('/projects/proj-1/pms/plan-1');
+
+    const planDetail = page.getByTestId('pms-plan-detail-page');
+    await expect(planDetail).toBeVisible();
+
+    const tabKeys = ['plan', 'monitoring', 'reports', 'gaps'];
+    for (const key of tabKeys) {
+      await page.getByTestId(`tab-${key}`).click();
+      await expect(page.getByTestId(`tab-${key}`)).toBeVisible();
     }
   });
 
-  test('PMS cycle detail loads with tabs', async ({ page }) => {
-    await page.goto('/projects/proj-1/pms/plan-1/cycles/cycle-1');
-
-    const cycleDetail = page.getByTestId('cycle-detail');
-    const loading = page.getByTestId('cycle-detail-loading');
-
-    await expect(cycleDetail.or(loading).first()).toBeVisible();
-
-    if (await cycleDetail.isVisible()) {
-      await expect(page.getByTestId('tab-activities')).toBeVisible();
-      await expect(page.getByTestId('tab-complaints')).toBeVisible();
-      await expect(page.getByTestId('tab-trends')).toBeVisible();
-      await expect(page.getByTestId('tab-reports')).toBeVisible();
-      await expect(page.getByTestId('tab-decision')).toBeVisible();
-    }
-  });
-
-  test('PMS cycle detail activities tab shows placeholder', async ({ page }) => {
-    await page.goto('/projects/proj-1/pms/plan-1/cycles/cycle-1');
-
-    const cycleDetail = page.getByTestId('cycle-detail');
-    const loading = page.getByTestId('cycle-detail-loading');
-
-    await expect(cycleDetail.or(loading).first()).toBeVisible();
-
-    if (await cycleDetail.isVisible()) {
-      await expect(page.getByTestId('activities-placeholder')).toBeVisible();
-    }
-  });
-
-  test('complaints dashboard loads with metrics', async ({ page }) => {
-    await page.goto('/projects/proj-1/pms/plan-1/cycles/cycle-1');
-
-    const cycleDetail = page.getByTestId('cycle-detail');
-    const loading = page.getByTestId('cycle-detail-loading');
-
-    await expect(cycleDetail.or(loading).first()).toBeVisible();
-
-    if (await cycleDetail.isVisible()) {
-      const complaintsTab = page.getByTestId('tab-complaints');
-      await complaintsTab.click();
-
-      const complaintsDashboard = page.getByTestId('complaints-dashboard');
-      const complaintsLoading = page.getByTestId('complaints-loading');
-
-      await expect(complaintsDashboard.or(complaintsLoading).first()).toBeVisible();
-
-      if (await complaintsDashboard.isVisible()) {
-        await expect(page.getByTestId('metric-total')).toBeVisible();
-        await expect(page.getByTestId('metric-incidents')).toBeVisible();
-      }
-    }
-  });
-
-  test('complaints dashboard shows action buttons', async ({ page }) => {
-    await page.goto('/projects/proj-1/pms/plan-1/cycles/cycle-1');
-
-    const cycleDetail = page.getByTestId('cycle-detail');
-    const loading = page.getByTestId('cycle-detail-loading');
-
-    await expect(cycleDetail.or(loading).first()).toBeVisible();
-
-    if (await cycleDetail.isVisible()) {
-      const complaintsTab = page.getByTestId('tab-complaints');
-      await complaintsTab.click();
-
-      const complaintsDashboard = page.getByTestId('complaints-dashboard');
-      const complaintsLoading = page.getByTestId('complaints-loading');
-
-      await expect(complaintsDashboard.or(complaintsLoading).first()).toBeVisible();
-
-      if (await complaintsDashboard.isVisible()) {
-        await expect(page.getByTestId('add-complaint-btn')).toBeVisible();
-        await expect(page.getByTestId('import-btn')).toBeVisible();
-      }
-    }
-  });
-
-  test('complaints dashboard shows filter controls', async ({ page }) => {
-    await page.goto('/projects/proj-1/pms/plan-1/cycles/cycle-1');
-
-    const cycleDetail = page.getByTestId('cycle-detail');
-    const loading = page.getByTestId('cycle-detail-loading');
-
-    await expect(cycleDetail.or(loading).first()).toBeVisible();
-
-    if (await cycleDetail.isVisible()) {
-      const complaintsTab = page.getByTestId('tab-complaints');
-      await complaintsTab.click();
-
-      const complaintsDashboard = page.getByTestId('complaints-dashboard');
-      const complaintsLoading = page.getByTestId('complaints-loading');
-
-      await expect(complaintsDashboard.or(complaintsLoading).first()).toBeVisible();
-
-      if (await complaintsDashboard.isVisible()) {
-        await expect(page.getByTestId('filter-severity')).toBeVisible();
-        await expect(page.getByTestId('filter-status')).toBeVisible();
-      }
-    }
-  });
-
-  test('complaints dashboard shows table or empty state', async ({ page }) => {
-    await page.goto('/projects/proj-1/pms/plan-1/cycles/cycle-1');
-
-    const cycleDetail = page.getByTestId('cycle-detail');
-    const loading = page.getByTestId('cycle-detail-loading');
-
-    await expect(cycleDetail.or(loading).first()).toBeVisible();
-
-    if (await cycleDetail.isVisible()) {
-      const complaintsTab = page.getByTestId('tab-complaints');
-      await complaintsTab.click();
-
-      const complaintsDashboard = page.getByTestId('complaints-dashboard');
-      const complaintsLoading = page.getByTestId('complaints-loading');
-
-      await expect(complaintsDashboard.or(complaintsLoading).first()).toBeVisible();
-
-      if (await complaintsDashboard.isVisible()) {
-        const table = page.getByTestId('complaints-table');
-        const empty = page.getByTestId('complaints-empty');
-        // Either table or empty state should be visible
-        await expect(table.or(empty).first()).toBeVisible();
-      }
-    }
-  });
-
-  test('trend analysis panel loads', async ({ page }) => {
-    await page.goto('/projects/proj-1/pms/plan-1/cycles/cycle-1');
-
-    const cycleDetail = page.getByTestId('cycle-detail');
-    const loading = page.getByTestId('cycle-detail-loading');
-
-    await expect(cycleDetail.or(loading).first()).toBeVisible();
-
-    if (await cycleDetail.isVisible()) {
-      const trendsTab = page.getByTestId('tab-trends');
-      await trendsTab.click();
-
-      const trendPanel = page.getByTestId('trend-analysis-panel');
-      const trendLoading = page.getByTestId('trend-analysis-loading');
-
-      await expect(trendPanel.or(trendLoading).first()).toBeVisible();
-    }
-  });
-
-  test('report generation panel loads', async ({ page }) => {
-    await page.goto('/projects/proj-1/pms/plan-1/cycles/cycle-1');
-
-    const cycleDetail = page.getByTestId('cycle-detail');
-    const loading = page.getByTestId('cycle-detail-loading');
-
-    await expect(cycleDetail.or(loading).first()).toBeVisible();
-
-    if (await cycleDetail.isVisible()) {
-      const reportsTab = page.getByTestId('tab-reports');
-      await reportsTab.click();
-
-      const reportGeneration = page.getByTestId('report-generation');
-      const reportLoading = page.getByTestId('report-generation-loading');
-
-      await expect(reportGeneration.or(reportLoading).first()).toBeVisible();
-    }
-  });
-
-  test('CER update decision panel loads', async ({ page }) => {
-    await page.goto('/projects/proj-1/pms/plan-1/cycles/cycle-1');
-
-    const cycleDetail = page.getByTestId('cycle-detail');
-    const loading = page.getByTestId('cycle-detail-loading');
-
-    await expect(cycleDetail.or(loading).first()).toBeVisible();
-
-    if (await cycleDetail.isVisible()) {
-      const decisionTab = page.getByTestId('tab-decision');
-      await decisionTab.click();
-
-      const cerDecision = page.getByTestId('cer-update-decision');
-      const cerLoading = page.getByTestId('cer-update-decision-loading');
-
-      await expect(cerDecision.or(cerLoading).first()).toBeVisible();
-    }
-  });
-
-  test('PMS plan form renders', async ({ page }) => {
+  test('PMS plan form renders for new plan', async ({ page }) => {
     await page.goto('/projects/proj-1/pms/new');
 
     const form = page.getByTestId('pms-plan-form');
+    const planDetail = page.getByTestId('pms-plan-detail-page');
     const loading = page.getByTestId('pms-plan-form-loading');
 
-    await expect(form.or(loading).first()).toBeVisible();
+    await expect(form.or(planDetail).or(loading).first()).toBeVisible();
   });
 
-  test('cycle manager loads', async ({ page }) => {
-    await page.goto('/projects/proj-1/pms/plan-1/cycles');
+  test('monitoring tab requires cycle selection', async ({ page }) => {
+    await page.goto('/projects/proj-1/pms/plan-1');
 
-    const cycleManager = page.getByTestId('cycle-manager');
-    const loading = page.getByTestId('cycle-manager-loading');
+    const planDetail = page.getByTestId('pms-plan-detail-page');
+    await expect(planDetail).toBeVisible();
 
-    await expect(cycleManager.or(loading).first()).toBeVisible();
+    await page.getByTestId('tab-monitoring').click();
+
+    const noCycle = page.getByTestId('monitoring-no-cycle');
+    await expect(noCycle).toBeVisible();
+    await expect(noCycle).toContainText('No cycle selected');
   });
 
-  test('gap registry loads', async ({ page }) => {
-    await page.goto('/projects/proj-1/pms/plan-1/gaps');
+  test('reports tab requires cycle selection', async ({ page }) => {
+    await page.goto('/projects/proj-1/pms/plan-1');
 
-    const gapRegistry = page.getByTestId('gap-registry');
-    const loading = page.getByTestId('gap-registry-loading');
+    const planDetail = page.getByTestId('pms-plan-detail-page');
+    await expect(planDetail).toBeVisible();
 
-    await expect(gapRegistry.or(loading).first()).toBeVisible();
+    await page.getByTestId('tab-reports').click();
+
+    const noCycle = page.getByTestId('reports-no-cycle');
+    await expect(noCycle).toBeVisible();
+    await expect(noCycle).toContainText('No cycle selected');
+  });
+
+  test('cycle selection input accepts text', async ({ page }) => {
+    await page.goto('/projects/proj-1/pms/plan-1');
+
+    const planDetail = page.getByTestId('pms-plan-detail-page');
+    await expect(planDetail).toBeVisible();
+
+    const input = page.getByTestId('cycle-select-input');
+    await expect(input).toBeVisible();
+    await input.fill('cycle-1');
+    await expect(input).toHaveValue('cycle-1');
+  });
+
+  test('clear cycle button appears after cycle selection', async ({ page }) => {
+    await page.goto('/projects/proj-1/pms/plan-1');
+
+    const planDetail = page.getByTestId('pms-plan-detail-page');
+    await expect(planDetail).toBeVisible();
+
+    const input = page.getByTestId('cycle-select-input');
+    await input.fill('cycle-1');
+
+    const clearBtn = page.getByTestId('clear-cycle-btn');
+    await expect(clearBtn).toBeVisible();
+  });
+
+  test('plan detail page shows correct tab labels', async ({ page }) => {
+    await page.goto('/projects/proj-1/pms/plan-1');
+
+    const planDetail = page.getByTestId('pms-plan-detail-page');
+    await expect(planDetail).toBeVisible();
+
+    // Use tab testids to verify labels are rendered
+    await expect(page.getByTestId('tab-plan')).toContainText('Plan & Cycles');
+    await expect(page.getByTestId('tab-monitoring')).toContainText('Monitoring');
+    await expect(page.getByTestId('tab-reports')).toContainText('Reports');
+    await expect(page.getByTestId('tab-gaps')).toContainText('Gaps');
+  });
+
+  test('back button navigates to PMS list', async ({ page }) => {
+    await page.goto('/projects/proj-1/pms/plan-1');
+
+    const planDetail = page.getByTestId('pms-plan-detail-page');
+    await expect(planDetail).toBeVisible();
+
+    await expect(page.getByTestId('back-btn')).toContainText('Back to PMS Plans');
+  });
+
+  test('gaps tab renders content area', async ({ page }) => {
+    await page.goto('/projects/proj-1/pms/plan-1');
+
+    const planDetail = page.getByTestId('pms-plan-detail-page');
+    await expect(planDetail).toBeVisible();
+
+    await page.getByTestId('tab-gaps').click();
+
+    const gapContent = page.getByTestId('gap-registry');
+    const tabContent = page.getByTestId('tab-gaps');
+    await expect(gapContent.or(tabContent).first()).toBeVisible();
+  });
+
+  test('monitoring tab shows activity text when no cycle', async ({ page }) => {
+    await page.goto('/projects/proj-1/pms/plan-1');
+
+    const planDetail = page.getByTestId('pms-plan-detail-page');
+    await expect(planDetail).toBeVisible();
+
+    await page.getByTestId('tab-monitoring').click();
+    await expect(page.getByText('No cycle selected')).toBeVisible();
   });
 });

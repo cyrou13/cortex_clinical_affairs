@@ -28,27 +28,31 @@ function makeSession(overrides?: Partial<Record<string, unknown>>) {
   };
 }
 
-function makePrisma(overrides?: {
-  articleResult?: unknown;
-  sessionResult?: unknown;
-}) {
+function makePrisma(overrides?: { articleResult?: unknown; sessionResult?: unknown }) {
   return {
     article: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.articleResult !== undefined ? overrides.articleResult : makeArticle(),
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.articleResult !== undefined ? overrides.articleResult : makeArticle(),
+        ),
       update: vi.fn().mockImplementation(({ data }) => ({
         ...makeArticle(),
         ...data,
       })),
     },
     slsSession: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.sessionResult !== undefined ? overrides.sessionResult : makeSession(),
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.sessionResult !== undefined ? overrides.sessionResult : makeSession(),
+        ),
     },
     screeningDecision: {
       create: vi.fn().mockResolvedValue({ id: 'decision-1' }),
+    },
+    exclusionCode: {
+      count: vi.fn().mockResolvedValue(1),
     },
     auditLog: {
       create: vi.fn().mockResolvedValue({}),
@@ -172,8 +176,8 @@ describe('ScreenArticleUseCase', () => {
     ).rejects.toThrow('session is locked');
   });
 
-  it('throws ValidationError for invalid transition PENDING -> INCLUDED', async () => {
-    prisma = makePrisma({ articleResult: makeArticle({ status: 'PENDING' }) });
+  it('throws ValidationError for invalid transition EXCLUDED -> INCLUDED', async () => {
+    prisma = makePrisma({ articleResult: makeArticle({ status: 'EXCLUDED' }) });
     useCase = new ScreenArticleUseCase(prisma);
 
     await expect(

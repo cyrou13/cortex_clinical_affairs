@@ -15,36 +15,12 @@ vi.mock('@apollo/client/react', () => ({
 
 import { LockSoaButton } from './LockSoaButton';
 
-const preflightReady = {
-  soaLockPreflight: {
-    totalSections: 8,
-    finalizedSections: 8,
-    allSectionsFinalized: true,
-    soaStatus: 'IN_PROGRESS',
-  },
-};
-
-const preflightNotReady = {
-  soaLockPreflight: {
-    totalSections: 8,
-    finalizedSections: 5,
-    allSectionsFinalized: false,
-    soaStatus: 'IN_PROGRESS',
-  },
-};
-
-const preflightLocked = {
-  soaLockPreflight: {
-    totalSections: 8,
-    finalizedSections: 8,
-    allSectionsFinalized: true,
-    soaStatus: 'LOCKED',
-  },
-};
+const progressReady = { soaProgress: { totalSections: 8, finalizedCount: 8 } };
+const progressNotReady = { soaProgress: { totalSections: 8, finalizedCount: 5 } };
 
 describe('LockSoaButton', () => {
   const mockLock = vi.fn().mockResolvedValue({
-    data: { lockSoaAnalysis: { soaAnalysisId: 'soa-1', lockedAt: '2026-02-14', status: 'LOCKED' } },
+    data: { lockSoaAnalysis: { soaAnalysisId: 'soa-1', lockedAt: '2026-02-14', sectionCount: 8 } },
   });
 
   beforeEach(() => {
@@ -53,7 +29,7 @@ describe('LockSoaButton', () => {
   });
 
   it('renders lock button when conditions met', () => {
-    mockUseQuery.mockReturnValue({ data: preflightReady, loading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: progressReady, loading: false, error: null });
     render(<LockSoaButton soaAnalysisId="soa-1" />);
 
     expect(screen.getByTestId('lock-soa-btn')).toBeInTheDocument();
@@ -61,22 +37,22 @@ describe('LockSoaButton', () => {
   });
 
   it('disables button when sections not finalized', () => {
-    mockUseQuery.mockReturnValue({ data: preflightNotReady, loading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: progressNotReady, loading: false, error: null });
     render(<LockSoaButton soaAnalysisId="soa-1" />);
 
     expect(screen.getByTestId('lock-soa-btn')).toBeDisabled();
   });
 
   it('shows locked badge when already locked', () => {
-    mockUseQuery.mockReturnValue({ data: preflightLocked, loading: false, error: null });
-    render(<LockSoaButton soaAnalysisId="soa-1" />);
+    mockUseQuery.mockReturnValue({ data: progressReady, loading: false, error: null });
+    render(<LockSoaButton soaAnalysisId="soa-1" soaStatus="LOCKED" />);
 
     expect(screen.getByTestId('locked-badge')).toBeInTheDocument();
     expect(screen.getByTestId('locked-badge')).toHaveTextContent('SOA Locked');
   });
 
   it('opens confirmation dialog on click', () => {
-    mockUseQuery.mockReturnValue({ data: preflightReady, loading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: progressReady, loading: false, error: null });
     render(<LockSoaButton soaAnalysisId="soa-1" />);
 
     fireEvent.click(screen.getByTestId('lock-soa-btn'));
@@ -85,7 +61,7 @@ describe('LockSoaButton', () => {
   });
 
   it('confirm button disabled until checkbox checked', () => {
-    mockUseQuery.mockReturnValue({ data: preflightReady, loading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: progressReady, loading: false, error: null });
     render(<LockSoaButton soaAnalysisId="soa-1" />);
 
     fireEvent.click(screen.getByTestId('lock-soa-btn'));
@@ -98,7 +74,7 @@ describe('LockSoaButton', () => {
   });
 
   it('calls mutation on confirm', async () => {
-    mockUseQuery.mockReturnValue({ data: preflightReady, loading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: progressReady, loading: false, error: null });
     const onLocked = vi.fn();
     render(<LockSoaButton soaAnalysisId="soa-1" onLocked={onLocked} />);
 
@@ -112,7 +88,7 @@ describe('LockSoaButton', () => {
   });
 
   it('shows disabled tooltip when sections not finalized', () => {
-    mockUseQuery.mockReturnValue({ data: preflightNotReady, loading: false, error: null });
+    mockUseQuery.mockReturnValue({ data: progressNotReady, loading: false, error: null });
     render(<LockSoaButton soaAnalysisId="soa-1" />);
 
     expect(screen.getByTestId('lock-soa-btn')).toBeDisabled();

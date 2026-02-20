@@ -37,7 +37,7 @@ export class MineReferencesUseCase {
     // Create async task
     const task = await this.prisma.asyncTask.create({
       data: {
-        type: 'sls:mine-references',
+        type: 'sls.mine-references',
         status: 'PENDING',
         createdBy: userId,
         metadata: { sessionId, articleCount: validArticleIds.length },
@@ -45,7 +45,7 @@ export class MineReferencesUseCase {
     });
 
     // Enqueue BullMQ job
-    await this.enqueueJob('sls:mine-references', {
+    await this.enqueueJob('sls.mine-references', {
       sessionId,
       taskId: task.id,
       userId,

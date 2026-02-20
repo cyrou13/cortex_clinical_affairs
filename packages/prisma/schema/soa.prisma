@@ -77,6 +77,7 @@ model SoaSlsLink {
 
   @@unique([soaAnalysisId, slsSessionId])
   @@index([soaAnalysisId])
+  @@index([slsSessionId])
 }
 
 // --- Model 3: ThematicSection ---
@@ -271,4 +272,54 @@ model SoaOpenQuestion {
 
   @@index([soaAnalysisId])
   @@index([cerVersionId])
+}
+
+// --- Model 14: SoaImport (staging for document import) ---
+
+model SoaImport {
+  id               String   @id @default(uuid())
+  projectId        String
+  status           String   @default("PROCESSING") // PROCESSING | REVIEW | CONFIRMED | FAILED | CANCELLED
+  sourceFileName   String
+  sourceStorageKey String
+  sourceFormat     String   // PDF | DOCX
+  extractedData    Json?    // Données extraites par le LLM
+  gapReport        Json?    // Rapport d'écarts
+  taskId           String?  // Référence AsyncTask
+  soaAnalysisId    String?  // SOA créé après confirmation
+  createdById      String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([projectId, status])
+}
+
+// --- Model 15: CustomGridTemplate ---
+
+model CustomGridTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  soaType     String
+  description String?
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  columns     CustomGridTemplateColumn[]
+
+  @@index([soaType])
+}
+
+// --- Model 15: CustomGridTemplateColumn ---
+
+model CustomGridTemplateColumn {
+  id          String  @id @default(uuid())
+  templateId  String
+  name        String
+  displayName String
+  dataType    String
+  isRequired  Boolean @default(false)
+  orderIndex  Int
+  template    CustomGridTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
 }

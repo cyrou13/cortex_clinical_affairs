@@ -1,86 +1,58 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { gql } from '@apollo/client';
-import { Plus, X, Award } from 'lucide-react';
-
-export const GET_SIMILAR_DEVICES = gql`
-  query GetSimilarDevices($soaAnalysisId: String!) {
-    similarDevices(soaAnalysisId: $soaAnalysisId) {
-      id
-      name
-      manufacturer
-      modelNumber
-      regulatoryClass
-      performanceBenchmark {
-        score
-        category
-      }
-    }
-  }
-`;
-
-export const ADD_SIMILAR_DEVICE = gql`
-  mutation AddSimilarDevice($soaAnalysisId: String!, $deviceId: String!) {
-    addSimilarDevice(soaAnalysisId: $soaAnalysisId, deviceId: $deviceId) {
-      id
-      name
-    }
-  }
-`;
-
-export const REMOVE_SIMILAR_DEVICE = gql`
-  mutation RemoveSimilarDevice($soaAnalysisId: String!, $deviceId: String!) {
-    removeSimilarDevice(soaAnalysisId: $soaAnalysisId, deviceId: $deviceId) {
-      success
-    }
-  }
-`;
+import { Plus, Cpu } from 'lucide-react';
+import { GET_SIMILAR_DEVICES } from '../graphql/queries';
+import { ADD_SIMILAR_DEVICE } from '../graphql/mutations';
 
 interface Device {
   id: string;
-  name: string;
+  deviceName: string;
   manufacturer: string;
-  modelNumber?: string;
-  regulatoryClass?: string;
-  performanceBenchmark?: {
-    score: number;
-    category: string;
-  };
+  indication: string;
+  regulatoryStatus: string;
+  metadata: unknown;
+  createdAt: string;
 }
 
 interface SimilarDeviceRegistryProps {
   soaAnalysisId: string;
 }
 
-function PerformanceBadge({ score, category }: { score: number; category: string }) {
-  const colorClass =
-    score >= 80 ? 'text-emerald-600' : score >= 60 ? 'text-amber-600' : 'text-red-600';
-  const bgClass = score >= 80 ? 'bg-emerald-50' : score >= 60 ? 'bg-amber-50' : 'bg-red-50';
-
-  return (
-    <div
-      className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium ${bgClass} ${colorClass}`}
-      data-testid="performance-badge"
-    >
-      <Award size={12} />
-      {category} ({score})
-    </div>
-  );
-}
-
 export function SimilarDeviceRegistry({ soaAnalysisId }: SimilarDeviceRegistryProps) {
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [deviceName, setDeviceName] = useState('');
+  const [manufacturer, setManufacturer] = useState('');
+  const [indication, setIndication] = useState('');
+  const [regulatoryStatus, setRegulatoryStatus] = useState('');
 
   const { data, loading, error, refetch } = useQuery<any>(GET_SIMILAR_DEVICES, {
     variables: { soaAnalysisId },
   });
 
-  const [removeDevice, { loading: removing }] = useMutation<any>(REMOVE_SIMILAR_DEVICE);
+  const [addDevice, { loading: adding }] = useMutation<any>(ADD_SIMILAR_DEVICE);
 
-  const handleRemove = async (deviceId: string) => {
-    await removeDevice({
-      variables: { soaAnalysisId, deviceId },
+  const handleAddDevice = async () => {
+    if (
+      !deviceName.trim() ||
+      !manufacturer.trim() ||
+      !indication.trim() ||
+      !regulatoryStatus.trim()
+    )
+      return;
+    await addDevice({
+      variables: {
+        soaAnalysisId,
+        deviceName: deviceName.trim(),
+        manufacturer: manufacturer.trim(),
+        indication: indication.trim(),
+        regulatoryStatus: regulatoryStatus.trim(),
+      },
     });
+    setDeviceName('');
+    setManufacturer('');
+    setIndication('');
+    setRegulatoryStatus('');
+    setShowAddDialog(false);
     refetch();
   };
 
@@ -111,13 +83,13 @@ export function SimilarDeviceRegistry({ soaAnalysisId }: SimilarDeviceRegistryPr
   return (
     <div className="space-y-4" data-testid="similar-device-registry">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-[var(--cortex-text-primary)]">
-          Similar Devices Registry
+        <h3 className="flex items-center gap-2 text-lg font-semibold text-[var(--cortex-text-primary)]">
+          <Cpu size={18} /> Similar Devices Registry
         </h3>
         <button
           type="button"
           onClick={() => setShowAddDialog(true)}
-          className="inline-flex items-center gap-2 rounded bg-[var(--cortex-primary)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--cortex-primary-hover)]"
+          className="inline-flex items-center gap-2 rounded bg-[var(--cortex-blue-500)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--cortex-blue-600)]"
           data-testid="add-device-btn"
         >
           <Plus size={16} />
@@ -137,41 +109,23 @@ export function SimilarDeviceRegistry({ soaAnalysisId }: SimilarDeviceRegistryPr
           {devices.map((device) => (
             <div
               key={device.id}
-              className="flex items-center justify-between rounded-lg border border-[var(--cortex-border)] p-4 hover:border-[var(--cortex-primary)]"
+              className="rounded-lg border border-[var(--cortex-border)] p-4 hover:border-[var(--cortex-blue-500)]"
               data-testid={`device-item-${device.id}`}
             >
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-medium text-[var(--cortex-text-primary)]">{device.name}</h4>
-                  {device.regulatoryClass && (
-                    <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
-                      Class {device.regulatoryClass}
-                    </span>
-                  )}
-                </div>
-                <div className="mt-1 text-sm text-[var(--cortex-text-muted)]">
-                  {device.manufacturer}
-                  {device.modelNumber && ` • Model ${device.modelNumber}`}
-                </div>
-                {device.performanceBenchmark && (
-                  <div className="mt-2">
-                    <PerformanceBadge
-                      score={device.performanceBenchmark.score}
-                      category={device.performanceBenchmark.category}
-                    />
-                  </div>
-                )}
+              <div className="flex items-center gap-2">
+                <h4 className="font-medium text-[var(--cortex-text-primary)]">
+                  {device.deviceName}
+                </h4>
+                <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700">
+                  {device.regulatoryStatus}
+                </span>
               </div>
-              <button
-                type="button"
-                onClick={() => handleRemove(device.id)}
-                disabled={removing}
-                className="ml-4 rounded p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-                data-testid={`remove-device-btn-${device.id}`}
-                aria-label={`Remove ${device.name}`}
-              >
-                <X size={16} />
-              </button>
+              <div className="mt-1 text-sm text-[var(--cortex-text-muted)]">
+                {device.manufacturer}
+              </div>
+              <div className="mt-1 text-xs text-[var(--cortex-text-muted)]">
+                Indication: {device.indication}
+              </div>
             </div>
           ))}
         </div>
@@ -191,17 +145,63 @@ export function SimilarDeviceRegistry({ soaAnalysisId }: SimilarDeviceRegistryPr
             <h3 className="text-lg font-semibold text-[var(--cortex-text-primary)]">
               Add Similar Device
             </h3>
-            <p className="mt-2 text-sm text-[var(--cortex-text-muted)]">
-              Search for and select a device from the database to add to the registry.
-            </p>
+            <div className="mt-4 space-y-3">
+              <input
+                type="text"
+                value={deviceName}
+                onChange={(e) => setDeviceName(e.target.value)}
+                placeholder="Device name"
+                className="w-full rounded border border-[var(--cortex-border)] px-3 py-2 text-sm"
+                data-testid="device-name-input"
+              />
+              <input
+                type="text"
+                value={manufacturer}
+                onChange={(e) => setManufacturer(e.target.value)}
+                placeholder="Manufacturer"
+                className="w-full rounded border border-[var(--cortex-border)] px-3 py-2 text-sm"
+                data-testid="device-manufacturer-input"
+              />
+              <input
+                type="text"
+                value={indication}
+                onChange={(e) => setIndication(e.target.value)}
+                placeholder="Indication"
+                className="w-full rounded border border-[var(--cortex-border)] px-3 py-2 text-sm"
+                data-testid="device-indication-input"
+              />
+              <input
+                type="text"
+                value={regulatoryStatus}
+                onChange={(e) => setRegulatoryStatus(e.target.value)}
+                placeholder="Regulatory status (e.g. CE Marked)"
+                className="w-full rounded border border-[var(--cortex-border)] px-3 py-2 text-sm"
+                data-testid="device-regulatory-input"
+              />
+            </div>
             <div className="mt-4 flex justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setShowAddDialog(false)}
-                className="rounded border border-[var(--cortex-border)] px-4 py-2 text-sm text-[var(--cortex-text-secondary)] hover:bg-[var(--cortex-bg-hover)]"
+                className="rounded border border-[var(--cortex-border)] px-4 py-2 text-sm text-[var(--cortex-text-secondary)] hover:bg-gray-50"
                 data-testid="cancel-add-btn"
               >
                 Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddDevice}
+                disabled={
+                  adding ||
+                  !deviceName.trim() ||
+                  !manufacturer.trim() ||
+                  !indication.trim() ||
+                  !regulatoryStatus.trim()
+                }
+                className="rounded bg-[var(--cortex-blue-500)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--cortex-blue-600)] disabled:cursor-not-allowed disabled:opacity-50"
+                data-testid="confirm-add-btn"
+              >
+                {adding ? 'Adding...' : 'Add Device'}
               </button>
             </div>
           </div>

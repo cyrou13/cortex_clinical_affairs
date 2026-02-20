@@ -3,8 +3,18 @@ import { gql } from '@apollo/client';
 // --- Story 5.1 ---
 
 export const CREATE_CER = gql`
-  mutation CreateCer($projectId: String!, $regulatoryContext: String!, $versionType: String!, $currentVersion: String) {
-    createCer(projectId: $projectId, regulatoryContext: $regulatoryContext, versionType: $versionType, currentVersion: $currentVersion) {
+  mutation CreateCer(
+    $projectId: String!
+    $regulatoryContext: String!
+    $versionType: String!
+    $currentVersion: String
+  ) {
+    createCer(
+      projectId: $projectId
+      regulatoryContext: $regulatoryContext
+      versionType: $versionType
+      currentVersion: $currentVersion
+    ) {
       cerVersionId
       versionNumber
       regulatoryContext
@@ -28,8 +38,22 @@ export const LINK_CER_UPSTREAM = gql`
 // --- Story 5.2 ---
 
 export const CREATE_CER_EXTERNAL_DOC = gql`
-  mutation CreateCerExternalDoc($cerVersionId: String!, $title: String!, $version: String!, $date: String!, $summary: String!, $documentType: String!) {
-    createCerExternalDoc(cerVersionId: $cerVersionId, title: $title, version: $version, date: $date, summary: $summary, documentType: $documentType) {
+  mutation CreateCerExternalDoc(
+    $cerVersionId: String!
+    $title: String!
+    $version: String!
+    $date: String!
+    $summary: String!
+    $documentType: String!
+  ) {
+    createCerExternalDoc(
+      cerVersionId: $cerVersionId
+      title: $title
+      version: $version
+      date: $date
+      summary: $summary
+      documentType: $documentType
+    ) {
       id
       cerVersionId
       title
@@ -44,8 +68,22 @@ export const CREATE_CER_EXTERNAL_DOC = gql`
 `;
 
 export const UPDATE_CER_EXTERNAL_DOC = gql`
-  mutation UpdateCerExternalDoc($documentId: String!, $title: String, $version: String, $date: String, $summary: String, $documentType: String) {
-    updateCerExternalDoc(documentId: $documentId, title: $title, version: $version, date: $date, summary: $summary, documentType: $documentType) {
+  mutation UpdateCerExternalDoc(
+    $documentId: String!
+    $title: String
+    $version: String
+    $date: String
+    $summary: String
+    $documentType: String
+  ) {
+    updateCerExternalDoc(
+      documentId: $documentId
+      title: $title
+      version: $version
+      date: $date
+      summary: $summary
+      documentType: $documentType
+    ) {
       id
       cerVersionId
       title
@@ -66,8 +104,18 @@ export const DELETE_CER_EXTERNAL_DOC = gql`
 `;
 
 export const UPDATE_EXTERNAL_DOC_VERSION = gql`
-  mutation UpdateExternalDocVersion($documentId: String!, $newVersion: String!, $newDate: String!, $newSummary: String) {
-    updateExternalDocVersion(documentId: $documentId, newVersion: $newVersion, newDate: $newDate, newSummary: $newSummary) {
+  mutation UpdateExternalDocVersion(
+    $documentId: String!
+    $newVersion: String!
+    $newDate: String!
+    $newSummary: String
+  ) {
+    updateExternalDocVersion(
+      documentId: $documentId
+      newVersion: $newVersion
+      newDate: $newDate
+      newSummary: $newSummary
+    ) {
       documentId
       previousVersion
       newVersion
@@ -80,8 +128,18 @@ export const UPDATE_EXTERNAL_DOC_VERSION = gql`
 // --- Story 5.3 ---
 
 export const CREATE_NAMED_DEVICE_SEARCH = gql`
-  mutation CreateNamedDeviceSearch($cerVersionId: String!, $deviceName: String!, $keywords: [String!]!, $databases: [String!]!) {
-    createNamedDeviceSearch(cerVersionId: $cerVersionId, deviceName: $deviceName, keywords: $keywords, databases: $databases) {
+  mutation CreateNamedDeviceSearch(
+    $cerVersionId: String!
+    $deviceName: String!
+    $keywords: [String!]!
+    $databases: [String!]!
+  ) {
+    createNamedDeviceSearch(
+      cerVersionId: $cerVersionId
+      deviceName: $deviceName
+      keywords: $keywords
+      databases: $databases
+    ) {
       searchId
       deviceName
       databases
@@ -152,8 +210,18 @@ export const GENERATE_COMPLIANCE_STATEMENT = gql`
 `;
 
 export const UPDATE_GSPR_ROW = gql`
-  mutation UpdateGsprRow($gsprMatrixRowId: String!, $status: String, $evidenceReferences: [String!], $notes: String) {
-    updateGsprRow(gsprMatrixRowId: $gsprMatrixRowId, status: $status, evidenceReferences: $evidenceReferences, notes: $notes) {
+  mutation UpdateGsprRow(
+    $gsprMatrixRowId: String!
+    $status: String
+    $evidenceReferences: [String!]
+    $notes: String
+  ) {
+    updateGsprRow(
+      gsprMatrixRowId: $gsprMatrixRowId
+      status: $status
+      evidenceReferences: $evidenceReferences
+      notes: $notes
+    ) {
       id
       gsprId
       status
@@ -178,8 +246,16 @@ export const DETERMINE_BENEFIT_RISK = gql`
 `;
 
 export const UPDATE_BENEFIT = gql`
-  mutation UpdateBenefit($benefitRiskItemId: String!, $description: String, $evidenceLinks: [String!]) {
-    updateBenefit(benefitRiskItemId: $benefitRiskItemId, description: $description, evidenceLinks: $evidenceLinks) {
+  mutation UpdateBenefit(
+    $benefitRiskItemId: String!
+    $description: String
+    $evidenceLinks: [String!]
+  ) {
+    updateBenefit(
+      benefitRiskItemId: $benefitRiskItemId
+      description: $description
+      evidenceLinks: $evidenceLinks
+    ) {
       id
       description
       riskLevel
@@ -189,8 +265,20 @@ export const UPDATE_BENEFIT = gql`
 `;
 
 export const UPDATE_RISK = gql`
-  mutation UpdateRisk($benefitRiskItemId: String!, $description: String, $severity: String, $probability: String, $evidenceLinks: [String!]) {
-    updateRisk(benefitRiskItemId: $benefitRiskItemId, description: $description, severity: $severity, probability: $probability, evidenceLinks: $evidenceLinks) {
+  mutation UpdateRisk(
+    $benefitRiskItemId: String!
+    $description: String
+    $severity: String
+    $probability: String
+    $evidenceLinks: [String!]
+  ) {
+    updateRisk(
+      benefitRiskItemId: $benefitRiskItemId
+      description: $description
+      severity: $severity
+      probability: $probability
+      evidenceLinks: $evidenceLinks
+    ) {
       id
       description
       riskLevel
@@ -200,8 +288,16 @@ export const UPDATE_RISK = gql`
 `;
 
 export const UPDATE_MITIGATION = gql`
-  mutation UpdateMitigation($mitigationId: String!, $description: String, $residualRiskLevel: String) {
-    updateMitigation(mitigationId: $mitigationId, description: $description, residualRiskLevel: $residualRiskLevel) {
+  mutation UpdateMitigation(
+    $mitigationId: String!
+    $description: String
+    $residualRiskLevel: String
+  ) {
+    updateMitigation(
+      mitigationId: $mitigationId
+      description: $description
+      residualRiskLevel: $residualRiskLevel
+    ) {
       id
       description
       riskLevel
@@ -226,8 +322,18 @@ export const MANAGE_BIBLIOGRAPHY = gql`
 // --- Story 5.11 ---
 
 export const ASSIGN_EVALUATOR = gql`
-  mutation AssignEvaluator($cerVersionId: String!, $sectionId: String!, $userId: String!, $role: String!) {
-    assignEvaluator(cerVersionId: $cerVersionId, sectionId: $sectionId, userId: $userId, role: $role) {
+  mutation AssignEvaluator(
+    $cerVersionId: String!
+    $sectionId: String!
+    $userId: String!
+    $role: String!
+  ) {
+    assignEvaluator(
+      cerVersionId: $cerVersionId
+      sectionId: $sectionId
+      userId: $userId
+      role: $role
+    ) {
       id
       cerVersionId
       sectionId
@@ -258,8 +364,16 @@ export const E_SIGN_CER = gql`
 // --- Story 5.12 ---
 
 export const CREATE_CER_VERSION = gql`
-  mutation CreateCerVersion($projectId: String!, $previousVersionId: String, $versionType: String!) {
-    createCerVersion(projectId: $projectId, previousVersionId: $previousVersionId, versionType: $versionType) {
+  mutation CreateCerVersion(
+    $projectId: String!
+    $previousVersionId: String
+    $versionType: String!
+  ) {
+    createCerVersion(
+      projectId: $projectId
+      previousVersionId: $previousVersionId
+      versionType: $versionType
+    ) {
       cerVersionId
       versionNumber
       versionType
@@ -288,5 +402,11 @@ export const LOCK_CER = gql`
       lockedAt
       snapshotCount
     }
+  }
+`;
+
+export const DELETE_CER_VERSION = gql`
+  mutation DeleteCerVersion($cerVersionId: String!) {
+    deleteCerVersion(cerVersionId: $cerVersionId)
   }
 `;

@@ -17,6 +17,10 @@ import {
   ClaimObjectType,
   ClaimArticleLinkObjectType,
   LockSoaResultType,
+  CreateTemplateResultType,
+  DeleteTemplateResultType,
+  ImportSoaDocumentResultType,
+  ConfirmSoaImportResultType,
 } from './types.js';
 import {
   checkPermission,
@@ -37,6 +41,10 @@ import { DraftNarrativeUseCase } from '../application/use-cases/draft-narrative.
 import { ManageDeviceRegistryUseCase } from '../application/use-cases/manage-device-registry.js';
 import { ManageClaimsUseCase } from '../application/use-cases/manage-claims.js';
 import { LockSoaUseCase } from '../application/use-cases/lock-soa.js';
+import { ManageGridTemplatesUseCase } from '../application/use-cases/manage-grid-templates.js';
+import { ImportSoaDocumentUseCase } from '../application/use-cases/import-soa-document.js';
+import { ConfirmSoaImportUseCase } from '../application/use-cases/confirm-soa-import.js';
+import { UpdateSoaImportDataUseCase } from '../application/use-cases/update-soa-import-data.js';
 import { getRedis } from '../../../config/redis.js';
 import { getEventBus } from '../../../shared/events/rabbitmq-event-bus.js';
 
@@ -642,6 +650,281 @@ builder.mutationField('lockSoaAnalysis', (t) =>
         soaAnalysisId: args.soaAnalysisId,
         userId: ctx.user!.id,
       }) as any;
+    },
+  }),
+);
+
+// --- Grid Template mutations (Template System) ---
+
+builder.mutationField('createGridTemplate', (t) =>
+  t.field({
+    type: CreateTemplateResultType,
+    args: {
+      name: t.arg.string({ required: true }),
+      soaType: t.arg.string({ required: true }),
+      description: t.arg.string({ required: false }),
+      columns: t.arg({ type: 'JSON', required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      const useCase = new ManageGridTemplatesUseCase(ctx.prisma);
+      return useCase.createTemplate({
+        name: args.name,
+        soaType: args.soaType,
+        description: args.description ?? undefined,
+        columns: args.columns as any[],
+        userId: ctx.user!.id,
+      }) as any;
+    },
+  }),
+);
+
+builder.mutationField('duplicateGridTemplate', (t) =>
+  t.field({
+    type: CreateTemplateResultType,
+    args: {
+      sourceTemplateId: t.arg.string({ required: true }),
+      newName: t.arg.string({ required: true }),
+      soaType: t.arg.string({ required: false }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      const useCase = new ManageGridTemplatesUseCase(ctx.prisma);
+      return useCase.duplicateTemplate({
+        sourceTemplateId: args.sourceTemplateId,
+        newName: args.newName,
+        soaType: args.soaType ?? undefined,
+        userId: ctx.user!.id,
+      }) as any;
+    },
+  }),
+);
+
+builder.mutationField('updateGridTemplate', (t) =>
+  t.field({
+    type: 'JSON',
+    args: {
+      templateId: t.arg.string({ required: true }),
+      name: t.arg.string({ required: false }),
+      description: t.arg.string({ required: false }),
+      columns: t.arg({ type: 'JSON', required: false }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      const useCase = new ManageGridTemplatesUseCase(ctx.prisma);
+      return useCase.updateTemplate({
+        templateId: args.templateId,
+        name: args.name ?? undefined,
+        description: args.description ?? undefined,
+        columns: (args.columns as any[] | undefined) ?? undefined,
+      }) as any;
+    },
+  }),
+);
+
+builder.mutationField('deleteGridTemplate', (t) =>
+  t.field({
+    type: DeleteTemplateResultType,
+    args: {
+      templateId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      const useCase = new ManageGridTemplatesUseCase(ctx.prisma);
+      return useCase.deleteTemplate(args.templateId) as any;
+    },
+  }),
+);
+
+// --- Delete SOA Analysis mutation ---
+
+builder.mutationField('deleteSoaAnalysis', (t) =>
+  t.field({
+    type: 'Boolean',
+    args: {
+      soaAnalysisId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
+        where: { id: args.soaAnalysisId },
+      });
+
+      if (!soa) {
+        throw new NotFoundError('SoaAnalysis', args.soaAnalysisId);
+      }
+
+      await checkProjectMembership(ctx, soa.projectId);
+
+      if (soa.status !== 'DRAFT') {
+        throw new Error('Cannot delete a locked SOA analysis');
+      }
+
+      // Cascade delete children in transaction
+      await ctx.prisma.$transaction([
+        ctx.prisma.claimArticleLink.deleteMany({
+          where: { claim: { soaAnalysisId: args.soaAnalysisId } },
+        }),
+        ctx.prisma.gridCell.deleteMany({
+          where: { extractionGrid: { soaAnalysisId: args.soaAnalysisId } },
+        }),
+        ctx.prisma.gridColumn.deleteMany({
+          where: { extractionGrid: { soaAnalysisId: args.soaAnalysisId } },
+        }),
+        ctx.prisma.soaBenchmark.deleteMany({
+          where: { soaAnalysisId: args.soaAnalysisId },
+        }),
+        ctx.prisma.qualityAssessment.deleteMany({
+          where: { soaAnalysisId: args.soaAnalysisId },
+        }),
+        ctx.prisma.extractionGrid.deleteMany({
+          where: { soaAnalysisId: args.soaAnalysisId },
+        }),
+        ctx.prisma.claim.deleteMany({
+          where: { soaAnalysisId: args.soaAnalysisId },
+        }),
+        ctx.prisma.similarDevice.deleteMany({
+          where: { soaAnalysisId: args.soaAnalysisId },
+        }),
+        ctx.prisma.thematicSection.deleteMany({
+          where: { soaAnalysisId: args.soaAnalysisId },
+        }),
+        ctx.prisma.soaSlsLink.deleteMany({
+          where: { soaAnalysisId: args.soaAnalysisId },
+        }),
+        ctx.prisma.soaAnalysis.delete({
+          where: { id: args.soaAnalysisId },
+        }),
+      ]);
+
+      return true;
+    },
+  }),
+);
+
+// --- SOA Import mutations ---
+
+builder.mutationField('importSoaDocument', (t) =>
+  t.field({
+    type: ImportSoaDocumentResultType,
+    args: {
+      projectId: t.arg.string({ required: true }),
+      fileName: t.arg.string({ required: true }),
+      fileContent: t.arg.string({ required: true }),
+      fileFormat: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+      await checkProjectMembership(ctx, args.projectId);
+
+      const redis = getRedis();
+      const enqueueJob = async (_queue: string, data: unknown): Promise<string> => {
+        await redis.publish('task:enqueued', JSON.stringify(data));
+        return (data as Record<string, string>).taskId ?? '';
+      };
+
+      const useCase = new ImportSoaDocumentUseCase(ctx.prisma, enqueueJob);
+      return useCase.execute({
+        projectId: args.projectId,
+        fileName: args.fileName,
+        fileContent: args.fileContent,
+        fileFormat: args.fileFormat as 'PDF' | 'DOCX',
+        userId: ctx.user!.id,
+      }) as any;
+    },
+  }),
+);
+
+builder.mutationField('confirmSoaImport', (t) =>
+  t.field({
+    type: ConfirmSoaImportResultType,
+    args: {
+      importId: t.arg.string({ required: true }),
+      editedData: t.arg({ type: 'JSON', required: false }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      const soaImport = await (ctx.prisma as any).soaImport.findUnique({
+        where: { id: args.importId },
+      });
+
+      if (!soaImport) {
+        throw new NotFoundError('SoaImport', args.importId);
+      }
+
+      await checkProjectMembership(ctx, soaImport.projectId);
+
+      const useCase = new ConfirmSoaImportUseCase(ctx.prisma);
+      return useCase.execute({
+        importId: args.importId,
+        editedData: args.editedData as any,
+        userId: ctx.user!.id,
+      }) as any;
+    },
+  }),
+);
+
+builder.mutationField('cancelSoaImport', (t) =>
+  t.field({
+    type: 'Boolean',
+    args: {
+      importId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      const soaImport = await (ctx.prisma as any).soaImport.findUnique({
+        where: { id: args.importId },
+      });
+
+      if (!soaImport) {
+        throw new NotFoundError('SoaImport', args.importId);
+      }
+
+      await checkProjectMembership(ctx, soaImport.projectId);
+
+      if (!['PROCESSING', 'REVIEW'].includes(soaImport.status)) {
+        throw new Error('Cannot cancel import in current status');
+      }
+
+      await (ctx.prisma as any).soaImport.update({
+        where: { id: args.importId },
+        data: { status: 'CANCELLED' },
+      });
+
+      return true;
+    },
+  }),
+);
+
+builder.mutationField('updateSoaImportData', (t) =>
+  t.field({
+    type: 'JSON',
+    args: {
+      importId: t.arg.string({ required: true }),
+      editedData: t.arg({ type: 'JSON', required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      const soaImport = await (ctx.prisma as any).soaImport.findUnique({
+        where: { id: args.importId },
+      });
+
+      if (!soaImport) {
+        throw new NotFoundError('SoaImport', args.importId);
+      }
+
+      await checkProjectMembership(ctx, soaImport.projectId);
+
+      const useCase = new UpdateSoaImportDataUseCase(ctx.prisma);
+      return useCase.execute(args.importId, args.editedData as any) as any;
     },
   }),
 );

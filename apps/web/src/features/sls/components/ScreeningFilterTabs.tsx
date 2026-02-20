@@ -13,16 +13,12 @@ interface ScreeningFilterTabsProps {
 
 const tabs = [
   { key: 'all', label: 'All', countKey: 'all' as const },
-  { key: 'likely-relevant', label: 'Likely Relevant', countKey: 'likelyRelevant' as const },
+  { key: 'likely_relevant', label: 'Likely Relevant', countKey: 'likelyRelevant' as const },
   { key: 'uncertain', label: 'Uncertain', countKey: 'uncertain' as const },
-  { key: 'likely-irrelevant', label: 'Likely Irrelevant', countKey: 'likelyIrrelevant' as const },
+  { key: 'likely_irrelevant', label: 'Likely Irrelevant', countKey: 'likelyIrrelevant' as const },
 ];
 
-export function ScreeningFilterTabs({
-  activeTab,
-  onTabChange,
-  counts,
-}: ScreeningFilterTabsProps) {
+export function ScreeningFilterTabs({ activeTab, onTabChange, counts }: ScreeningFilterTabsProps) {
   return (
     <div
       className="flex gap-1 border-b border-[var(--cortex-border)]"
@@ -45,10 +41,7 @@ export function ScreeningFilterTabs({
           data-testid={`filter-tab-${tab.key}`}
         >
           {tab.label}{' '}
-          <span
-            className="text-xs opacity-70"
-            data-testid={`tab-count-${tab.key}`}
-          >
+          <span className="text-xs opacity-70" data-testid={`tab-count-${tab.key}`}>
             ({counts[tab.countKey].toLocaleString()})
           </span>
         </button>

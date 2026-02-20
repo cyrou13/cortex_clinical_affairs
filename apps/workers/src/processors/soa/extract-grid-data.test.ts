@@ -5,7 +5,7 @@ function makeMockJob(metadata: any) {
   return {
     data: {
       taskId: 'task-1',
-      type: 'soa:extract-grid-data',
+      type: 'soa.extract-grid-data',
       metadata,
       createdBy: 'user-1',
     },

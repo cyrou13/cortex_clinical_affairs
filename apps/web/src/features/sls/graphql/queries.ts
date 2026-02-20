@@ -37,6 +37,8 @@ export const GET_SLS_QUERIES = gql`
       version
       isActive
       parentQueryId
+      dateFrom
+      dateTo
       createdAt
       updatedAt
     }
@@ -86,6 +88,7 @@ export const GET_ARTICLES = gql`
         journal
         sourceDatabase
         status
+        pdfStatus
         relevanceScore
         aiCategory
         aiExclusionCode
@@ -132,6 +135,18 @@ export const GET_ARTICLE_COUNT_BY_STATUS = gql`
 export const GET_AI_SCORING_PROGRESS = gql`
   query GetAiScoringProgress($taskId: String!) {
     aiScoringProgress(taskId: $taskId) {
+      taskId
+      status
+      scored
+      total
+      estimatedSecondsRemaining
+    }
+  }
+`;
+
+export const GET_ACTIVE_SCORING_TASK = gql`
+  query GetActiveScoringTask($sessionId: String!) {
+    activeScoringTask(sessionId: $sessionId) {
       taskId
       status
       scored
@@ -246,8 +261,20 @@ export const GET_SPOT_CHECK_SAMPLE = gql`
 `;
 
 export const GET_SCREENING_AUDIT_LOG = gql`
-  query GetScreeningAuditLog($sessionId: String!, $userId: String, $decision: String, $offset: Int, $limit: Int) {
-    screeningAuditLog(sessionId: $sessionId, userId: $userId, decision: $decision, offset: $offset, limit: $limit) {
+  query GetScreeningAuditLog(
+    $sessionId: String!
+    $userId: String
+    $decision: String
+    $offset: Int
+    $limit: Int
+  ) {
+    screeningAuditLog(
+      sessionId: $sessionId
+      userId: $userId
+      decision: $decision
+      offset: $offset
+      limit: $limit
+    ) {
       id
       articleId
       userId
@@ -294,22 +321,28 @@ export const GET_PDF_RETRIEVAL_STATS = gql`
 `;
 
 export const GET_MINED_REFERENCES = gql`
-  query GetMinedReferences($sessionId: String!, $approvalStatus: String, $validationStatus: String, $excludeDuplicates: Boolean) {
-    minedReferences(sessionId: $sessionId, approvalStatus: $approvalStatus, validationStatus: $validationStatus, excludeDuplicates: $excludeDuplicates) {
+  query GetMinedReferences(
+    $sessionId: String!
+    $approvalStatus: String
+    $validationStatus: String
+    $excludeDuplicates: Boolean
+  ) {
+    minedReferences(
+      sessionId: $sessionId
+      approvalStatus: $approvalStatus
+      validationStatus: $validationStatus
+      excludeDuplicates: $excludeDuplicates
+    ) {
       id
       sessionId
-      sourceArticleId
       title
       authors
       year
       journal
       doi
       pmid
-      rawCitation
       validationStatus
-      validationSource
       isDuplicate
-      duplicateOfArticleId
       approvalStatus
       approvedById
       approvedAt

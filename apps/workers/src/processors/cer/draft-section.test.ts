@@ -7,7 +7,7 @@ function createMockJob(overrides?: Partial<TaskJobData>): Job<TaskJobData> {
   return {
     data: {
       taskId: 'task-001',
-      type: 'cer:draft-section',
+      type: 'cer.draft-section',
       metadata: {
         cerVersionId: 'cer-1',
         cerSectionId: 'sec-1',
@@ -45,7 +45,8 @@ function makeDeps(overrides?: {
     generateDraft: overrides?.generateDraftFails
       ? vi.fn().mockRejectedValue(new Error('LLM service unavailable'))
       : vi.fn().mockResolvedValue({
-          content: overrides?.llmContent ?? 'This section describes the scope of the clinical evaluation.',
+          content:
+            overrides?.llmContent ?? 'This section describes the scope of the clinical evaluation.',
           references: overrides?.llmReferences ?? [
             { sourceId: 'soa-1', excerpt: 'CardioValve Pro device description' },
           ],
@@ -97,9 +98,7 @@ describe('DraftSectionProcessor', () => {
 
     await processor.process(job);
 
-    expect(deps.generateDraft).toHaveBeenCalledWith(
-      expect.stringContaining('Section 1'),
-    );
+    expect(deps.generateDraft).toHaveBeenCalledWith(expect.stringContaining('Section 1'));
   });
 
   it('stores the generated content', async () => {

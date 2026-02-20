@@ -1,9 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { PrismaClient } from '@prisma/client';
+import type { Redis } from 'ioredis';
 import { TaskService } from './task-service.js';
 
 const mockTask = {
   id: 'task-001',
-  type: 'sls:score-articles',
+  type: 'sls.score-articles',
   status: 'PENDING',
   progress: 0,
   total: null,
@@ -24,11 +26,11 @@ const mockPrisma = {
     findMany: vi.fn(),
     update: vi.fn(),
   },
-} as unknown as import('@prisma/client').PrismaClient;
+} as unknown as PrismaClient;
 
 const mockRedis = {
   publish: vi.fn().mockResolvedValue(1),
-} as unknown as import('ioredis').Redis;
+} as unknown as Redis;
 
 describe('TaskService', () => {
   let service: TaskService;
@@ -43,7 +45,7 @@ describe('TaskService', () => {
       (mockPrisma.asyncTask.create as ReturnType<typeof vi.fn>).mockResolvedValue(mockTask);
 
       const result = await service.enqueueTask(
-        'sls:score-articles',
+        'sls.score-articles',
         { projectId: 'proj-1' },
         'user-123',
       );
@@ -51,7 +53,7 @@ describe('TaskService', () => {
       expect(result).toEqual(mockTask);
       expect(mockPrisma.asyncTask.create).toHaveBeenCalledWith({
         data: {
-          type: 'sls:score-articles',
+          type: 'sls.score-articles',
           status: 'PENDING',
           progress: 0,
           metadata: { projectId: 'proj-1' },
@@ -63,7 +65,7 @@ describe('TaskService', () => {
     it('publishes task:enqueued event to Redis', async () => {
       (mockPrisma.asyncTask.create as ReturnType<typeof vi.fn>).mockResolvedValue(mockTask);
 
-      await service.enqueueTask('sls:score-articles', { projectId: 'proj-1' }, 'user-123');
+      await service.enqueueTask('sls.score-articles', { projectId: 'proj-1' }, 'user-123');
 
       expect(mockRedis.publish).toHaveBeenCalledWith(
         'task:enqueued',
@@ -77,7 +79,7 @@ describe('TaskService', () => {
         new Error('Redis down'),
       );
 
-      const result = await service.enqueueTask('sls:score-articles', undefined, 'user-123');
+      const result = await service.enqueueTask('sls.score-articles', undefined, 'user-123');
 
       expect(result).toEqual(mockTask);
     });
@@ -85,7 +87,7 @@ describe('TaskService', () => {
     it('defaults metadata to empty object when undefined', async () => {
       (mockPrisma.asyncTask.create as ReturnType<typeof vi.fn>).mockResolvedValue(mockTask);
 
-      await service.enqueueTask('sls:score-articles', undefined, 'user-123');
+      await service.enqueueTask('sls.score-articles', undefined, 'user-123');
 
       expect(mockPrisma.asyncTask.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
@@ -126,9 +128,7 @@ describe('TaskService', () => {
     it('throws NotFoundError for non-existent task', async () => {
       (mockPrisma.asyncTask.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(null);
 
-      await expect(service.cancelTask('nonexistent', 'user-123')).rejects.toThrow(
-        'not found',
-      );
+      await expect(service.cancelTask('nonexistent', 'user-123')).rejects.toThrow('not found');
     });
 
     it('throws error for already completed task', async () => {

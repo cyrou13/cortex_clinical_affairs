@@ -8,21 +8,26 @@ function makePrisma(overrides?: {
 }) {
   return {
     soaAnalysis: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.soa !== undefined ? overrides.soa : { id: 'soa-1', status: 'DRAFT' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.soa !== undefined ? overrides.soa : { id: 'soa-1', status: 'DRAFT' },
+        ),
     },
     extractionGrid: {
       create: vi.fn().mockResolvedValue({ id: 'grid-1' }),
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.grid !== undefined ? overrides.grid : { id: 'grid-1' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(overrides?.grid !== undefined ? overrides.grid : { id: 'grid-1' }),
     },
     gridColumn: {
       create: vi.fn().mockResolvedValue({ id: 'col-1' }),
       findFirst: vi.fn().mockResolvedValue(overrides?.maxOrder ?? { orderIndex: 2 }),
       update: vi.fn().mockResolvedValue({ id: 'col-1' }),
       delete: vi.fn().mockResolvedValue({ id: 'col-1' }),
+    },
+    customGridTemplate: {
+      findUnique: vi.fn().mockResolvedValue(null),
     },
   } as any;
 }
@@ -65,18 +70,18 @@ describe('ConfigureGridUseCase', () => {
       const prisma = makePrisma({ soa: null });
       const useCase = new ConfigureGridUseCase(prisma);
 
-      await expect(
-        useCase.createGrid({ soaAnalysisId: 'missing', name: 'Grid' }),
-      ).rejects.toThrow('not found');
+      await expect(useCase.createGrid({ soaAnalysisId: 'missing', name: 'Grid' })).rejects.toThrow(
+        'not found',
+      );
     });
 
     it('throws for locked SOA', async () => {
       const prisma = makePrisma({ soa: { id: 'soa-1', status: 'LOCKED' } });
       const useCase = new ConfigureGridUseCase(prisma);
 
-      await expect(
-        useCase.createGrid({ soaAnalysisId: 'soa-1', name: 'Grid' }),
-      ).rejects.toThrow('locked');
+      await expect(useCase.createGrid({ soaAnalysisId: 'soa-1', name: 'Grid' })).rejects.toThrow(
+        'locked',
+      );
     });
 
     it('throws for invalid template ID', async () => {
@@ -145,9 +150,7 @@ describe('ConfigureGridUseCase', () => {
       const prisma = makePrisma();
       const useCase = new ConfigureGridUseCase(prisma);
 
-      await expect(
-        useCase.renameColumn('grid-1', 'col-1', '  '),
-      ).rejects.toThrow('empty');
+      await expect(useCase.renameColumn('grid-1', 'col-1', '  ')).rejects.toThrow('empty');
     });
   });
 

@@ -45,10 +45,24 @@ export class ScoreArticlesProcessor extends BaseProcessor {
     this.prisma = prisma;
   }
 
+  /**
+   * Persist progress to the AsyncTask DB record so polling queries see updates.
+   */
+  private async persistProgress(taskId: string, progress: number, total: number): Promise<void> {
+    try {
+      await this.prisma.asyncTask.update({
+        where: { id: taskId },
+        data: { progress, total },
+      });
+    } catch {
+      // Best-effort DB update; don't fail the batch
+    }
+  }
+
   async process(job: Job<TaskJobData>): Promise<void> {
     const metadata = job.data.metadata as unknown as ScoreArticlesMetadata;
     const {
-      sessionId,
+      sessionId: _sessionId,
       articleIds,
       exclusionCodes,
       sessionName,
@@ -88,23 +102,27 @@ export class ScoreArticlesProcessor extends BaseProcessor {
       current: 0,
       message: `Starting AI scoring of ${articles.length} articles in ${totalBatches} batch(es)`,
     });
+    await this.persistProgress(job.data.taskId, 0, totalArticles);
 
     for (let batchIndex = 0; batchIndex < totalBatches; batchIndex++) {
       // Check cancellation between batches
       const cancelled = await this.checkCancellation(job);
       if (cancelled) {
-        await this.reportProgress(job, Math.round((processedCount / totalArticles) * 100), {
+        const pct = Math.round((processedCount / totalArticles) * 100);
+        await this.reportProgress(job, pct, {
           total: totalArticles,
           current: processedCount,
           message: `Scoring cancelled after ${processedCount} articles`,
         });
+        await this.persistProgress(job.data.taskId, pct, totalArticles);
         return;
       }
 
       const batchStart = batchIndex * BATCH_SIZE;
       const batchArticles: ScoringArticle[] = articles.slice(batchStart, batchStart + BATCH_SIZE);
 
-      await this.reportProgress(job, Math.round((processedCount / totalArticles) * 100), {
+      const pctBefore = Math.round((processedCount / totalArticles) * 100);
+      await this.reportProgress(job, pctBefore, {
         total: totalArticles,
         current: processedCount,
         message: `Scoring batch ${batchIndex + 1}/${totalBatches} (${batchArticles.length} articles)`,
@@ -151,8 +169,9 @@ export class ScoreArticlesProcessor extends BaseProcessor {
 
         processedCount += batchArticles.length;
       } catch (err) {
-        // Log error but continue with next batch
+        // Log error to stderr for debugging, then continue with next batch
         const errorMessage = err instanceof Error ? err.message : String(err);
+        process.stderr.write(`[ERROR] Score batch ${batchIndex + 1} failed: ${errorMessage}\n`);
         await this.reportProgress(job, Math.round((processedCount / totalArticles) * 100), {
           total: totalArticles,
           current: processedCount,
@@ -161,6 +180,10 @@ export class ScoreArticlesProcessor extends BaseProcessor {
         // Mark batch articles as failed - skip them but count them
         processedCount += batchArticles.length;
       }
+
+      // Persist progress to DB after each batch for polling queries
+      const pctAfter = Math.round((processedCount / totalArticles) * 100);
+      await this.persistProgress(job.data.taskId, pctAfter, totalArticles);
     }
 
     // Report final progress
@@ -169,16 +192,6 @@ export class ScoreArticlesProcessor extends BaseProcessor {
       current: processedCount,
       message: `Completed: ${processedCount}/${totalArticles} articles scored`,
     });
-
-    // Emit completion event
-    const completionEvent = JSON.stringify({
-      taskId: job.data.taskId,
-      type: 'sls:score-articles:completed',
-      sessionId,
-      articlesScored: processedCount,
-      totalArticles,
-    });
-
-    await this.redis.publish(`task:progress:${job.data.createdBy}`, completionEvent);
+    await this.persistProgress(job.data.taskId, 100, totalArticles);
   }
 }

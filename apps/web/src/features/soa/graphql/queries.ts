@@ -17,6 +17,18 @@ export const GET_SOA_ANALYSES = gql`
   }
 `;
 
+export const GET_SOA_ANALYSES_BY_SLS_SESSION = gql`
+  query GetSoaAnalysesBySlsSession($slsSessionId: String!) {
+    soaAnalysesBySlsSession(slsSessionId: $slsSessionId) {
+      id
+      name
+      type
+      status
+      createdAt
+    }
+  }
+`;
+
 export const GET_SOA_ANALYSIS = gql`
   query GetSoaAnalysis($id: String!) {
     soaAnalysis(id: $id) {
@@ -44,6 +56,7 @@ export const GET_SOA_SECTIONS = gql`
       title
       status
       orderIndex
+      narrativeContent
       createdAt
       updatedAt
     }
@@ -207,6 +220,81 @@ export const GET_CLAIM_ARTICLE_LINKS = gql`
       claimId
       articleId
       sourceQuote
+      createdAt
+    }
+  }
+`;
+
+// --- Grid Template queries ---
+
+export const GET_GRID_TEMPLATES = gql`
+  query GetGridTemplates($soaType: String) {
+    gridTemplates(soaType: $soaType) {
+      id
+      name
+      soaType
+      description
+      isBuiltIn
+      columns {
+        name
+        displayName
+        dataType
+        isRequired
+        orderIndex
+      }
+    }
+  }
+`;
+
+export const GET_GRID_TEMPLATE = gql`
+  query GetGridTemplate($templateId: String!) {
+    gridTemplate(templateId: $templateId) {
+      id
+      name
+      soaType
+      description
+      isBuiltIn
+      columns {
+        name
+        displayName
+        dataType
+        isRequired
+        orderIndex
+      }
+    }
+  }
+`;
+
+// --- SOA Import ---
+
+export const GET_SOA_IMPORT = gql`
+  query GetSoaImport($importId: String!) {
+    soaImport(importId: $importId) {
+      id
+      projectId
+      status
+      sourceFileName
+      sourceFormat
+      extractedData
+      gapReport
+      taskId
+      soaAnalysisId
+      createdById
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const GET_SOA_IMPORTS = gql`
+  query GetSoaImports($projectId: String!) {
+    soaImports(projectId: $projectId) {
+      id
+      status
+      sourceFileName
+      sourceFormat
+      taskId
+      soaAnalysisId
       createdAt
     }
   }

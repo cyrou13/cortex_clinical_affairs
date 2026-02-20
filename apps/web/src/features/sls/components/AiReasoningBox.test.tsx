@@ -1,9 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-
-vi.mock('@apollo/client', () => ({
-  gql: (str: TemplateStringsArray) => str[0],
-}));
 
 import { AiReasoningBox } from './AiReasoningBox';
 
@@ -51,25 +47,19 @@ describe('AiReasoningBox', () => {
   it('shows score label: Likely Relevant for high scores', () => {
     render(<AiReasoningBox {...defaultProps} score={80} />);
 
-    expect(screen.getByTestId('ai-score-label')).toHaveTextContent(
-      'Likely Relevant',
-    );
+    expect(screen.getByTestId('ai-score-label')).toHaveTextContent('Likely Relevant');
   });
 
   it('shows score label: Uncertain for medium scores', () => {
     render(<AiReasoningBox {...defaultProps} score={50} />);
 
-    expect(screen.getByTestId('ai-score-label')).toHaveTextContent(
-      'Uncertain',
-    );
+    expect(screen.getByTestId('ai-score-label')).toHaveTextContent('Uncertain');
   });
 
   it('shows score label: Likely Irrelevant for low scores', () => {
     render(<AiReasoningBox {...defaultProps} score={15} />);
 
-    expect(screen.getByTestId('ai-score-label')).toHaveTextContent(
-      'Likely Irrelevant',
-    );
+    expect(screen.getByTestId('ai-score-label')).toHaveTextContent('Likely Irrelevant');
   });
 
   it('renders reasoning text in styled box', () => {
@@ -85,15 +75,11 @@ describe('AiReasoningBox', () => {
   it('renders category label', () => {
     render(<AiReasoningBox {...defaultProps} />);
 
-    expect(screen.getByTestId('ai-category')).toHaveTextContent(
-      'Clinical Efficacy',
-    );
+    expect(screen.getByTestId('ai-category')).toHaveTextContent('Clinical Efficacy');
   });
 
   it('renders exclusion code when present', () => {
-    render(
-      <AiReasoningBox {...defaultProps} score={15} exclusionCode="E1-Wrong Population" />,
-    );
+    render(<AiReasoningBox {...defaultProps} score={15} exclusionCode="E1-Wrong Population" />);
 
     const exclusion = screen.getByTestId('ai-exclusion-code');
     expect(exclusion).toBeInTheDocument();
@@ -107,18 +93,9 @@ describe('AiReasoningBox', () => {
   });
 
   it('shows empty state when score and reasoning are both null', () => {
-    render(
-      <AiReasoningBox
-        score={null}
-        reasoning={null}
-        exclusionCode={null}
-        category={null}
-      />,
-    );
+    render(<AiReasoningBox score={null} reasoning={null} exclusionCode={null} category={null} />);
 
-    expect(screen.getByTestId('ai-no-score')).toHaveTextContent(
-      'No AI scoring data available',
-    );
+    expect(screen.getByTestId('ai-no-score')).toHaveTextContent('No AI scoring data available');
   });
 
   it('renders without category when null', () => {
@@ -137,34 +114,21 @@ describe('AiReasoningBox', () => {
       />,
     );
 
-    expect(screen.getByTestId('ai-reasoning-text')).toHaveTextContent(
-      'Some reasoning text',
-    );
+    expect(screen.getByTestId('ai-reasoning-text')).toHaveTextContent('Some reasoning text');
     expect(screen.queryByTestId('ai-score-badge')).not.toBeInTheDocument();
   });
 
   it('renders score with null reasoning', () => {
-    render(
-      <AiReasoningBox
-        score={90}
-        reasoning={null}
-        exclusionCode={null}
-        category={null}
-      />,
-    );
+    render(<AiReasoningBox score={90} reasoning={null} exclusionCode={null} category={null} />);
 
-    expect(screen.getByTestId('ai-score-badge')).toHaveTextContent(
-      'AI Score: 90',
-    );
+    expect(screen.getByTestId('ai-score-badge')).toHaveTextContent('AI Score: 90');
     expect(screen.queryByTestId('ai-reasoning-text')).not.toBeInTheDocument();
   });
 
   it('renders at boundary score 75 as Likely Relevant', () => {
     render(<AiReasoningBox {...defaultProps} score={75} />);
 
-    expect(screen.getByTestId('ai-score-label')).toHaveTextContent(
-      'Likely Relevant',
-    );
+    expect(screen.getByTestId('ai-score-label')).toHaveTextContent('Likely Relevant');
     const badge = screen.getByTestId('ai-score-badge');
     expect(badge.className).toContain('bg-emerald-100');
   });
@@ -172,9 +136,7 @@ describe('AiReasoningBox', () => {
   it('renders at boundary score 40 as Uncertain', () => {
     render(<AiReasoningBox {...defaultProps} score={40} />);
 
-    expect(screen.getByTestId('ai-score-label')).toHaveTextContent(
-      'Uncertain',
-    );
+    expect(screen.getByTestId('ai-score-label')).toHaveTextContent('Uncertain');
     const badge = screen.getByTestId('ai-score-badge');
     expect(badge.className).toContain('bg-orange-100');
   });
@@ -182,9 +144,7 @@ describe('AiReasoningBox', () => {
   it('renders at boundary score 39 as Likely Irrelevant', () => {
     render(<AiReasoningBox {...defaultProps} score={39} />);
 
-    expect(screen.getByTestId('ai-score-label')).toHaveTextContent(
-      'Likely Irrelevant',
-    );
+    expect(screen.getByTestId('ai-score-label')).toHaveTextContent('Likely Irrelevant');
     const badge = screen.getByTestId('ai-score-badge');
     expect(badge.className).toContain('bg-red-100');
   });

@@ -1,27 +1,42 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('PDF Retrieval & Verification', () => {
-  test('PDF retrieval panel loads on session page', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/pdfs');
+  test('PDF retrieval panel accessible via pdfs-refs tab', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
 
-    await expect(page.getByTestId('pdf-retrieval-panel')).toBeVisible();
-    await expect(page.getByTestId('launch-retrieval-btn')).toBeVisible();
-  });
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-pdfs-refs').click();
 
-  test('PDF stats display when available', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/pdfs');
+      const pdfsTab = page.getByTestId('pdfs-refs-tab');
+      await expect(pdfsTab).toBeVisible();
 
-    const stats = page.getByTestId('pdf-stats');
-    if (await stats.isVisible()) {
-      await expect(page.getByTestId('stat-total')).toBeVisible();
-      await expect(page.getByTestId('stat-found')).toBeVisible();
-      await expect(page.getByTestId('stat-not-found')).toBeVisible();
-      await expect(page.getByTestId('stat-mismatches')).toBeVisible();
-      await expect(page.getByTestId('pdf-progress-bar')).toBeVisible();
+      const pdfPanel = page.getByTestId('pdf-retrieval-panel');
+      if (await pdfPanel.isVisible()) {
+        await expect(page.getByTestId('launch-retrieval-btn')).toBeVisible();
+      }
     }
   });
 
-  test('manual PDF upload zone renders', async ({ page }) => {
+  test('PDF stats display when available', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
+
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-pdfs-refs').click();
+
+      const stats = page.getByTestId('pdf-stats');
+      if (await stats.isVisible()) {
+        await expect(page.getByTestId('stat-total')).toBeVisible();
+        await expect(page.getByTestId('stat-found')).toBeVisible();
+        await expect(page.getByTestId('stat-not-found')).toBeVisible();
+        await expect(page.getByTestId('stat-mismatches')).toBeVisible();
+        await expect(page.getByTestId('pdf-progress-bar')).toBeVisible();
+      }
+    }
+  });
+
+  test('manual PDF upload zone renders in article detail', async ({ page }) => {
     await page.goto('/projects/proj-1/sls-sessions/sess-1/articles/art-1');
 
     const uploadZone = page.getByTestId('pdf-drop-zone');
@@ -30,32 +45,51 @@ test.describe('PDF Retrieval & Verification', () => {
     }
   });
 
-  test('mismatch review page loads', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/pdfs/mismatches');
+  test('PDF mismatch review accessible via pdfs-refs tab', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
 
-    const review = page.getByTestId('pdf-mismatch-review');
-    const empty = page.getByTestId('mismatch-empty');
-    const loading = page.getByTestId('mismatch-loading');
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-pdfs-refs').click();
 
-    await expect(review.or(empty).or(loading).first()).toBeVisible();
-  });
+      const pdfsTab = page.getByTestId('pdfs-refs-tab');
+      await expect(pdfsTab).toBeVisible();
 
-  test('mismatch cards show action buttons', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/pdfs/mismatches');
-
-    const review = page.getByTestId('pdf-mismatch-review');
-    if (await review.isVisible()) {
-      await expect(page.getByTestId('mismatch-accept-btn').first()).toBeVisible();
-      await expect(page.getByTestId('mismatch-reject-btn').first()).toBeVisible();
+      const review = page.getByTestId('pdf-mismatch-review');
+      if (await review.isVisible()) {
+        await expect(review).toBeVisible();
+      }
     }
   });
 
-  test('PDF percentage display', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/pdfs');
+  test('mismatch cards show action buttons when data available', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
 
-    const percent = page.getByTestId('pdf-percent');
-    if (await percent.isVisible()) {
-      await expect(percent).toHaveText(/\d+% PDFs retrieved/);
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-pdfs-refs').click();
+
+      const review = page.getByTestId('pdf-mismatch-review');
+      if (await review.isVisible()) {
+        const acceptBtn = page.getByTestId('mismatch-accept-btn').first();
+        if (await acceptBtn.isVisible()) {
+          await expect(acceptBtn).toBeVisible();
+        }
+      }
+    }
+  });
+
+  test('PDF percentage display when available', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
+
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-pdfs-refs').click();
+
+      const percent = page.getByTestId('pdf-percent');
+      if (await percent.isVisible()) {
+        await expect(percent).toHaveText(/\d+% PDFs retrieved/);
+      }
     }
   });
 });

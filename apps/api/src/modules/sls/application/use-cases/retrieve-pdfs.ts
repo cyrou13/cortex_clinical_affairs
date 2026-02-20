@@ -23,7 +23,7 @@ export class RetrievePdfsUseCase {
       where: {
         sessionId,
         status: { in: ['INCLUDED', 'FINAL_INCLUDED'] },
-        OR: [{ pdfStatus: 'NONE' }, { pdfStatus: null }],
+        OR: [{ pdfStatus: 'NONE' }, { pdfStatus: null }, { pdfStatus: 'RETRIEVING' }],
       },
       select: { id: true },
     });
@@ -37,7 +37,7 @@ export class RetrievePdfsUseCase {
     // Create async task
     const task = await this.prisma.asyncTask.create({
       data: {
-        type: 'sls:retrieve-pdfs',
+        type: 'sls.retrieve-pdfs',
         status: 'PENDING',
         createdBy: userId,
         metadata: { sessionId, articleCount: articleIds.length },
@@ -45,7 +45,7 @@ export class RetrievePdfsUseCase {
     });
 
     // Enqueue job
-    await this.enqueueJob('sls:retrieve-pdfs', {
+    await this.enqueueJob('sls.retrieve-pdfs', {
       sessionId,
       taskId: task.id,
       userId,

@@ -27,6 +27,9 @@
   --cortex-text-secondary: #2C3E50;
   --cortex-text-muted: #7F8C8D;
 
+  --cortex-primary: var(--cortex-blue-500);
+  --cortex-bg-hover: var(--cortex-bg-secondary);
+
   font-family: 'Inter Variable', system-ui, sans-serif;
   color: var(--cortex-text-primary);
 }

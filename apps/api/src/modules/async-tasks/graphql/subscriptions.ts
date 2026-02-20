@@ -81,12 +81,14 @@ export async function* createTaskProgressIterator(
 builder.subscriptionField('onTaskProgress', (t) =>
   t.field({
     type: TaskProgressEventType,
-    description: 'Subscribe to real-time task progress events for the current user',
-    subscribe: async function* (_parent, _args, ctx) {
-      if (!ctx.user) {
-        throw new Error('Authentication required');
-      }
-      yield* createTaskProgressIterator(ctx.user.id);
+    description: 'Subscribe to real-time task progress events for a user',
+    args: {
+      userId: t.arg.string({ required: true }),
+    },
+    subscribe: async function* (_parent, args, ctx) {
+      // Use the authenticated user's ID if available, otherwise fall back to the provided arg
+      const userId = ctx.user?.id ?? args.userId;
+      yield* createTaskProgressIterator(userId);
     },
     resolve: (event: ProgressEvent) => event,
   }),

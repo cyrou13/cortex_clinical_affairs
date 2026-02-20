@@ -1,15 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-
-vi.mock('@apollo/client', () => ({
-  gql: (str: TemplateStringsArray) => str[0],
-}));
-
-const mockUseQuery = vi.fn();
-
-vi.mock('@apollo/client/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-}));
+import { screen, fireEvent } from '@testing-library/react';
+import { renderWithApollo, type MockedResponse } from '../../../test-utils/apollo-wrapper';
+import { GET_QUERY_EXECUTIONS } from '../graphql/queries';
 
 import { QueryExecutionHistory } from './QueryExecutionHistory';
 
@@ -17,12 +9,11 @@ const mockExecutions = [
   {
     id: 'exec-1',
     queryId: 'query-1',
-    database: 'pubmed',
+    database: 'PUBMED',
     status: 'SUCCESS',
     articlesFound: 3200,
     articlesImported: 2800,
-    reproducibilityStatement:
-      'Search conducted on PubMed on 2026-02-14 using the query string...',
+    reproducibilityStatement: 'Search conducted on PubMed on 2026-02-14 using the query string...',
     errorMessage: null,
     executedAt: '2026-02-14T10:00:00Z',
     completedAt: '2026-02-14T10:05:00Z',
@@ -30,7 +21,7 @@ const mockExecutions = [
   {
     id: 'exec-2',
     queryId: 'query-1',
-    database: 'cochrane',
+    database: 'GOOGLE_SCHOLAR',
     status: 'FAILED',
     articlesFound: null,
     articlesImported: null,
@@ -42,7 +33,7 @@ const mockExecutions = [
   {
     id: 'exec-3',
     queryId: 'query-1',
-    database: 'embase',
+    database: 'CLINICAL_TRIALS',
     status: 'SUCCESS',
     articlesFound: 1500,
     articlesImported: 1200,
@@ -53,33 +44,54 @@ const mockExecutions = [
   },
 ];
 
+function makeMock(queryId: string, executions: typeof mockExecutions): MockedResponse {
+  return {
+    request: {
+      query: GET_QUERY_EXECUTIONS,
+      variables: { queryId },
+    },
+    result: {
+      data: { queryExecutions: executions },
+    },
+  };
+}
+
+function makeLoadingMock(queryId: string): MockedResponse {
+  return {
+    request: {
+      query: GET_QUERY_EXECUTIONS,
+      variables: { queryId },
+    },
+    result: {
+      data: { queryExecutions: [] },
+    },
+    delay: 100000, // Very long delay to simulate loading state
+  };
+}
+
 describe('QueryExecutionHistory', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders execution list', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryExecutions: mockExecutions },
-      loading: false,
-    });
+  it('renders execution list', async () => {
+    renderWithApollo(<QueryExecutionHistory queryId="query-1" />, [
+      makeMock('query-1', mockExecutions),
+    ]);
 
-    render(<QueryExecutionHistory queryId="query-1" />);
-
+    expect(await screen.findByText('Execution History')).toBeInTheDocument();
     expect(screen.getByTestId('execution-history')).toBeInTheDocument();
-    expect(screen.getByText('Execution History')).toBeInTheDocument();
     expect(screen.getByTestId('execution-row-exec-1')).toBeInTheDocument();
     expect(screen.getByTestId('execution-row-exec-2')).toBeInTheDocument();
     expect(screen.getByTestId('execution-row-exec-3')).toBeInTheDocument();
   });
 
-  it('shows status badges for each execution', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryExecutions: mockExecutions },
-      loading: false,
-    });
+  it('shows status badges for each execution', async () => {
+    renderWithApollo(<QueryExecutionHistory queryId="query-1" />, [
+      makeMock('query-1', mockExecutions),
+    ]);
 
-    render(<QueryExecutionHistory queryId="query-1" />);
+    await screen.findByText('Execution History');
 
     const statusElements = screen.getAllByRole('status');
     expect(statusElements.length).toBe(3);
@@ -88,94 +100,68 @@ describe('QueryExecutionHistory', () => {
     expect(screen.getByText('Failed')).toBeInTheDocument();
   });
 
-  it('shows database badges', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryExecutions: mockExecutions },
-      loading: false,
-    });
+  it('shows database badges', async () => {
+    renderWithApollo(<QueryExecutionHistory queryId="query-1" />, [
+      makeMock('query-1', mockExecutions),
+    ]);
 
-    render(<QueryExecutionHistory queryId="query-1" />);
+    await screen.findByText('Execution History');
 
     expect(screen.getByText('PubMed')).toBeInTheDocument();
-    expect(screen.getByText('Cochrane')).toBeInTheDocument();
-    expect(screen.getByText('Embase')).toBeInTheDocument();
+    expect(screen.getByText('Google Scholar')).toBeInTheDocument();
+    expect(screen.getByText('ClinicalTrials.gov')).toBeInTheDocument();
   });
 
-  it('shows articles found and imported counts', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryExecutions: mockExecutions },
-      loading: false,
-    });
+  it('shows articles found and imported counts', async () => {
+    renderWithApollo(<QueryExecutionHistory queryId="query-1" />, [
+      makeMock('query-1', mockExecutions),
+    ]);
 
-    render(<QueryExecutionHistory queryId="query-1" />);
+    await screen.findByText('Execution History');
 
-    expect(screen.getByTestId('articles-found-exec-1')).toHaveTextContent(
-      '3,200 found',
-    );
-    expect(screen.getByTestId('articles-imported-exec-1')).toHaveTextContent(
-      '2,800 imported',
-    );
+    expect(screen.getByTestId('articles-found-exec-1')).toHaveTextContent('3,200 found');
+    expect(screen.getByTestId('articles-imported-exec-1')).toHaveTextContent('2,800 imported');
   });
 
-  it('shows empty state when no executions', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryExecutions: [] },
-      loading: false,
-    });
+  it('shows empty state when no executions', async () => {
+    renderWithApollo(<QueryExecutionHistory queryId="query-1" />, [makeMock('query-1', [])]);
 
-    render(<QueryExecutionHistory queryId="query-1" />);
-
-    expect(screen.getByTestId('empty-state')).toBeInTheDocument();
+    expect(await screen.findByTestId('empty-state')).toBeInTheDocument();
     expect(screen.getByText('No executions yet')).toBeInTheDocument();
-    expect(
-      screen.getByText('Execute this query to see results here'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Execute this query to see results here')).toBeInTheDocument();
   });
 
   it('shows loading state', () => {
-    mockUseQuery.mockReturnValue({
-      data: null,
-      loading: true,
-    });
+    renderWithApollo(<QueryExecutionHistory queryId="query-1" />, [makeLoadingMock('query-1')]);
 
-    render(<QueryExecutionHistory queryId="query-1" />);
-
-    expect(
-      screen.getByText('Loading execution history...'),
-    ).toBeInTheDocument();
+    expect(screen.getByText('Loading execution history...')).toBeInTheDocument();
   });
 
-  it('expands reproducibility statement on click', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryExecutions: mockExecutions },
-      loading: false,
-    });
+  it('expands reproducibility statement on click', async () => {
+    renderWithApollo(<QueryExecutionHistory queryId="query-1" />, [
+      makeMock('query-1', mockExecutions),
+    ]);
 
-    render(<QueryExecutionHistory queryId="query-1" />);
+    await screen.findByText('Execution History');
 
     // Initially collapsed
-    expect(
-      screen.queryByTestId('execution-details-exec-1'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('execution-details-exec-1')).not.toBeInTheDocument();
 
     // Click to expand
     fireEvent.click(screen.getByTestId('execution-toggle-exec-1'));
 
-    expect(
-      screen.getByTestId('execution-details-exec-1'),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('execution-details-exec-1')).toBeInTheDocument();
     expect(screen.getByTestId('reproducibility-exec-1')).toHaveTextContent(
       'Search conducted on PubMed on 2026-02-14 using the query string...',
     );
   });
 
-  it('shows error message for failed execution when expanded', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryExecutions: mockExecutions },
-      loading: false,
-    });
+  it('shows error message for failed execution when expanded', async () => {
+    renderWithApollo(<QueryExecutionHistory queryId="query-1" />, [
+      makeMock('query-1', mockExecutions),
+    ]);
 
-    render(<QueryExecutionHistory queryId="query-1" />);
+    await screen.findByText('Execution History');
 
     fireEvent.click(screen.getByTestId('execution-toggle-exec-2'));
 
@@ -184,35 +170,14 @@ describe('QueryExecutionHistory', () => {
     );
   });
 
-  it('does not show articles for failed executions without counts', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryExecutions: mockExecutions },
-      loading: false,
-    });
+  it('does not show articles for failed executions without counts', async () => {
+    renderWithApollo(<QueryExecutionHistory queryId="query-1" />, [
+      makeMock('query-1', mockExecutions),
+    ]);
 
-    render(<QueryExecutionHistory queryId="query-1" />);
+    await screen.findByText('Execution History');
 
-    expect(
-      screen.queryByTestId('articles-found-exec-2'),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByTestId('articles-imported-exec-2'),
-    ).not.toBeInTheDocument();
-  });
-
-  it('passes queryId to the GraphQL query', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryExecutions: [] },
-      loading: false,
-    });
-
-    render(<QueryExecutionHistory queryId="query-42" />);
-
-    expect(mockUseQuery).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        variables: { queryId: 'query-42' },
-      }),
-    );
+    expect(screen.queryByTestId('articles-found-exec-2')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('articles-imported-exec-2')).not.toBeInTheDocument();
   });
 });

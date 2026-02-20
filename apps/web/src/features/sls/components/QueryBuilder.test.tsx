@@ -1,14 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-
-vi.mock('@apollo/client', () => ({
-  gql: (str: TemplateStringsArray) => str[0],
-}));
-
-vi.mock('@apollo/client/react', () => ({
-  useQuery: vi.fn(),
-  useMutation: vi.fn(),
-}));
+import { screen, fireEvent } from '@testing-library/react';
+import { renderWithApollo } from '../../../test-utils/apollo-wrapper';
 
 import { QueryBuilder } from './QueryBuilder';
 
@@ -24,7 +16,7 @@ describe('QueryBuilder', () => {
   });
 
   it('renders query name input and query string textarea', () => {
-    render(<QueryBuilder {...defaultProps} />);
+    renderWithApollo(<QueryBuilder {...defaultProps} />);
 
     expect(screen.getByTestId('query-name-input')).toBeInTheDocument();
     expect(screen.getByTestId('query-string-input')).toBeInTheDocument();
@@ -33,7 +25,7 @@ describe('QueryBuilder', () => {
   });
 
   it('renders save and cancel buttons', () => {
-    render(<QueryBuilder {...defaultProps} />);
+    renderWithApollo(<QueryBuilder {...defaultProps} />);
 
     expect(screen.getByTestId('save-button')).toBeInTheDocument();
     expect(screen.getByTestId('cancel-button')).toBeInTheDocument();
@@ -41,22 +33,32 @@ describe('QueryBuilder', () => {
   });
 
   it('shows "Update Query" when editing existing query', () => {
-    const query = { id: 'q-1', name: 'Test Query', queryString: 'cancer AND treatment', version: 1 };
-    render(<QueryBuilder {...defaultProps} query={query} />);
+    const query = {
+      id: 'q-1',
+      name: 'Test Query',
+      queryString: 'cancer AND treatment',
+      version: 1,
+    };
+    renderWithApollo(<QueryBuilder {...defaultProps} query={query} />);
 
     expect(screen.getByTestId('save-button')).toHaveTextContent('Update Query');
   });
 
   it('populates fields when editing existing query', () => {
-    const query = { id: 'q-1', name: 'Test Query', queryString: 'cancer AND treatment', version: 1 };
-    render(<QueryBuilder {...defaultProps} query={query} />);
+    const query = {
+      id: 'q-1',
+      name: 'Test Query',
+      queryString: 'cancer AND treatment',
+      version: 1,
+    };
+    renderWithApollo(<QueryBuilder {...defaultProps} query={query} />);
 
     expect(screen.getByTestId('query-name-input')).toHaveValue('Test Query');
     expect(screen.getByTestId('query-string-input')).toHaveValue('cancer AND treatment');
   });
 
   it('displays validation errors for invalid query', () => {
-    render(<QueryBuilder {...defaultProps} />);
+    renderWithApollo(<QueryBuilder {...defaultProps} />);
 
     fireEvent.change(screen.getByTestId('query-string-input'), {
       target: { value: '(cancer AND treatment' },
@@ -67,7 +69,7 @@ describe('QueryBuilder', () => {
   });
 
   it('shows syntax preview for valid query', () => {
-    render(<QueryBuilder {...defaultProps} />);
+    renderWithApollo(<QueryBuilder {...defaultProps} />);
 
     fireEvent.change(screen.getByTestId('query-string-input'), {
       target: { value: 'cancer AND treatment' },
@@ -77,13 +79,13 @@ describe('QueryBuilder', () => {
   });
 
   it('does not show syntax preview when query is empty', () => {
-    render(<QueryBuilder {...defaultProps} />);
+    renderWithApollo(<QueryBuilder {...defaultProps} />);
 
     expect(screen.queryByTestId('syntax-preview')).not.toBeInTheDocument();
   });
 
   it('does not show syntax preview when query is invalid', () => {
-    render(<QueryBuilder {...defaultProps} />);
+    renderWithApollo(<QueryBuilder {...defaultProps} />);
 
     fireEvent.change(screen.getByTestId('query-string-input'), {
       target: { value: '(cancer AND' },
@@ -93,7 +95,7 @@ describe('QueryBuilder', () => {
   });
 
   it('applies red border when query has errors', () => {
-    render(<QueryBuilder {...defaultProps} />);
+    renderWithApollo(<QueryBuilder {...defaultProps} />);
 
     fireEvent.change(screen.getByTestId('query-string-input'), {
       target: { value: '(cancer AND treatment' },
@@ -105,7 +107,7 @@ describe('QueryBuilder', () => {
 
   it('calls onSave with name and queryString', () => {
     const onSave = vi.fn();
-    render(<QueryBuilder {...defaultProps} onSave={onSave} />);
+    renderWithApollo(<QueryBuilder {...defaultProps} onSave={onSave} />);
 
     fireEvent.change(screen.getByTestId('query-name-input'), {
       target: { value: 'My Query' },
@@ -124,7 +126,7 @@ describe('QueryBuilder', () => {
 
   it('does not call onSave when name is empty', () => {
     const onSave = vi.fn();
-    render(<QueryBuilder {...defaultProps} onSave={onSave} />);
+    renderWithApollo(<QueryBuilder {...defaultProps} onSave={onSave} />);
 
     fireEvent.change(screen.getByTestId('query-string-input'), {
       target: { value: 'cancer AND treatment' },
@@ -137,7 +139,7 @@ describe('QueryBuilder', () => {
 
   it('does not call onSave when query is invalid', () => {
     const onSave = vi.fn();
-    render(<QueryBuilder {...defaultProps} onSave={onSave} />);
+    renderWithApollo(<QueryBuilder {...defaultProps} onSave={onSave} />);
 
     fireEvent.change(screen.getByTestId('query-name-input'), {
       target: { value: 'My Query' },
@@ -153,7 +155,7 @@ describe('QueryBuilder', () => {
 
   it('calls onCancel when cancel button is clicked', () => {
     const onCancel = vi.fn();
-    render(<QueryBuilder {...defaultProps} onCancel={onCancel} />);
+    renderWithApollo(<QueryBuilder {...defaultProps} onCancel={onCancel} />);
 
     fireEvent.click(screen.getByTestId('cancel-button'));
 
@@ -161,7 +163,7 @@ describe('QueryBuilder', () => {
   });
 
   it('save button is disabled when form is incomplete', () => {
-    render(<QueryBuilder {...defaultProps} />);
+    renderWithApollo(<QueryBuilder {...defaultProps} />);
 
     expect(screen.getByTestId('save-button')).toBeDisabled();
   });

@@ -8,7 +8,7 @@ interface CreateStudyInput {
   name: string;
   type: string;
   description?: string;
-  soaAnalysisId: string;
+  soaAnalysisId?: string;
   userId: string;
 }
 
@@ -16,7 +16,7 @@ interface CreateStudyResult {
   validationStudyId: string;
   name: string;
   type: string;
-  soaAnalysisId: string;
+  soaAnalysisId?: string;
   benchmarkCount: number;
 }
 
@@ -42,22 +42,24 @@ export class CreateStudyUseCase {
       throw new NotFoundError('Project', input.projectId);
     }
 
-    // Verify SOA exists and is locked
-    const soa = await this.prisma.soaAnalysis.findUnique({
-      where: { id: input.soaAnalysisId },
-      select: { id: true, status: true, projectId: true },
-    });
+    // Verify SOA exists and is locked (only if provided)
+    if (input.soaAnalysisId) {
+      const soa = await this.prisma.soaAnalysis.findUnique({
+        where: { id: input.soaAnalysisId },
+        select: { id: true, status: true, projectId: true },
+      });
 
-    if (!soa) {
-      throw new NotFoundError('SoaAnalysis', input.soaAnalysisId);
-    }
+      if (!soa) {
+        throw new NotFoundError('SoaAnalysis', input.soaAnalysisId);
+      }
 
-    if (soa.status !== 'LOCKED') {
-      throw new ValidationError('SOA analysis must be locked before creating a validation study');
-    }
+      if (soa.status !== 'LOCKED') {
+        throw new ValidationError('SOA analysis must be locked before creating a validation study');
+      }
 
-    if (soa.projectId !== input.projectId) {
-      throw new ValidationError('SOA analysis does not belong to this project');
+      if (soa.projectId !== input.projectId) {
+        throw new ValidationError('SOA analysis does not belong to this project');
+      }
     }
 
     const studyId = crypto.randomUUID();
@@ -70,24 +72,28 @@ export class CreateStudyUseCase {
         type: input.type,
         status: 'DRAFT',
         description: input.description ?? null,
-        soaAnalysisId: input.soaAnalysisId,
+        soaAnalysisId: input.soaAnalysisId ?? null,
         createdById: input.userId,
       },
     });
 
-    // Auto-import benchmarks from SOA
-    const linkBenchmarks = new LinkSoaBenchmarksUseCase(this.prisma);
-    const benchmarkResult = await linkBenchmarks.execute({
-      validationStudyId: studyId,
-      soaAnalysisId: input.soaAnalysisId,
-    });
+    // Auto-import benchmarks from SOA (only if linked)
+    let benchmarkCount = 0;
+    if (input.soaAnalysisId) {
+      const linkBenchmarks = new LinkSoaBenchmarksUseCase(this.prisma);
+      const benchmarkResult = await linkBenchmarks.execute({
+        validationStudyId: studyId,
+        soaAnalysisId: input.soaAnalysisId,
+      });
+      benchmarkCount = benchmarkResult.importedCount;
+    }
 
     return {
       validationStudyId: studyId,
       name: input.name.trim(),
       type: input.type,
       soaAnalysisId: input.soaAnalysisId,
-      benchmarkCount: benchmarkResult.importedCount,
+      benchmarkCount,
     };
   }
 }

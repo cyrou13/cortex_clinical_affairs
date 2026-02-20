@@ -1,13 +1,5 @@
 import { useQuery } from '@apollo/client/react';
-import {
-  X,
-  ExternalLink,
-  Calendar,
-  BookOpen,
-  Database,
-  Users,
-  Brain,
-} from 'lucide-react';
+import { X, ExternalLink, Calendar, BookOpen, Database, Users, Brain } from 'lucide-react';
 import { cn } from '../../../shared/utils/cn';
 import { GET_ARTICLE } from '../graphql/queries';
 
@@ -58,9 +50,10 @@ const statusLabels: Record<ArticleStatus, string> = {
 };
 
 const databaseLabels: Record<string, string> = {
-  pubmed: 'PubMed',
-  cochrane: 'Cochrane',
-  embase: 'Embase',
+  PUBMED: 'PubMed',
+  PMC: 'PubMed Central',
+  GOOGLE_SCHOLAR: 'Google Scholar',
+  CLINICAL_TRIALS: 'ClinicalTrials.gov',
 };
 
 const scoreBadgeStyles = (score: number): string => {
@@ -108,9 +101,7 @@ export function ArticleDetailPanel({ articleId, onClose }: ArticleDetailPanelPro
     >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-[var(--cortex-border)] px-4 py-3">
-        <h3 className="text-sm font-semibold text-[var(--cortex-text-primary)]">
-          Article Details
-        </h3>
+        <h3 className="text-sm font-semibold text-[var(--cortex-text-primary)]">Article Details</h3>
         <button
           type="button"
           onClick={onClose}
@@ -125,19 +116,28 @@ export function ArticleDetailPanel({ articleId, onClose }: ArticleDetailPanelPro
       {/* Content */}
       <div className="h-full overflow-y-auto p-4 pb-20">
         {loading && (
-          <p className="py-4 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="article-loading">
+          <p
+            className="py-4 text-center text-sm text-[var(--cortex-text-muted)]"
+            data-testid="article-loading"
+          >
             Loading article details...
           </p>
         )}
 
         {error && !loading && (
-          <p className="py-4 text-center text-sm text-[var(--cortex-error)]" data-testid="article-error">
+          <p
+            className="py-4 text-center text-sm text-[var(--cortex-error)]"
+            data-testid="article-error"
+          >
             Failed to load article details.
           </p>
         )}
 
         {!loading && !error && !article && (
-          <p className="py-4 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="article-not-found">
+          <p
+            className="py-4 text-center text-sm text-[var(--cortex-text-muted)]"
+            data-testid="article-not-found"
+          >
             Article not found.
           </p>
         )}
@@ -214,8 +214,14 @@ export function ArticleDetailPanel({ articleId, onClose }: ArticleDetailPanelPro
                   {article.aiReasoning}
                 </div>
                 {article.aiExclusionCode && (
-                  <div className="mt-2 text-xs text-[var(--cortex-text-muted)]" data-testid="ai-exclusion-code">
-                    Suggested exclusion: <span className="font-medium text-[var(--cortex-text-primary)]">{article.aiExclusionCode}</span>
+                  <div
+                    className="mt-2 text-xs text-[var(--cortex-text-muted)]"
+                    data-testid="ai-exclusion-code"
+                  >
+                    Suggested exclusion:{' '}
+                    <span className="font-medium text-[var(--cortex-text-primary)]">
+                      {article.aiExclusionCode}
+                    </span>
                   </div>
                 )}
               </div>
@@ -279,10 +285,17 @@ export function ArticleDetailPanel({ articleId, onClose }: ArticleDetailPanelPro
             <div className="space-y-3 border-t border-[var(--cortex-border)] pt-4">
               {article.publicationDate && (
                 <div className="flex items-center gap-2">
-                  <Calendar size={14} className="text-[var(--cortex-text-muted)]" aria-hidden="true" />
+                  <Calendar
+                    size={14}
+                    className="text-[var(--cortex-text-muted)]"
+                    aria-hidden="true"
+                  />
                   <div>
                     <div className="text-xs text-[var(--cortex-text-muted)]">Publication Date</div>
-                    <div className="text-sm text-[var(--cortex-text-primary)]" data-testid="publication-date">
+                    <div
+                      className="text-sm text-[var(--cortex-text-primary)]"
+                      data-testid="publication-date"
+                    >
                       {formatDate(article.publicationDate)}
                     </div>
                   </div>
@@ -291,10 +304,17 @@ export function ArticleDetailPanel({ articleId, onClose }: ArticleDetailPanelPro
 
               {article.journal && (
                 <div className="flex items-center gap-2">
-                  <BookOpen size={14} className="text-[var(--cortex-text-muted)]" aria-hidden="true" />
+                  <BookOpen
+                    size={14}
+                    className="text-[var(--cortex-text-muted)]"
+                    aria-hidden="true"
+                  />
                   <div>
                     <div className="text-xs text-[var(--cortex-text-muted)]">Journal</div>
-                    <div className="text-sm text-[var(--cortex-text-primary)]" data-testid="article-journal">
+                    <div
+                      className="text-sm text-[var(--cortex-text-primary)]"
+                      data-testid="article-journal"
+                    >
                       {article.journal}
                     </div>
                   </div>
@@ -302,20 +322,34 @@ export function ArticleDetailPanel({ articleId, onClose }: ArticleDetailPanelPro
               )}
 
               <div className="flex items-center gap-2">
-                <Database size={14} className="text-[var(--cortex-text-muted)]" aria-hidden="true" />
+                <Database
+                  size={14}
+                  className="text-[var(--cortex-text-muted)]"
+                  aria-hidden="true"
+                />
                 <div>
                   <div className="text-xs text-[var(--cortex-text-muted)]">Source Database</div>
-                  <div className="text-sm text-[var(--cortex-text-primary)]" data-testid="article-source">
+                  <div
+                    className="text-sm text-[var(--cortex-text-primary)]"
+                    data-testid="article-source"
+                  >
                     {databaseLabels[article.sourceDatabase] ?? article.sourceDatabase}
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
-                <Calendar size={14} className="text-[var(--cortex-text-muted)]" aria-hidden="true" />
+                <Calendar
+                  size={14}
+                  className="text-[var(--cortex-text-muted)]"
+                  aria-hidden="true"
+                />
                 <div>
                   <div className="text-xs text-[var(--cortex-text-muted)]">Added to Pool</div>
-                  <div className="text-sm text-[var(--cortex-text-primary)]" data-testid="article-created-at">
+                  <div
+                    className="text-sm text-[var(--cortex-text-primary)]"
+                    data-testid="article-created-at"
+                  >
                     {formatDate(article.createdAt)}
                   </div>
                 </div>

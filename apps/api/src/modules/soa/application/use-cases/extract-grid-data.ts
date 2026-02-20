@@ -83,7 +83,7 @@ export class ExtractGridDataUseCase {
       },
     });
 
-    await this.enqueueJob('soa:extract-grid-data', {
+    await this.enqueueJob('soa.extract-grid-data', {
       taskId: task.id,
       soaAnalysisId: grid.soaAnalysis.id,
       extractionGridId: input.gridId,

@@ -31,24 +31,28 @@ function makeSession(overrides?: Partial<Record<string, unknown>>) {
   };
 }
 
-function makePrisma(overrides?: {
-  articles?: unknown[];
-  sessionResult?: unknown;
-}) {
+function makePrisma(overrides?: { articles?: unknown[]; sessionResult?: unknown }) {
   return {
     slsSession: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.sessionResult !== undefined ? overrides.sessionResult : makeSession(),
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.sessionResult !== undefined ? overrides.sessionResult : makeSession(),
+        ),
     },
     article: {
-      findMany: vi.fn().mockResolvedValue(
-        overrides?.articles !== undefined ? overrides.articles : makeArticles(3),
-      ),
+      findMany: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.articles !== undefined ? overrides.articles : makeArticles(3),
+        ),
       updateMany: vi.fn().mockResolvedValue({ count: 3 }),
     },
     screeningDecision: {
       createMany: vi.fn().mockResolvedValue({ count: 3 }),
+    },
+    exclusionCode: {
+      count: vi.fn().mockResolvedValue(1),
     },
     auditLog: {
       create: vi.fn().mockResolvedValue({}),
@@ -146,7 +150,13 @@ describe('BulkScreenArticlesUseCase', () => {
   it('skips articles with invalid transitions', async () => {
     const mixedArticles = [
       ...makeArticles(2),
-      { id: ARTICLE_UUIDS[2], sessionId: TEST_SESSION_ID, title: 'Pending', status: 'PENDING', aiCategory: null },
+      {
+        id: ARTICLE_UUIDS[2],
+        sessionId: TEST_SESSION_ID,
+        title: 'Excluded',
+        status: 'EXCLUDED',
+        aiCategory: null,
+      },
     ];
     prisma = makePrisma({ articles: mixedArticles });
     useCase = new BulkScreenArticlesUseCase(prisma);
@@ -161,14 +171,14 @@ describe('BulkScreenArticlesUseCase', () => {
       TEST_USER_ID,
     );
 
-    // article-3 is PENDING, can't go to INCLUDED directly
+    // article-3 is EXCLUDED (terminal), can't go to INCLUDED
     expect(result.successCount).toBe(2);
     expect(result.totalRequested).toBe(3);
   });
 
   it('throws when no articles can transition', async () => {
     prisma = makePrisma({
-      articles: makeArticles(2, { status: 'PENDING' }),
+      articles: makeArticles(2, { status: 'EXCLUDED' }),
     });
     useCase = new BulkScreenArticlesUseCase(prisma);
 

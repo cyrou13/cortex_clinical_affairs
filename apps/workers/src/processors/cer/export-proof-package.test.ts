@@ -11,7 +11,7 @@ function createMockJob(
   return {
     data: {
       taskId: 'task-001',
-      type: 'cer:export-proof-package',
+      type: 'cer.export-proof-package',
       createdBy: 'user-1',
       metadata: {
         claimTraceId: 'trace-1',
@@ -78,10 +78,7 @@ describe('ExportProofPackageProcessor', () => {
     await processor.process(job);
 
     expect(mockRedis.publish).toHaveBeenCalledTimes(4);
-    expect(mockRedis.publish).toHaveBeenCalledWith(
-      'task:progress:user-1',
-      expect.any(String),
-    );
+    expect(mockRedis.publish).toHaveBeenCalledWith('task:progress:user-1', expect.any(String));
   });
 
   it('throws on cancellation at first check', async () => {
@@ -92,9 +89,7 @@ describe('ExportProofPackageProcessor', () => {
   });
 
   it('throws on cancellation at second check', async () => {
-    mockRedis.get
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce('1');
+    mockRedis.get.mockResolvedValueOnce(null).mockResolvedValueOnce('1');
     const job = createMockJob();
 
     await expect(processor.process(job)).rejects.toThrow('Task cancelled');

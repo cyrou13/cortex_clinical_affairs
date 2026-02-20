@@ -3,8 +3,18 @@ import { gql } from '@apollo/client';
 import { Check, X, CheckCircle, AlertCircle, HelpCircle } from 'lucide-react';
 
 export const GET_MINED_REFERENCES = gql`
-  query GetMinedReferences($sessionId: String!, $filter: MinedReferenceFilter) {
-    minedReferences(sessionId: $sessionId, filter: $filter) {
+  query GetMinedReferences(
+    $sessionId: String!
+    $approvalStatus: String
+    $validationStatus: String
+    $excludeDuplicates: Boolean
+  ) {
+    minedReferences(
+      sessionId: $sessionId
+      approvalStatus: $approvalStatus
+      validationStatus: $validationStatus
+      excludeDuplicates: $excludeDuplicates
+    ) {
       id
       title
       authors
@@ -12,11 +22,8 @@ export const GET_MINED_REFERENCES = gql`
       journal
       doi
       validationStatus
-      validationSource
       isDuplicate
-      duplicateOfArticleId
       approvalStatus
-      rawCitation
     }
   }
 `;
@@ -43,16 +50,13 @@ export const REJECT_REFERENCE = gql`
 interface MinedReference {
   id: string;
   title: string;
-  authors: Array<{ firstName: string; lastName: string }>;
+  authors: unknown;
   year: number | null;
   journal: string | null;
   doi: string | null;
-  validationStatus: 'VALIDATED' | 'UNVALIDATED' | 'INVALID';
-  validationSource: string | null;
+  validationStatus: string | null;
   isDuplicate: boolean;
-  duplicateOfArticleId: string | null;
   approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
-  rawCitation: string | null;
 }
 
 interface MinedReferenceReviewProps {
@@ -174,7 +178,7 @@ export function MinedReferenceReview({ sessionId }: MinedReferenceReviewProps) {
                 </td>
                 <td className="px-3 py-2 text-[var(--cortex-text-muted)]">{ref.year ?? '—'}</td>
                 <td className="px-3 py-2">
-                  <ValidationBadge status={ref.validationStatus} />
+                  <ValidationBadge status={ref.validationStatus ?? 'UNVALIDATED'} />
                 </td>
                 <td className="px-3 py-2">
                   {ref.approvalStatus === 'PENDING' ? (

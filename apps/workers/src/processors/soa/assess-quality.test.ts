@@ -5,7 +5,7 @@ function makeMockJob(metadata: any) {
   return {
     data: {
       taskId: 'task-1',
-      type: 'soa:assess-quality',
+      type: 'soa.assess-quality',
       metadata,
       createdBy: 'user-1',
     },

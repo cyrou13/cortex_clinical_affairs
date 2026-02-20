@@ -40,11 +40,12 @@ export function buildScoringPrompt(
   context: ScoringContext,
   exclusionCodes: ExclusionCodeEntry[],
 ): { system: string; user: string } {
-  const exclusionCodeList = exclusionCodes.length > 0
-    ? exclusionCodes
-        .map((ec) => `- "${ec.code}" (${ec.label})${ec.shortCode ? ` [${ec.shortCode}]` : ''}`)
-        .join('\n')
-    : '- No exclusion codes defined';
+  const exclusionCodeList =
+    exclusionCodes.length > 0
+      ? exclusionCodes
+          .map((ec) => `- "${ec.code}" (${ec.label})${ec.shortCode ? ` [${ec.shortCode}]` : ''}`)
+          .join('\n')
+      : '- No exclusion codes defined';
 
   const scopeDescription = buildScopeDescription(context.scopeFields);
 
@@ -169,31 +170,51 @@ export function parseScoringResponse(content: string): ScoringResultItem[] {
 
   const parsed = JSON.parse(cleaned);
 
-  if (!Array.isArray(parsed)) {
-    throw new Error('Expected JSON array in scoring response');
+  // Handle common LLM response formats
+  let items: unknown[];
+  if (Array.isArray(parsed)) {
+    items = parsed;
+  } else if (typeof parsed === 'object' && parsed !== null) {
+    // Check if it's a wrapper object like { results: [...] } or { articles: [...] }
+    const arrayProp = Object.values(parsed).find((v) => Array.isArray(v));
+    if (Array.isArray(arrayProp)) {
+      items = arrayProp;
+    } else if ('articleId' in parsed) {
+      // Single result object — wrap in array
+      items = [parsed];
+    } else {
+      throw new Error(
+        `Unexpected JSON structure in scoring response: ${Object.keys(parsed).join(', ')}`,
+      );
+    }
+  } else {
+    throw new Error(`Expected JSON array in scoring response, got ${typeof parsed}`);
   }
 
-  return parsed.map((item: Record<string, unknown>) => {
-    if (typeof item.articleId !== 'string') {
+  return items.map((item: unknown) => {
+    const entry = item as Record<string, unknown>;
+    if (typeof entry.articleId !== 'string') {
       throw new Error('Missing or invalid articleId in scoring response item');
     }
 
-    const relevanceScore = Number(item.relevanceScore);
+    const relevanceScore = Number(entry.relevanceScore);
     if (isNaN(relevanceScore) || relevanceScore < 0 || relevanceScore > 1) {
-      throw new Error(`Invalid relevanceScore for article ${item.articleId}: ${item.relevanceScore}`);
+      throw new Error(
+        `Invalid relevanceScore for article ${entry.articleId}: ${entry.relevanceScore}`,
+      );
     }
 
     const validCategories = ['likely_relevant', 'uncertain', 'likely_irrelevant'];
-    if (!validCategories.includes(item.aiCategory as string)) {
-      throw new Error(`Invalid aiCategory for article ${item.articleId}: ${item.aiCategory}`);
+    if (!validCategories.includes(entry.aiCategory as string)) {
+      throw new Error(`Invalid aiCategory for article ${entry.articleId}: ${entry.aiCategory}`);
     }
 
     return {
-      articleId: item.articleId as string,
+      articleId: entry.articleId as string,
       relevanceScore,
-      aiCategory: item.aiCategory as ScoringResultItem['aiCategory'],
-      aiExclusionCode: item.aiExclusionCode != null ? String(item.aiExclusionCode) : null,
-      aiReasoning: typeof item.aiReasoning === 'string' ? item.aiReasoning : '',
+      aiCategory: entry.aiCategory as ScoringResultItem['aiCategory'],
+      aiExclusionCode: entry.aiExclusionCode != null ? String(entry.aiExclusionCode) : null,
+      aiReasoning: typeof entry.aiReasoning === 'string' ? entry.aiReasoning : '',
     };
   });
 }

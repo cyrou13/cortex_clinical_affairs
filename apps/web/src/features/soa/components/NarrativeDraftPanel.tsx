@@ -1,29 +1,11 @@
 import { useState } from 'react';
 import { useMutation } from '@apollo/client/react';
-import { gql } from '@apollo/client';
-import { Sparkles, Check, Edit3, RefreshCw } from 'lucide-react';
-
-export const GENERATE_NARRATIVE_DRAFT = gql`
-  mutation GenerateNarrativeDraft($sectionId: String!) {
-    generateNarrativeDraft(sectionId: $sectionId) {
-      draftId
-      content
-      status
-    }
-  }
-`;
-
-export const ACCEPT_NARRATIVE_DRAFT = gql`
-  mutation AcceptNarrativeDraft($draftId: String!) {
-    acceptNarrativeDraft(draftId: $draftId) {
-      sectionId
-      status
-    }
-  }
-`;
+import { Sparkles, RefreshCw } from 'lucide-react';
+import { DRAFT_NARRATIVE } from '../graphql/mutations';
 
 interface NarrativeDraftPanelProps {
   sectionId: string;
+  soaAnalysisId: string;
   locked?: boolean;
   onDraftAccepted?: (content: string) => void;
   onDraftEdited?: (content: string) => void;
@@ -31,44 +13,18 @@ interface NarrativeDraftPanelProps {
 
 export function NarrativeDraftPanel({
   sectionId,
+  soaAnalysisId,
   locked = false,
-  onDraftAccepted,
-  onDraftEdited,
 }: NarrativeDraftPanelProps) {
-  const [draftContent, setDraftContent] = useState<string | null>(null);
-  const [draftId, setDraftId] = useState<string | null>(null);
+  const [taskId, setTaskId] = useState<string | null>(null);
 
-  const [generateDraft, { loading: generating }] = useMutation<any>(GENERATE_NARRATIVE_DRAFT);
-  const [acceptDraft, { loading: accepting }] = useMutation(ACCEPT_NARRATIVE_DRAFT);
+  const [generateDraft, { loading: generating }] = useMutation<any>(DRAFT_NARRATIVE);
 
   const handleGenerate = async () => {
-    const result = await generateDraft({ variables: { sectionId } });
-    if (result.data?.generateNarrativeDraft) {
-      setDraftContent(result.data.generateNarrativeDraft.content);
-      setDraftId(result.data.generateNarrativeDraft.draftId);
+    const result = await generateDraft({ variables: { sectionId, soaAnalysisId } });
+    if (result.data?.draftNarrative?.taskId) {
+      setTaskId(result.data.draftNarrative.taskId);
     }
-  };
-
-  const handleAccept = async () => {
-    if (!draftId || !draftContent) return;
-    await acceptDraft({ variables: { draftId } });
-    onDraftAccepted?.(draftContent);
-    setDraftContent(null);
-    setDraftId(null);
-  };
-
-  const handleEdit = () => {
-    if (draftContent) {
-      onDraftEdited?.(draftContent);
-      setDraftContent(null);
-      setDraftId(null);
-    }
-  };
-
-  const handleRegenerate = () => {
-    setDraftContent(null);
-    setDraftId(null);
-    handleGenerate();
   };
 
   return (
@@ -82,7 +38,7 @@ export function NarrativeDraftPanel({
         </h3>
       </div>
 
-      {!draftContent && !generating && (
+      {!taskId && !generating && (
         <button
           type="button"
           onClick={handleGenerate}
@@ -99,48 +55,37 @@ export function NarrativeDraftPanel({
         <div className="flex flex-col items-center gap-2 py-6" data-testid="draft-loading">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-purple-500 border-t-transparent" />
           <span className="text-sm text-[var(--cortex-text-muted)]">
-            Generating narrative draft...
+            Submitting narrative draft task...
           </span>
         </div>
       )}
 
-      {draftContent && !generating && (
-        <>
+      {taskId && !generating && (
+        <div className="space-y-3">
           <div
-            className="rounded-lg border border-purple-200 bg-purple-50 p-4 text-sm leading-relaxed text-[var(--cortex-text-primary)]"
-            data-testid="draft-preview"
+            className="rounded-lg border border-purple-200 bg-purple-50 p-4 text-sm text-[var(--cortex-text-primary)]"
+            data-testid="draft-submitted"
           >
-            {draftContent}
+            <p className="font-medium text-purple-700">Draft generation started</p>
+            <p className="mt-1 text-xs text-purple-600">
+              The AI narrative draft is being generated in the background. The content will appear
+              in the section editor once complete.
+            </p>
+            <p className="mt-2 text-xs text-[var(--cortex-text-muted)]">Task ID: {taskId}</p>
           </div>
-
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={handleAccept}
-              disabled={accepting}
-              className="inline-flex items-center gap-1 rounded bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
-              data-testid="accept-draft-btn"
-            >
-              <Check size={12} /> Accept
-            </button>
-            <button
-              type="button"
-              onClick={handleEdit}
-              className="inline-flex items-center gap-1 rounded border border-[var(--cortex-border)] px-3 py-1.5 text-xs font-medium text-[var(--cortex-text-secondary)] hover:bg-gray-50"
-              data-testid="edit-draft-btn"
-            >
-              <Edit3 size={12} /> Edit
-            </button>
-            <button
-              type="button"
-              onClick={handleRegenerate}
-              className="inline-flex items-center gap-1 rounded border border-[var(--cortex-border)] px-3 py-1.5 text-xs font-medium text-[var(--cortex-text-secondary)] hover:bg-gray-50"
-              data-testid="regenerate-draft-btn"
-            >
-              <RefreshCw size={12} /> Regenerate
-            </button>
-          </div>
-        </>
+          <button
+            type="button"
+            onClick={() => {
+              setTaskId(null);
+              handleGenerate();
+            }}
+            disabled={generating}
+            className="inline-flex items-center gap-1 rounded border border-[var(--cortex-border)] px-3 py-1.5 text-xs font-medium text-[var(--cortex-text-secondary)] hover:bg-gray-50"
+            data-testid="regenerate-draft-btn"
+          >
+            <RefreshCw size={12} /> Regenerate
+          </button>
+        </div>
       )}
     </div>
   );

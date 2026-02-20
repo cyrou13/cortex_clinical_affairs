@@ -8,7 +8,11 @@ interface GeneratePsurResult {
 }
 
 interface TaskEnqueuer {
-  enqueueTask: (type: string, data: Record<string, unknown> | undefined, userId: string) => Promise<{ id: string }>;
+  enqueueTask: (
+    type: string,
+    data: Record<string, unknown> | undefined,
+    userId: string,
+  ) => Promise<{ id: string }>;
 }
 
 export class GeneratePsurUseCase {
@@ -27,11 +31,7 @@ export class GeneratePsurUseCase {
       throw new NotFoundError('PmsCycle', pmsCycleId);
     }
 
-    const task = await this.taskService.enqueueTask(
-      'pms:generate-psur',
-      { pmsCycleId },
-      userId,
-    );
+    const task = await this.taskService.enqueueTask('pms.generate-psur', { pmsCycleId }, userId);
 
     return {
       taskId: task.id,

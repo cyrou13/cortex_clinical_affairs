@@ -1,7 +1,5 @@
 import type { DatabaseClient, DatabaseSearchResult, ArticleMetadata } from './database-client.js';
 import { PubMedClient } from './pubmed-client.js';
-import { CochraneClient } from './cochrane-client.js';
-import { EmbaseClient } from './embase-client.js';
 
 export interface PerDatabaseResult {
   database: string;
@@ -23,19 +21,10 @@ export class QueryOrchestrator {
   private readonly clients: Map<string, DatabaseClient>;
 
   constructor(clients?: Map<string, DatabaseClient>) {
-    this.clients =
-      clients ??
-      new Map<string, DatabaseClient>([
-        ['PUBMED', new PubMedClient()],
-        ['COCHRANE', new CochraneClient()],
-        ['EMBASE', new EmbaseClient()],
-      ]);
+    this.clients = clients ?? new Map<string, DatabaseClient>([['PUBMED', new PubMedClient()]]);
   }
 
-  async executeAcrossDatabases(
-    query: string,
-    databases: string[],
-  ): Promise<OrchestratorResult> {
+  async executeAcrossDatabases(query: string, databases: string[]): Promise<OrchestratorResult> {
     const promises = databases.map((db) => this.executeWithTimeout(db, query));
 
     const settled = await Promise.allSettled(promises);
@@ -58,9 +47,7 @@ export class QueryOrchestrator {
         allArticles.push(...searchResult.articles);
       } else {
         const errorMessage =
-          outcome.reason instanceof Error
-            ? outcome.reason.message
-            : String(outcome.reason);
+          outcome.reason instanceof Error ? outcome.reason.message : String(outcome.reason);
         results.push({
           database: db,
           status: 'failed',
@@ -78,10 +65,7 @@ export class QueryOrchestrator {
     };
   }
 
-  private async executeWithTimeout(
-    database: string,
-    query: string,
-  ): Promise<DatabaseSearchResult> {
+  private async executeWithTimeout(database: string, query: string): Promise<DatabaseSearchResult> {
     const client = this.clients.get(database);
     if (!client) {
       throw new Error(`No client configured for database: ${database}`);

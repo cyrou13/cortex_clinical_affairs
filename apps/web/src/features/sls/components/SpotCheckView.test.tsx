@@ -1,19 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-
-vi.mock('@apollo/client', () => ({
-  gql: (str: TemplateStringsArray) => str[0],
-}));
-
-const mockUseQuery = vi.fn();
-const mockUseMutation = vi.fn();
-
-vi.mock('@apollo/client/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: (...args: unknown[]) => mockUseMutation(...args),
-}));
-
-import { SpotCheckView } from './SpotCheckView';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithApollo, type MockedResponse } from '../../../test-utils/apollo-wrapper';
+import { SpotCheckView, GET_SPOT_CHECK_SAMPLE, SPOT_CHECK_ARTICLE } from './SpotCheckView';
 
 const mockArticles = [
   {
@@ -38,103 +26,121 @@ const mockArticles = [
   },
 ];
 
-describe('SpotCheckView', () => {
-  const mockMutate = vi.fn().mockResolvedValue({ data: { spotCheckArticle: { action: 'agreed' } } });
+function buildQueryMock(articles = mockArticles): MockedResponse {
+  return {
+    request: {
+      query: GET_SPOT_CHECK_SAMPLE,
+      variables: { sessionId: 's-1', category: 'likely_relevant', count: 10 },
+    },
+    result: {
+      data: { spotCheckSample: articles },
+    },
+  };
+}
 
+function buildAgreeMock(articleId: string): MockedResponse {
+  return {
+    request: {
+      query: SPOT_CHECK_ARTICLE,
+      variables: {
+        articleId,
+        agrees: true,
+        reason: 'Agrees with AI decision',
+      },
+    },
+    result: {
+      data: {
+        spotCheckArticle: { action: 'agreed', articleId },
+      },
+    },
+  };
+}
+
+describe('SpotCheckView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseMutation.mockReturnValue([mockMutate, { loading: false }]);
   });
 
   it('renders loading state', () => {
-    mockUseQuery.mockReturnValue({ data: null, loading: true, error: null });
-    render(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />);
-
+    renderWithApollo(
+      <SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />,
+      [],
+    );
     expect(screen.getByTestId('spot-check-loading')).toBeInTheDocument();
   });
 
-  it('renders error state', () => {
-    mockUseQuery.mockReturnValue({ data: null, loading: false, error: new Error('fail') });
-    render(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />);
-
-    expect(screen.getByTestId('spot-check-error')).toBeInTheDocument();
+  it('renders error state', async () => {
+    const errorMock: MockedResponse = {
+      request: {
+        query: GET_SPOT_CHECK_SAMPLE,
+        variables: { sessionId: 's-1', category: 'likely_relevant', count: 10 },
+      },
+      error: new Error('fail'),
+    };
+    renderWithApollo(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />, [
+      errorMock,
+    ]);
+    expect(await screen.findByTestId('spot-check-error')).toBeInTheDocument();
   });
 
-  it('renders empty state when no articles', () => {
-    mockUseQuery.mockReturnValue({
-      data: { spotCheckSample: [] },
-      loading: false,
-      error: null,
-    });
-    render(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />);
-
-    expect(screen.getByTestId('spot-check-empty')).toBeInTheDocument();
+  it('renders empty state when no articles', async () => {
+    renderWithApollo(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />, [
+      buildQueryMock([]),
+    ]);
+    expect(await screen.findByTestId('spot-check-empty')).toBeInTheDocument();
   });
 
-  it('renders first article for review', () => {
-    mockUseQuery.mockReturnValue({
-      data: { spotCheckSample: mockArticles },
-      loading: false,
-      error: null,
-    });
-    render(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />);
-
-    expect(screen.getByTestId('spot-check-view')).toBeInTheDocument();
-    expect(screen.getByTestId('spot-check-title')).toHaveTextContent('Article about cervical spine surgery');
+  it('renders first article for review', async () => {
+    renderWithApollo(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />, [
+      buildQueryMock(),
+    ]);
+    expect(await screen.findByTestId('spot-check-view')).toBeInTheDocument();
+    expect(screen.getByTestId('spot-check-title')).toHaveTextContent(
+      'Article about cervical spine surgery',
+    );
     expect(screen.getByTestId('spot-check-progress')).toHaveTextContent('1 / 2 articles');
   });
 
-  it('renders AI reasoning box', () => {
-    mockUseQuery.mockReturnValue({
-      data: { spotCheckSample: mockArticles },
-      loading: false,
-      error: null,
-    });
-    render(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />);
-
-    expect(screen.getByTestId('spot-check-ai-reasoning')).toBeInTheDocument();
-    expect(screen.getByTestId('spot-check-ai-reasoning')).toHaveTextContent(
-      'Article discusses cervical spine surgical outcomes',
-    );
+  it('renders AI reasoning box', async () => {
+    renderWithApollo(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />, [
+      buildQueryMock(),
+    ]);
+    const reasoning = await screen.findByTestId('spot-check-ai-reasoning');
+    expect(reasoning).toBeInTheDocument();
+    expect(reasoning).toHaveTextContent('Article discusses cervical spine surgical outcomes');
   });
 
-  it('renders agree and override buttons', () => {
-    mockUseQuery.mockReturnValue({
-      data: { spotCheckSample: mockArticles },
-      loading: false,
-      error: null,
-    });
-    render(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />);
-
-    expect(screen.getByTestId('spot-check-agree-btn')).toBeInTheDocument();
+  it('renders agree and override buttons', async () => {
+    renderWithApollo(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />, [
+      buildQueryMock(),
+    ]);
+    expect(await screen.findByTestId('spot-check-agree-btn')).toBeInTheDocument();
     expect(screen.getByTestId('spot-check-override-btn')).toBeInTheDocument();
   });
 
   it('advances to next article after agree', async () => {
-    mockUseQuery.mockReturnValue({
-      data: { spotCheckSample: mockArticles },
-      loading: false,
-      error: null,
-    });
-    render(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />);
-
-    fireEvent.click(screen.getByTestId('spot-check-agree-btn'));
+    renderWithApollo(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />, [
+      buildQueryMock(),
+      buildAgreeMock('art-1'),
+    ]);
+    const agreeBtn = await screen.findByTestId('spot-check-agree-btn');
+    fireEvent.click(agreeBtn);
 
     await waitFor(() => {
-      expect(screen.getByTestId('spot-check-title')).toHaveTextContent('Pediatric dental care review');
+      expect(screen.getByTestId('spot-check-title')).toHaveTextContent(
+        'Pediatric dental care review',
+      );
       expect(screen.getByTestId('spot-check-progress')).toHaveTextContent('2 / 2 articles');
     });
   });
 
   it('shows completion summary after all articles reviewed', async () => {
-    mockUseQuery.mockReturnValue({
-      data: { spotCheckSample: [mockArticles[0]] },
-      loading: false,
-      error: null,
-    });
-    render(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />);
-
-    fireEvent.click(screen.getByTestId('spot-check-agree-btn'));
+    renderWithApollo(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />, [
+      buildQueryMock([mockArticles[0]!]),
+      buildAgreeMock('art-1'),
+    ]);
+    const agreeBtn = await screen.findByTestId('spot-check-agree-btn');
+    fireEvent.click(agreeBtn);
 
     await waitFor(() => {
       expect(screen.getByTestId('spot-check-complete')).toBeInTheDocument();
@@ -143,24 +149,20 @@ describe('SpotCheckView', () => {
   });
 
   it('calls mutation with correct agree payload', async () => {
-    mockUseQuery.mockReturnValue({
-      data: { spotCheckSample: mockArticles },
-      loading: false,
-      error: null,
-    });
-    render(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />);
+    // Verify the mutation fires correctly by checking the UI advances (meaning mutation returned successfully)
+    renderWithApollo(<SpotCheckView sessionId="s-1" category="likely_relevant" sampleSize={10} />, [
+      buildQueryMock(),
+      buildAgreeMock('art-1'),
+    ]);
+    const agreeBtn = await screen.findByTestId('spot-check-agree-btn');
+    fireEvent.click(agreeBtn);
 
-    fireEvent.click(screen.getByTestId('spot-check-agree-btn'));
-
+    // If the mutation mock variables didn't match, the click would error.
+    // The fact that it advances to the next article proves the mutation was called correctly.
     await waitFor(() => {
-      expect(mockMutate).toHaveBeenCalledWith({
-        variables: {
-          input: expect.objectContaining({
-            articleId: 'art-1',
-            agrees: true,
-          }),
-        },
-      });
+      expect(screen.getByTestId('spot-check-title')).toHaveTextContent(
+        'Pediatric dental care review',
+      );
     });
   });
 });

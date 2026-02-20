@@ -1,17 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ConfigureCustomFilterUseCase } from './configure-custom-filter.js';
 
-function makePrisma(overrides?: {
-  sessionResult?: unknown;
-  filterResult?: unknown;
-}) {
+function makePrisma(overrides?: { sessionResult?: unknown; filterResult?: unknown }) {
   return {
     slsSession: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.sessionResult !== undefined
-          ? overrides.sessionResult
-          : { id: 'session-1', projectId: 'project-1' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.sessionResult !== undefined
+            ? overrides.sessionResult
+            : { id: 'session-1', projectId: 'project-1' },
+        ),
     },
     customAiFilter: {
       findUnique: vi.fn().mockResolvedValue(
@@ -47,7 +46,7 @@ function makePrisma(overrides?: {
     asyncTask: {
       create: vi.fn().mockResolvedValue({
         id: 'task-1',
-        type: 'sls:custom-filter-score',
+        type: 'sls.custom-filter-score',
         status: 'PENDING',
         progress: 0,
         metadata: {},
@@ -116,9 +115,9 @@ describe('ConfigureCustomFilterUseCase', () => {
       prisma = makePrisma({ sessionResult: null });
       useCase = new ConfigureCustomFilterUseCase(prisma, redis);
 
-      await expect(
-        useCase.createCustomFilter('session-1', validInput, 'user-1'),
-      ).rejects.toThrow('not found');
+      await expect(useCase.createCustomFilter('session-1', validInput, 'user-1')).rejects.toThrow(
+        'not found',
+      );
     });
 
     it('throws ValidationError for invalid input', async () => {
@@ -130,7 +129,7 @@ describe('ConfigureCustomFilterUseCase', () => {
 
   describe('updateCustomFilter', () => {
     it('updates a custom AI filter successfully', async () => {
-      const result = await useCase.updateCustomFilter('filter-1', { name: 'Updated' }, 'user-1');
+      const _result = await useCase.updateCustomFilter('filter-1', { name: 'Updated' }, 'user-1');
 
       expect(prisma.customAiFilter.update).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -196,9 +195,7 @@ describe('ConfigureCustomFilterUseCase', () => {
       prisma = makePrisma({ filterResult: null });
       useCase = new ConfigureCustomFilterUseCase(prisma, redis);
 
-      await expect(
-        useCase.deleteCustomFilter('filter-1', 'user-1'),
-      ).rejects.toThrow('not found');
+      await expect(useCase.deleteCustomFilter('filter-1', 'user-1')).rejects.toThrow('not found');
     });
   });
 
@@ -210,7 +207,7 @@ describe('ConfigureCustomFilterUseCase', () => {
       expect(prisma.asyncTask.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            type: 'sls:custom-filter-score',
+            type: 'sls.custom-filter-score',
             status: 'PENDING',
           }),
         }),

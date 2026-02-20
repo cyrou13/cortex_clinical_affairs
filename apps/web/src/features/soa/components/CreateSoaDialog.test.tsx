@@ -22,7 +22,14 @@ const mockSessions = [
 
 describe('CreateSoaDialog', () => {
   const mockCreate = vi.fn().mockResolvedValue({
-    data: { createSoaAnalysis: { soaAnalysisId: 'soa-1', name: 'Test', type: 'CLINICAL', sectionCount: 6 } },
+    data: {
+      createSoaAnalysis: {
+        soaAnalysisId: 'soa-1',
+        name: 'Test',
+        type: 'CLINICAL',
+        sectionCount: 6,
+      },
+    },
   });
   const mockOnClose = vi.fn();
   const mockOnCreated = vi.fn();
@@ -30,12 +37,14 @@ describe('CreateSoaDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseMutation.mockReturnValue([mockCreate, { loading: false }]);
-    mockUseQuery.mockImplementation((_query: unknown, opts: { variables?: { soaType?: string } }) => {
-      if (opts?.variables && 'soaType' in opts.variables) {
-        return { data: { checkDeviceSoaDependency: { canProceed: true, warnings: [] } } };
-      }
-      return { data: { lockedSlsSessions: mockSessions } };
-    });
+    mockUseQuery.mockImplementation(
+      (_query: unknown, opts: { variables?: { soaType?: string } }) => {
+        if (opts?.variables && 'soaType' in opts.variables) {
+          return { data: { checkDeviceSoaDependency: { canProceed: true, warnings: [] } } };
+        }
+        return { data: { lockedSlsSessions: mockSessions } };
+      },
+    );
   });
 
   it('does not render when closed', () => {
@@ -83,7 +92,14 @@ describe('CreateSoaDialog', () => {
   });
 
   it('calls mutation on submit', async () => {
-    render(<CreateSoaDialog projectId="p-1" open={true} onClose={mockOnClose} onCreated={mockOnCreated} />);
+    render(
+      <CreateSoaDialog
+        projectId="p-1"
+        open={true}
+        onClose={mockOnClose}
+        onCreated={mockOnCreated}
+      />,
+    );
     fireEvent.change(screen.getByTestId('soa-name-input'), { target: { value: 'My SOA' } });
     fireEvent.click(screen.getByTestId('session-check-sess-1'));
     fireEvent.click(screen.getByTestId('create-soa-btn'));
@@ -92,10 +108,10 @@ describe('CreateSoaDialog', () => {
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({
           variables: expect.objectContaining({
-            input: expect.objectContaining({
-              name: 'My SOA',
-              type: 'CLINICAL',
-            }),
+            projectId: 'p-1',
+            name: 'My SOA',
+            type: 'CLINICAL',
+            slsSessionIds: ['sess-1'],
           }),
         }),
       );
@@ -103,19 +119,21 @@ describe('CreateSoaDialog', () => {
   });
 
   it('shows dependency warning for SIMILAR_DEVICE', () => {
-    mockUseQuery.mockImplementation((_query: unknown, opts: { variables?: { soaType?: string } }) => {
-      if (opts?.variables && 'soaType' in opts.variables) {
-        return {
-          data: {
-            checkDeviceSoaDependency: {
-              canProceed: true,
-              warnings: ['Clinical SOA Section 6 not finalized'],
+    mockUseQuery.mockImplementation(
+      (_query: unknown, opts: { variables?: { soaType?: string } }) => {
+        if (opts?.variables && 'soaType' in opts.variables) {
+          return {
+            data: {
+              checkDeviceSoaDependency: {
+                canProceed: true,
+                warnings: ['Clinical SOA Section 6 not finalized'],
+              },
             },
-          },
-        };
-      }
-      return { data: { lockedSlsSessions: mockSessions } };
-    });
+          };
+        }
+        return { data: { lockedSlsSessions: mockSessions } };
+      },
+    );
 
     render(<CreateSoaDialog projectId="p-1" open={true} onClose={mockOnClose} />);
     fireEvent.click(screen.getByTestId('soa-type-SIMILAR_DEVICE'));

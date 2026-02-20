@@ -15,7 +15,13 @@ import { QualityAssessmentForm } from './QualityAssessmentForm';
 
 describe('QualityAssessmentForm', () => {
   const mockSubmit = vi.fn().mockResolvedValue({
-    data: { submitQualityAssessment: { assessmentId: 'qa-1', status: 'COMPLETED' } },
+    data: {
+      assessQuality: {
+        qualityAssessmentId: 'qa-1',
+        assessmentType: 'QUADAS_2',
+        dataContributionLevel: 'SUPPORTIVE',
+      },
+    },
   });
 
   beforeEach(() => {
@@ -58,8 +64,12 @@ describe('QualityAssessmentForm', () => {
   it('calls mutation on submit with correct variables', async () => {
     render(<QualityAssessmentForm {...defaultProps} />);
 
-    fireEvent.change(screen.getByTestId('assessment-type-select'), { target: { value: 'QUADAS_2' } });
-    fireEvent.change(screen.getByTestId('contribution-level-select'), { target: { value: 'SUPPORTIVE' } });
+    fireEvent.change(screen.getByTestId('assessment-type-select'), {
+      target: { value: 'QUADAS_2' },
+    });
+    fireEvent.change(screen.getByTestId('contribution-level-select'), {
+      target: { value: 'SUPPORTIVE' },
+    });
     fireEvent.click(screen.getByTestId('submit-assessment-btn'));
 
     await waitFor(() => {
@@ -69,8 +79,8 @@ describe('QualityAssessmentForm', () => {
             soaAnalysisId: 'soa-1',
             articleId: 'art-1',
             assessmentType: 'QUADAS_2',
-            contributionLevel: 'SUPPORTIVE',
-            notes: null,
+            assessmentData: {},
+            dataContributionLevel: 'SUPPORTIVE',
           },
         }),
       );

@@ -1,37 +1,23 @@
 import { useState } from 'react';
 import { useQuery } from '@apollo/client/react';
-import { gql } from '@apollo/client';
 import { BarChart3, Filter } from 'lucide-react';
-
-export const GET_EXTRACTION_PROGRESS = gql`
-  query GetExtractionProgress($soaAnalysisId: String!) {
-    extractionProgress(soaAnalysisId: $soaAnalysisId) {
-      total
-      extracted
-      reviewed
-      flagged
-      pending
-    }
-  }
-`;
+import { GET_GRID_EXTRACTION_PROGRESS } from '../graphql/queries';
 
 type FilterStatus = 'ALL' | 'PENDING' | 'EXTRACTED' | 'REVIEWED' | 'FLAGGED';
 
 const FILTER_OPTIONS: FilterStatus[] = ['ALL', 'PENDING', 'EXTRACTED', 'REVIEWED', 'FLAGGED'];
 
 interface ExtractionProgressPanelProps {
-  soaAnalysisId: string;
+  gridId: string;
   onFilterChange?: (filter: FilterStatus) => void;
 }
 
-export function ExtractionProgressPanel({
-  soaAnalysisId,
-  onFilterChange,
-}: ExtractionProgressPanelProps) {
+export function ExtractionProgressPanel({ gridId, onFilterChange }: ExtractionProgressPanelProps) {
   const [activeFilter, setActiveFilter] = useState<FilterStatus>('ALL');
 
-  const { data, loading } = useQuery<any>(GET_EXTRACTION_PROGRESS, {
-    variables: { soaAnalysisId },
+  const { data, loading } = useQuery<any>(GET_GRID_EXTRACTION_PROGRESS, {
+    variables: { gridId },
+    skip: !gridId,
   });
 
   const handleFilterClick = (filter: FilterStatus) => {
@@ -50,15 +36,14 @@ export function ExtractionProgressPanel({
     );
   }
 
-  const progress = data?.extractionProgress;
-  const total = progress?.total ?? 0;
-  const extracted = progress?.extracted ?? 0;
-  const reviewed = progress?.reviewed ?? 0;
-  const flagged = progress?.flagged ?? 0;
-  const pending = progress?.pending ?? 0;
-
-  const completedCount = extracted + reviewed;
-  const percentage = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+  const progress = data?.gridExtractionProgress;
+  const totalArticles = progress?.totalArticles ?? 0;
+  const percentage = progress?.overallPercentage ?? 0;
+  const counts = progress?.counts ?? {};
+  const extracted = counts.extracted ?? 0;
+  const reviewed = counts.reviewed ?? 0;
+  const flagged = counts.flagged ?? 0;
+  const pending = counts.pending ?? 0;
 
   return (
     <div
@@ -70,7 +55,7 @@ export function ExtractionProgressPanel({
           <BarChart3 size={14} /> Extraction Progress
         </h3>
         <span className="text-xs text-[var(--cortex-text-muted)]" data-testid="total-count">
-          {total} articles
+          {totalArticles} articles
         </span>
       </div>
 
@@ -142,7 +127,7 @@ export function ExtractionProgressPanel({
       </div>
 
       {/* Empty state */}
-      {total === 0 && (
+      {totalArticles === 0 && (
         <div
           className="py-4 text-center text-sm text-[var(--cortex-text-muted)]"
           data-testid="empty-state"

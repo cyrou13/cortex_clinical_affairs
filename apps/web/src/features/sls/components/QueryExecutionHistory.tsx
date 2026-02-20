@@ -19,10 +19,7 @@ interface QueryExecution {
   completedAt: string | null;
 }
 
-const statusConfig: Record<
-  ExecutionStatus,
-  { label: string; className: string }
-> = {
+const statusConfig: Record<ExecutionStatus, { label: string; className: string }> = {
   PENDING: {
     label: 'Pending',
     className: 'bg-gray-100 text-gray-600',
@@ -46,9 +43,10 @@ const statusConfig: Record<
 };
 
 const databaseLabels: Record<string, string> = {
-  pubmed: 'PubMed',
-  cochrane: 'Cochrane',
-  embase: 'Embase',
+  PUBMED: 'PubMed',
+  PMC: 'PubMed Central',
+  GOOGLE_SCHOLAR: 'Google Scholar',
+  CLINICAL_TRIALS: 'ClinicalTrials.gov',
 };
 
 interface QueryExecutionHistoryProps {
@@ -66,32 +64,22 @@ export function QueryExecutionHistory({ queryId }: QueryExecutionHistoryProps) {
 
   if (loading) {
     return (
-      <div
-        className="rounded-lg bg-white p-4 shadow-sm"
-        data-testid="execution-history"
-      >
-        <p className="text-sm text-[var(--cortex-text-muted)]">
-          Loading execution history...
-        </p>
+      <div className="rounded-lg bg-white p-4 shadow-sm" data-testid="execution-history">
+        <p className="text-sm text-[var(--cortex-text-muted)]">Loading execution history...</p>
       </div>
     );
   }
 
   if (executions.length === 0) {
     return (
-      <div
-        className="rounded-lg bg-white p-4 shadow-sm"
-        data-testid="execution-history"
-      >
+      <div className="rounded-lg bg-white p-4 shadow-sm" data-testid="execution-history">
         <div data-testid="empty-state" className="py-6 text-center">
           <Database
             size={32}
             className="mx-auto mb-2 text-[var(--cortex-text-muted)]"
             aria-hidden="true"
           />
-          <p className="text-sm text-[var(--cortex-text-muted)]">
-            No executions yet
-          </p>
+          <p className="text-sm text-[var(--cortex-text-muted)]">No executions yet</p>
           <p className="mt-1 text-xs text-[var(--cortex-text-muted)]">
             Execute this query to see results here
           </p>
@@ -101,10 +89,7 @@ export function QueryExecutionHistory({ queryId }: QueryExecutionHistoryProps) {
   }
 
   return (
-    <div
-      className="rounded-lg bg-white p-4 shadow-sm"
-      data-testid="execution-history"
-    >
+    <div className="rounded-lg bg-white p-4 shadow-sm" data-testid="execution-history">
       <h3 className="mb-3 text-sm font-medium text-[var(--cortex-text-secondary)]">
         Execution History
       </h3>
@@ -207,9 +192,7 @@ function ExecutionRow({ execution }: { execution: QueryExecution }) {
           )}
 
           {!execution.reproducibilityStatement && !execution.errorMessage && (
-            <p className="text-xs text-[var(--cortex-text-muted)]">
-              No additional details
-            </p>
+            <p className="text-xs text-[var(--cortex-text-muted)]">No additional details</p>
           )}
         </div>
       )}

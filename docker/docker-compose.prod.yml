@@ -1,0 +1,138 @@
+services:
+  # ── Infrastructure ──────────────────────────────────────────────
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cortex}
+      POSTGRES_USER: ${POSTGRES_USER:-cortex}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cortex_secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-cortex}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    restart: unless-stopped
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-cortex}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-cortex_secret}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  minio:
+    image: minio/minio
+    restart: unless-stopped
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-cortex_minio}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-cortex_minio_secret}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ['CMD', 'mc', 'ready', 'local']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ── Applications ────────────────────────────────────────────────
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    ports:
+      - '4000:4000'
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cortex}:${POSTGRES_PASSWORD:-cortex_secret}@postgres:5432/${POSTGRES_DB:-cortex}
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-cortex}:${RABBITMQ_PASSWORD:-cortex_secret}@rabbitmq:5672
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-in-production-too}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-cortex_minio}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-cortex_minio_secret}
+      MINIO_USE_SSL: 'false'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  workers:
+    build:
+      context: ..
+      dockerfile: apps/workers/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cortex}:${POSTGRES_PASSWORD:-cortex_secret}@postgres:5432/${POSTGRES_DB:-cortex}
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-cortex}:${RABBITMQ_PASSWORD:-cortex_secret}@rabbitmq:5672
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-cortex_minio}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-cortex_minio_secret}
+      MINIO_USE_SSL: 'false'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    environment:
+      API_HOST: api
+      API_PORT: 4000
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:
+  rabbitmq_data:
+  minio_data:

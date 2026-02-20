@@ -43,31 +43,106 @@ const sessionTypes: { value: SlsSessionType; label: string; description: string 
 
 const scopeFieldsByType: Record<SlsSessionType, ScopeFieldConfig[]> = {
   SOA_CLINICAL: [
-    { key: 'indication', label: 'Indication', type: 'text', placeholder: 'e.g. Cervical spine degeneration' },
-    { key: 'population', label: 'Population', type: 'text', placeholder: 'e.g. Adults with chronic neck pain' },
-    { key: 'intervention', label: 'Intervention', type: 'text', placeholder: 'e.g. Anterior cervical discectomy' },
-    { key: 'comparator', label: 'Comparator', type: 'text', placeholder: 'e.g. Conservative treatment' },
-    { key: 'outcomes', label: 'Outcomes', type: 'textarea', placeholder: 'e.g. Pain reduction, functional improvement' },
+    {
+      key: 'indication',
+      label: 'Indication',
+      type: 'text',
+      placeholder: 'e.g. Cervical spine degeneration',
+    },
+    {
+      key: 'population',
+      label: 'Population',
+      type: 'text',
+      placeholder: 'e.g. Adults with chronic neck pain',
+    },
+    {
+      key: 'intervention',
+      label: 'Intervention',
+      type: 'text',
+      placeholder: 'e.g. Anterior cervical discectomy',
+    },
+    {
+      key: 'comparator',
+      label: 'Comparator',
+      type: 'text',
+      placeholder: 'e.g. Conservative treatment',
+    },
+    {
+      key: 'outcomes',
+      label: 'Outcomes',
+      type: 'textarea',
+      placeholder: 'e.g. Pain reduction, functional improvement',
+    },
   ],
   SOA_DEVICE: [
-    { key: 'deviceName', label: 'Device Name', type: 'text', placeholder: 'e.g. CINA CSpine System' },
+    {
+      key: 'deviceName',
+      label: 'Device Name',
+      type: 'text',
+      placeholder: 'e.g. CINA CSpine System',
+    },
     { key: 'deviceClass', label: 'Device Class', type: 'text', placeholder: 'e.g. IIa, III' },
-    { key: 'intendedPurpose', label: 'Intended Purpose', type: 'textarea', placeholder: 'Describe the intended purpose of the device' },
-    { key: 'keyPerformanceEndpoints', label: 'Key Performance Endpoints', type: 'textarea', placeholder: 'e.g. Safety endpoints, efficacy endpoints' },
+    {
+      key: 'intendedPurpose',
+      label: 'Intended Purpose',
+      type: 'textarea',
+      placeholder: 'Describe the intended purpose of the device',
+    },
+    {
+      key: 'keyPerformanceEndpoints',
+      label: 'Key Performance Endpoints',
+      type: 'textarea',
+      placeholder: 'e.g. Safety endpoints, efficacy endpoints',
+    },
   ],
   SIMILAR_DEVICE: [
-    { key: 'deviceCategory', label: 'Device Category', type: 'text', placeholder: 'e.g. Spinal implants' },
-    { key: 'equivalenceCriteria', label: 'Equivalence Criteria', type: 'textarea', placeholder: 'Describe technical, biological, and clinical equivalence criteria' },
-    { key: 'searchDatabases', label: 'Search Databases', type: 'text', placeholder: 'e.g. PubMed, Embase, Cochrane' },
+    {
+      key: 'deviceCategory',
+      label: 'Device Category',
+      type: 'text',
+      placeholder: 'e.g. Spinal implants',
+    },
+    {
+      key: 'equivalenceCriteria',
+      label: 'Equivalence Criteria',
+      type: 'textarea',
+      placeholder: 'Describe technical, biological, and clinical equivalence criteria',
+    },
+    {
+      key: 'searchDatabases',
+      label: 'Search Databases',
+      type: 'text',
+      placeholder: 'e.g. PubMed, Embase, Cochrane',
+    },
   ],
   PMS_UPDATE: [
     { key: 'dateRange', label: 'Date Range', type: 'text', placeholder: 'e.g. 2024-01 to 2026-01' },
-    { key: 'updateScope', label: 'Update Scope', type: 'textarea', placeholder: 'Describe the scope of this PMS update' },
-    { key: 'previousSlsReference', label: 'Previous SLS Reference', type: 'text', placeholder: 'Reference to previous SLS session or report' },
+    {
+      key: 'updateScope',
+      label: 'Update Scope',
+      type: 'textarea',
+      placeholder: 'Describe the scope of this PMS update',
+    },
+    {
+      key: 'previousSlsReference',
+      label: 'Previous SLS Reference',
+      type: 'text',
+      placeholder: 'Reference to previous SLS session or report',
+    },
   ],
   AD_HOC: [
-    { key: 'description', label: 'Description', type: 'textarea', placeholder: 'Describe the purpose of this search' },
-    { key: 'searchObjective', label: 'Search Objective', type: 'textarea', placeholder: 'What do you hope to find?' },
+    {
+      key: 'description',
+      label: 'Description',
+      type: 'textarea',
+      placeholder: 'Describe the purpose of this search',
+    },
+    {
+      key: 'searchObjective',
+      label: 'Search Objective',
+      type: 'textarea',
+      placeholder: 'What do you hope to find?',
+    },
   ],
 };
 
@@ -82,11 +157,7 @@ interface ValidationErrors {
   type?: string;
 }
 
-export function SessionCreateForm({
-  projectId,
-  onCreated,
-  onCancel,
-}: SessionCreateFormProps) {
+export function SessionCreateForm({ projectId, onCreated, onCancel }: SessionCreateFormProps) {
   const [name, setName] = useState('');
   const [selectedType, setSelectedType] = useState<SlsSessionType | null>(null);
   const [scopeFields, setScopeFields] = useState<Record<string, string>>({});
@@ -132,12 +203,10 @@ export function SessionCreateForm({
 
     const { data } = await createSession({
       variables: {
-        input: {
-          projectId,
-          name: name.trim(),
-          type: selectedType,
-          scopeFields,
-        },
+        projectId,
+        name: name.trim(),
+        type: selectedType,
+        scopeFields: Object.keys(scopeFields).length > 0 ? scopeFields : undefined,
       },
     });
 
@@ -191,9 +260,7 @@ export function SessionCreateForm({
               className={cn(
                 'w-full rounded-md border px-3 py-2 text-sm outline-none transition-colors',
                 'focus:border-[var(--cortex-blue-500)] focus:ring-1 focus:ring-[var(--cortex-blue-500)]',
-                errors.name
-                  ? 'border-[var(--cortex-error)]'
-                  : 'border-[var(--cortex-border)]',
+                errors.name ? 'border-[var(--cortex-error)]' : 'border-[var(--cortex-border)]',
               )}
             />
             {errors.name && (
@@ -236,9 +303,7 @@ export function SessionCreateForm({
                     <span className="text-sm font-medium text-[var(--cortex-text-primary)]">
                       {type.label}
                     </span>
-                    <p className="text-xs text-[var(--cortex-text-muted)]">
-                      {type.description}
-                    </p>
+                    <p className="text-xs text-[var(--cortex-text-muted)]">{type.description}</p>
                   </div>
                 </label>
               ))}

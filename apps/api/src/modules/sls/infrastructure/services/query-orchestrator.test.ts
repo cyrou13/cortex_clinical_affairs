@@ -57,28 +57,25 @@ describe('QueryOrchestrator', () => {
       totalCount: 1,
       database: 'PUBMED',
     });
-    const mockCochrane = createMockClient({
-      articles: [{ title: 'Cochrane Review', sourceDatabase: 'COCHRANE' }],
+    const mockPmc = createMockClient({
+      articles: [{ title: 'PMC Article', sourceDatabase: 'PMC' }],
       totalCount: 1,
-      database: 'COCHRANE',
+      database: 'PMC',
     });
 
     const clients = new Map<string, DatabaseClient>([
       ['PUBMED', mockPubmed],
-      ['COCHRANE', mockCochrane],
+      ['PMC', mockPmc],
     ]);
     const orchestrator = new QueryOrchestrator(clients);
 
-    const result = await orchestrator.executeAcrossDatabases('test query', [
-      'PUBMED',
-      'COCHRANE',
-    ]);
+    const result = await orchestrator.executeAcrossDatabases('test query', ['PUBMED', 'PMC']);
 
     expect(result.results).toHaveLength(2);
     expect(result.totalArticles).toBe(2);
     expect(result.allArticles).toHaveLength(2);
     expect(mockPubmed.search).toHaveBeenCalledWith('test query');
-    expect(mockCochrane.search).toHaveBeenCalledWith('test query');
+    expect(mockPmc.search).toHaveBeenCalledWith('test query');
   });
 
   it('handles partial failure gracefully', async () => {
@@ -87,18 +84,15 @@ describe('QueryOrchestrator', () => {
       totalCount: 1,
       database: 'PUBMED',
     });
-    const mockCochrane = createMockClient(undefined, new Error('Cochrane API not configured'));
+    const mockPmc = createMockClient(undefined, new Error('PMC API error'));
 
     const clients = new Map<string, DatabaseClient>([
       ['PUBMED', mockPubmed],
-      ['COCHRANE', mockCochrane],
+      ['PMC', mockPmc],
     ]);
     const orchestrator = new QueryOrchestrator(clients);
 
-    const result = await orchestrator.executeAcrossDatabases('test query', [
-      'PUBMED',
-      'COCHRANE',
-    ]);
+    const result = await orchestrator.executeAcrossDatabases('test query', ['PUBMED', 'PMC']);
 
     expect(result.results).toHaveLength(2);
 
@@ -106,12 +100,11 @@ describe('QueryOrchestrator', () => {
     expect(pubmedResult!.status).toBe('success');
     expect(pubmedResult!.articles).toHaveLength(1);
 
-    const cochraneResult = result.results.find((r) => r.database === 'COCHRANE');
-    expect(cochraneResult!.status).toBe('failed');
-    expect(cochraneResult!.errorMessage).toBe('Cochrane API not configured');
-    expect(cochraneResult!.articles).toHaveLength(0);
+    const pmcResult = result.results.find((r) => r.database === 'PMC');
+    expect(pmcResult!.status).toBe('failed');
+    expect(pmcResult!.errorMessage).toBe('PMC API error');
+    expect(pmcResult!.articles).toHaveLength(0);
 
-    // Total should only include successful articles
     expect(result.totalArticles).toBe(1);
   });
 
@@ -121,7 +114,6 @@ describe('QueryOrchestrator', () => {
       totalCount: 1,
       database: 'PUBMED',
     });
-    // Slow client that exceeds timeout - using 30s delay (timeout is 25s)
     const mockSlow = createMockClient(undefined, undefined, 30_000);
 
     const clients = new Map<string, DatabaseClient>([
@@ -130,10 +122,7 @@ describe('QueryOrchestrator', () => {
     ]);
     const orchestrator = new QueryOrchestrator(clients);
 
-    const result = await orchestrator.executeAcrossDatabases('test query', [
-      'PUBMED',
-      'SLOW_DB',
-    ]);
+    const result = await orchestrator.executeAcrossDatabases('test query', ['PUBMED', 'SLOW_DB']);
 
     expect(result.results).toHaveLength(2);
 
@@ -165,21 +154,19 @@ describe('QueryOrchestrator', () => {
       totalCount: 2,
       database: 'PUBMED',
     });
-    const mockEmbase = createMockClient({
-      articles: [
-        { title: 'Embase 1', sourceDatabase: 'EMBASE' },
-      ],
+    const mockClinicalTrials = createMockClient({
+      articles: [{ title: 'Trial 1', sourceDatabase: 'CLINICAL_TRIALS' }],
       totalCount: 1,
-      database: 'EMBASE',
+      database: 'CLINICAL_TRIALS',
     });
 
     const clients = new Map<string, DatabaseClient>([
       ['PUBMED', mockPubmed],
-      ['EMBASE', mockEmbase],
+      ['CLINICAL_TRIALS', mockClinicalTrials],
     ]);
     const orchestrator = new QueryOrchestrator(clients);
 
-    const result = await orchestrator.executeAcrossDatabases('test', ['PUBMED', 'EMBASE']);
+    const result = await orchestrator.executeAcrossDatabases('test', ['PUBMED', 'CLINICAL_TRIALS']);
 
     expect(result.allArticles).toHaveLength(3);
     expect(result.totalArticles).toBe(3);
@@ -187,15 +174,15 @@ describe('QueryOrchestrator', () => {
 
   it('handles all databases failing', async () => {
     const mockPubmed = createMockClient(undefined, new Error('PubMed down'));
-    const mockCochrane = createMockClient(undefined, new Error('Cochrane down'));
+    const mockPmc = createMockClient(undefined, new Error('PMC down'));
 
     const clients = new Map<string, DatabaseClient>([
       ['PUBMED', mockPubmed],
-      ['COCHRANE', mockCochrane],
+      ['PMC', mockPmc],
     ]);
     const orchestrator = new QueryOrchestrator(clients);
 
-    const result = await orchestrator.executeAcrossDatabases('test', ['PUBMED', 'COCHRANE']);
+    const result = await orchestrator.executeAcrossDatabases('test', ['PUBMED', 'PMC']);
 
     expect(result.results).toHaveLength(2);
     expect(result.results.every((r) => r.status === 'failed')).toBe(true);

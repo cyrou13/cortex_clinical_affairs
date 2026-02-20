@@ -52,8 +52,8 @@ describe('validateTransition', () => {
     expect(validateTransition('FULL_TEXT_REVIEW', 'FINAL_EXCLUDED')).toBe(true);
   });
 
-  it('rejects PENDING -> INCLUDED (must go through SCORED first)', () => {
-    expect(validateTransition('PENDING', 'INCLUDED')).toBe(false);
+  it('allows PENDING -> INCLUDED (manual screening bypass)', () => {
+    expect(validateTransition('PENDING', 'INCLUDED')).toBe(true);
   });
 
   it('rejects EXCLUDED -> anything (terminal state)', () => {
@@ -96,8 +96,8 @@ describe('transitionStatus', () => {
   it('throws for invalid transition', () => {
     const article = makeArticle({ status: 'PENDING' });
 
-    expect(() => transitionStatus(article, 'INCLUDED', 'user-1')).toThrow(
-      'Invalid status transition from PENDING to INCLUDED',
+    expect(() => transitionStatus(article, 'FULL_TEXT_REVIEW', 'user-1')).toThrow(
+      'Invalid status transition from PENDING to FULL_TEXT_REVIEW',
     );
   });
 

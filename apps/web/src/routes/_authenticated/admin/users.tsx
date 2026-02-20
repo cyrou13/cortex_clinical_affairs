@@ -80,6 +80,7 @@ export default function AdminUsersPage() {
   const [filterRole, setFilterRole] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const { data, refetch } = useQuery<{ users: { users: User[]; total: number } }>(USERS_QUERY, {
     variables: {
@@ -101,6 +102,18 @@ export default function AdminUsersPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
+      {error && (
+        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
+          <button
+            type="button"
+            onClick={() => setError(null)}
+            className="ml-2 font-medium underline"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       <UserManagementTable
         users={users}
         total={total}
@@ -119,9 +132,19 @@ export default function AdminUsersPage() {
       <UserCreateDialog
         open={showCreate}
         onClose={() => setShowCreate(false)}
-        onSubmit={(data) => {
-          createUser({ variables: data });
-          setShowCreate(false);
+        onSubmit={async (data) => {
+          setError(null);
+          try {
+            const createResult = await createUser({ variables: data });
+            const createErrors = (createResult as any).errors;
+            if (createErrors?.length) {
+              setError(createErrors.map((e: any) => e.message).join(', '));
+              return;
+            }
+            setShowCreate(false);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to create user');
+          }
         }}
       />
 
@@ -129,9 +152,19 @@ export default function AdminUsersPage() {
         open={!!editingUser}
         user={editingUser}
         onClose={() => setEditingUser(null)}
-        onSubmit={(id, changes) => {
-          updateUser({ variables: { id, ...changes } });
-          setEditingUser(null);
+        onSubmit={async (id, changes) => {
+          setError(null);
+          try {
+            const updateResult = await updateUser({ variables: { id, ...changes } });
+            const updateErrors = (updateResult as any).errors;
+            if (updateErrors?.length) {
+              setError(updateErrors.map((e: any) => e.message).join(', '));
+              return;
+            }
+            setEditingUser(null);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to update user');
+          }
         }}
       />
     </div>

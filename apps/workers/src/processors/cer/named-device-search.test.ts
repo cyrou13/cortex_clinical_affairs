@@ -7,7 +7,7 @@ function createMockJob(overrides?: Partial<TaskJobData>): Job<TaskJobData> {
   return {
     data: {
       taskId: 'task-001',
-      type: 'cer:named-device-search',
+      type: 'cer.named-device-search',
       metadata: {
         searchId: 'search-1',
         cerVersionId: 'cer-1',
@@ -70,7 +70,11 @@ describe('NamedDeviceSearchProcessor', () => {
 
     expect(result.searchId).toBe('search-1');
     expect(result.totalFindings).toBe(1);
-    expect(deps.aggregateSearch).toHaveBeenCalledWith('CardioValve Pro', ['heart valve'], ['MAUDE']);
+    expect(deps.aggregateSearch).toHaveBeenCalledWith(
+      'CardioValve Pro',
+      ['heart valve'],
+      ['MAUDE'],
+    );
     expect(deps.storeFinding).toHaveBeenCalledTimes(1);
   });
 
@@ -137,15 +141,29 @@ describe('NamedDeviceSearchProcessor', () => {
   it('handles cancellation during finding storage', async () => {
     const deps = makeDeps({
       findings: [
-        { sourceDatabase: 'MAUDE', reportNumber: 'MDR-001', eventDate: '', deviceName: 'D', eventType: 'OTHER', description: 'D', outcome: 'O' },
-        { sourceDatabase: 'MAUDE', reportNumber: 'MDR-002', eventDate: '', deviceName: 'D', eventType: 'OTHER', description: 'D', outcome: 'O' },
+        {
+          sourceDatabase: 'MAUDE',
+          reportNumber: 'MDR-001',
+          eventDate: '',
+          deviceName: 'D',
+          eventType: 'OTHER',
+          description: 'D',
+          outcome: 'O',
+        },
+        {
+          sourceDatabase: 'MAUDE',
+          reportNumber: 'MDR-002',
+          eventDate: '',
+          deviceName: 'D',
+          eventType: 'OTHER',
+          description: 'D',
+          outcome: 'O',
+        },
       ],
     });
 
     // Cancel after first finding
-    mockRedis.get
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce('1');
+    mockRedis.get.mockResolvedValueOnce(null).mockResolvedValueOnce('1');
 
     const processor = new NamedDeviceSearchProcessor(mockRedis as never, deps);
     const job = createMockJob();
@@ -161,8 +179,24 @@ describe('NamedDeviceSearchProcessor', () => {
   it('continues on individual storage failures', async () => {
     const deps = makeDeps({
       findings: [
-        { sourceDatabase: 'MAUDE', reportNumber: 'MDR-001', eventDate: '', deviceName: 'D', eventType: 'OTHER', description: 'D', outcome: 'O' },
-        { sourceDatabase: 'MAUDE', reportNumber: 'MDR-002', eventDate: '', deviceName: 'D', eventType: 'OTHER', description: 'D', outcome: 'O' },
+        {
+          sourceDatabase: 'MAUDE',
+          reportNumber: 'MDR-001',
+          eventDate: '',
+          deviceName: 'D',
+          eventType: 'OTHER',
+          description: 'D',
+          outcome: 'O',
+        },
+        {
+          sourceDatabase: 'MAUDE',
+          reportNumber: 'MDR-002',
+          eventDate: '',
+          deviceName: 'D',
+          eventType: 'OTHER',
+          description: 'D',
+          outcome: 'O',
+        },
       ],
     });
 

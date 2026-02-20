@@ -3,8 +3,20 @@ import { gql } from '@apollo/client';
 // --- Story 3.1 ---
 
 export const CREATE_SOA_ANALYSIS = gql`
-  mutation CreateSoaAnalysis($projectId: String!, $name: String!, $type: String!, $description: String, $slsSessionIds: [String!]!) {
-    createSoaAnalysis(projectId: $projectId, name: $name, type: $type, description: $description, slsSessionIds: $slsSessionIds) {
+  mutation CreateSoaAnalysis(
+    $projectId: String!
+    $name: String!
+    $type: String!
+    $description: String
+    $slsSessionIds: [String!]!
+  ) {
+    createSoaAnalysis(
+      projectId: $projectId
+      name: $name
+      type: $type
+      description: $description
+      slsSessionIds: $slsSessionIds
+    ) {
       soaAnalysisId
       name
       type
@@ -34,8 +46,18 @@ export const CHECK_DEVICE_SOA_DEPENDENCY = gql`
 // --- Story 3.2 ---
 
 export const CREATE_EXTRACTION_GRID = gql`
-  mutation CreateExtractionGrid($soaAnalysisId: String!, $name: String!, $thematicSectionId: String, $templateId: String) {
-    createExtractionGrid(soaAnalysisId: $soaAnalysisId, name: $name, thematicSectionId: $thematicSectionId, templateId: $templateId) {
+  mutation CreateExtractionGrid(
+    $soaAnalysisId: String!
+    $name: String!
+    $thematicSectionId: String
+    $templateId: String
+  ) {
+    createExtractionGrid(
+      soaAnalysisId: $soaAnalysisId
+      name: $name
+      thematicSectionId: $thematicSectionId
+      templateId: $templateId
+    ) {
       gridId
       columnCount
     }
@@ -43,8 +65,20 @@ export const CREATE_EXTRACTION_GRID = gql`
 `;
 
 export const ADD_GRID_COLUMN = gql`
-  mutation AddGridColumn($gridId: String!, $name: String!, $displayName: String!, $dataType: String!, $isRequired: Boolean) {
-    addGridColumn(gridId: $gridId, name: $name, displayName: $displayName, dataType: $dataType, isRequired: $isRequired)
+  mutation AddGridColumn(
+    $gridId: String!
+    $name: String!
+    $displayName: String!
+    $dataType: String!
+    $isRequired: Boolean
+  ) {
+    addGridColumn(
+      gridId: $gridId
+      name: $name
+      displayName: $displayName
+      dataType: $dataType
+      isRequired: $isRequired
+    )
   }
 `;
 
@@ -59,7 +93,12 @@ export const POPULATE_GRID_ROWS = gql`
 `;
 
 export const UPDATE_GRID_CELL = gql`
-  mutation UpdateGridCell($gridId: String!, $articleId: String!, $columnId: String!, $value: String) {
+  mutation UpdateGridCell(
+    $gridId: String!
+    $articleId: String!
+    $columnId: String!
+    $value: String
+  ) {
     updateGridCell(gridId: $gridId, articleId: $articleId, columnId: $columnId, value: $value) {
       cellId
       value
@@ -93,7 +132,12 @@ export const VALIDATE_CELL = gql`
 `;
 
 export const CORRECT_CELL = gql`
-  mutation CorrectCell($gridId: String!, $articleId: String!, $columnId: String!, $newValue: String!) {
+  mutation CorrectCell(
+    $gridId: String!
+    $articleId: String!
+    $columnId: String!
+    $newValue: String!
+  ) {
     correctCell(gridId: $gridId, articleId: $articleId, columnId: $columnId, newValue: $newValue) {
       cellId
       status
@@ -115,8 +159,20 @@ export const FLAG_CELL = gql`
 // --- Story 3.6 ---
 
 export const ASSESS_QUALITY = gql`
-  mutation AssessQuality($soaAnalysisId: String!, $articleId: String!, $assessmentType: String!, $assessmentData: JSON!, $dataContributionLevel: String!) {
-    assessQuality(soaAnalysisId: $soaAnalysisId, articleId: $articleId, assessmentType: $assessmentType, assessmentData: $assessmentData, dataContributionLevel: $dataContributionLevel) {
+  mutation AssessQuality(
+    $soaAnalysisId: String!
+    $articleId: String!
+    $assessmentType: String!
+    $assessmentData: JSON!
+    $dataContributionLevel: String!
+  ) {
+    assessQuality(
+      soaAnalysisId: $soaAnalysisId
+      articleId: $articleId
+      assessmentType: $assessmentType
+      assessmentData: $assessmentData
+      dataContributionLevel: $dataContributionLevel
+    ) {
       qualityAssessmentId
       assessmentType
       dataContributionLevel
@@ -159,8 +215,22 @@ export const DRAFT_NARRATIVE = gql`
 // --- Story 3.9 ---
 
 export const ADD_SIMILAR_DEVICE = gql`
-  mutation AddSimilarDevice($soaAnalysisId: String!, $deviceName: String!, $manufacturer: String!, $indication: String!, $regulatoryStatus: String!, $metadata: JSON) {
-    addSimilarDevice(soaAnalysisId: $soaAnalysisId, deviceName: $deviceName, manufacturer: $manufacturer, indication: $indication, regulatoryStatus: $regulatoryStatus, metadata: $metadata) {
+  mutation AddSimilarDevice(
+    $soaAnalysisId: String!
+    $deviceName: String!
+    $manufacturer: String!
+    $indication: String!
+    $regulatoryStatus: String!
+    $metadata: JSON
+  ) {
+    addSimilarDevice(
+      soaAnalysisId: $soaAnalysisId
+      deviceName: $deviceName
+      manufacturer: $manufacturer
+      indication: $indication
+      regulatoryStatus: $regulatoryStatus
+      metadata: $metadata
+    ) {
       id
       soaAnalysisId
       deviceName
@@ -173,8 +243,24 @@ export const ADD_SIMILAR_DEVICE = gql`
 `;
 
 export const ADD_BENCHMARK = gql`
-  mutation AddBenchmark($soaAnalysisId: String!, $similarDeviceId: String!, $metricName: String!, $metricValue: String!, $unit: String!, $sourceArticleId: String, $sourceDescription: String) {
-    addBenchmark(soaAnalysisId: $soaAnalysisId, similarDeviceId: $similarDeviceId, metricName: $metricName, metricValue: $metricValue, unit: $unit, sourceArticleId: $sourceArticleId, sourceDescription: $sourceDescription) {
+  mutation AddBenchmark(
+    $soaAnalysisId: String!
+    $similarDeviceId: String!
+    $metricName: String!
+    $metricValue: String!
+    $unit: String!
+    $sourceArticleId: String
+    $sourceDescription: String
+  ) {
+    addBenchmark(
+      soaAnalysisId: $soaAnalysisId
+      similarDeviceId: $similarDeviceId
+      metricName: $metricName
+      metricValue: $metricValue
+      unit: $unit
+      sourceArticleId: $sourceArticleId
+      sourceDescription: $sourceDescription
+    ) {
       id
       similarDeviceId
       metricName
@@ -188,8 +274,16 @@ export const ADD_BENCHMARK = gql`
 // --- Story 3.10 ---
 
 export const CREATE_CLAIM = gql`
-  mutation CreateClaim($soaAnalysisId: String!, $statementText: String!, $thematicSectionId: String) {
-    createClaim(soaAnalysisId: $soaAnalysisId, statementText: $statementText, thematicSectionId: $thematicSectionId) {
+  mutation CreateClaim(
+    $soaAnalysisId: String!
+    $statementText: String!
+    $thematicSectionId: String
+  ) {
+    createClaim(
+      soaAnalysisId: $soaAnalysisId
+      statementText: $statementText
+      thematicSectionId: $thematicSectionId
+    ) {
       id
       soaAnalysisId
       statementText
@@ -220,5 +314,113 @@ export const LOCK_SOA_ANALYSIS = gql`
       lockedAt
       sectionCount
     }
+  }
+`;
+
+// --- Grid Template mutations ---
+
+export const CREATE_GRID_TEMPLATE = gql`
+  mutation CreateGridTemplate(
+    $name: String!
+    $soaType: String!
+    $description: String
+    $columns: JSON!
+  ) {
+    createGridTemplate(
+      name: $name
+      soaType: $soaType
+      description: $description
+      columns: $columns
+    ) {
+      templateId
+      columnCount
+    }
+  }
+`;
+
+export const DUPLICATE_GRID_TEMPLATE = gql`
+  mutation DuplicateGridTemplate($sourceTemplateId: String!, $newName: String!, $soaType: String) {
+    duplicateGridTemplate(
+      sourceTemplateId: $sourceTemplateId
+      newName: $newName
+      soaType: $soaType
+    ) {
+      templateId
+      columnCount
+    }
+  }
+`;
+
+export const UPDATE_GRID_TEMPLATE = gql`
+  mutation UpdateGridTemplate(
+    $templateId: String!
+    $name: String
+    $description: String
+    $columns: JSON
+  ) {
+    updateGridTemplate(
+      templateId: $templateId
+      name: $name
+      description: $description
+      columns: $columns
+    )
+  }
+`;
+
+export const DELETE_GRID_TEMPLATE = gql`
+  mutation DeleteGridTemplate($templateId: String!) {
+    deleteGridTemplate(templateId: $templateId) {
+      templateId
+      deleted
+    }
+  }
+`;
+
+export const DELETE_SOA_ANALYSIS = gql`
+  mutation DeleteSoaAnalysis($soaAnalysisId: String!) {
+    deleteSoaAnalysis(soaAnalysisId: $soaAnalysisId)
+  }
+`;
+
+// --- SOA Import ---
+
+export const IMPORT_SOA_DOCUMENT = gql`
+  mutation ImportSoaDocument(
+    $projectId: String!
+    $fileName: String!
+    $fileContent: String!
+    $fileFormat: String!
+  ) {
+    importSoaDocument(
+      projectId: $projectId
+      fileName: $fileName
+      fileContent: $fileContent
+      fileFormat: $fileFormat
+    ) {
+      importId
+      taskId
+    }
+  }
+`;
+
+export const CONFIRM_SOA_IMPORT = gql`
+  mutation ConfirmSoaImport($importId: String!, $editedData: JSON) {
+    confirmSoaImport(importId: $importId, editedData: $editedData) {
+      soaAnalysisId
+      articleCount
+      sessionIds
+    }
+  }
+`;
+
+export const CANCEL_SOA_IMPORT = gql`
+  mutation CancelSoaImport($importId: String!) {
+    cancelSoaImport(importId: $importId)
+  }
+`;
+
+export const UPDATE_SOA_IMPORT_DATA = gql`
+  mutation UpdateSoaImportData($importId: String!, $editedData: JSON!) {
+    updateSoaImportData(importId: $importId, editedData: $editedData)
   }
 `;

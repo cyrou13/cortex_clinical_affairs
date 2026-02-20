@@ -64,7 +64,7 @@ export class ExportCerUseCase {
 
     // Enqueue BullMQ job via task service
     const task = await this.taskService.enqueueTask(
-      'cer:generate-docx',
+      'cer.generate-docx',
       {
         cerVersionId: input.cerVersionId,
         exportFormat: input.exportFormat,

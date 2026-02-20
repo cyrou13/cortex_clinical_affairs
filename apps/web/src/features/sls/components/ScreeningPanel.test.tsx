@@ -1,19 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-
-vi.mock('@apollo/client', () => ({
-  gql: (str: TemplateStringsArray) => str[0],
-}));
-
-const mockUseQuery = vi.fn();
-const mockUseMutation = vi.fn();
-
-vi.mock('@apollo/client/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: (...args: unknown[]) => mockUseMutation(...args),
-}));
-
-import { ScreeningPanel } from './ScreeningPanel';
+import { screen, fireEvent } from '@testing-library/react';
+import { renderWithApollo, type MockedResponse } from '../../../test-utils/apollo-wrapper';
+import { ScreeningPanel, GET_SCREENING_ARTICLES } from './ScreeningPanel';
 
 const mockArticles = [
   {
@@ -59,105 +47,110 @@ const mockArticles = [
 ];
 
 describe('ScreeningPanel', () => {
-  const mockMutate = vi.fn().mockResolvedValue({});
-
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseMutation.mockReturnValue([mockMutate, { loading: false }]);
   });
 
-  function renderWithData(articles = mockArticles) {
-    mockUseQuery.mockReturnValue({
-      data: { screeningArticles: articles },
-      loading: false,
-      error: null,
-    });
-    return render(<ScreeningPanel sessionId="session-1" />);
+  function buildMocks(articles = mockArticles): MockedResponse[] {
+    return [
+      {
+        request: {
+          query: GET_SCREENING_ARTICLES,
+          variables: { sessionId: 'session-1', filter: 'all' },
+        },
+        result: {
+          data: { screeningArticles: articles },
+        },
+      },
+    ];
   }
 
-  it('renders screening panel', () => {
-    renderWithData();
-    expect(screen.getByTestId('screening-panel')).toBeInTheDocument();
+  it('renders screening panel', async () => {
+    renderWithApollo(<ScreeningPanel sessionId="session-1" />, buildMocks());
+    expect(await screen.findByTestId('screening-panel')).toBeInTheDocument();
   });
 
-  it('renders filter tabs with counts', () => {
-    renderWithData();
+  it('renders filter tabs with counts', async () => {
+    renderWithApollo(<ScreeningPanel sessionId="session-1" />, buildMocks());
+    // Wait for articles to load first, then check tab count
+    await screen.findByTestId('screening-table');
     expect(screen.getByTestId('screening-filter-tabs')).toBeInTheDocument();
     expect(screen.getByTestId('tab-count-all')).toHaveTextContent('(4)');
   });
 
-  it('renders keyboard hints', () => {
-    renderWithData();
-    expect(screen.getByTestId('keyboard-hints')).toBeInTheDocument();
+  it('renders keyboard hints', async () => {
+    renderWithApollo(<ScreeningPanel sessionId="session-1" />, buildMocks());
+    expect(await screen.findByTestId('keyboard-hints')).toBeInTheDocument();
     expect(screen.getByTestId('keyboard-hints')).toHaveTextContent('I = Include');
   });
 
-  it('renders articles in table', () => {
-    renderWithData();
-    expect(screen.getByTestId('screening-table')).toBeInTheDocument();
+  it('renders articles in table', async () => {
+    renderWithApollo(<ScreeningPanel sessionId="session-1" />, buildMocks());
+    expect(await screen.findByTestId('screening-table')).toBeInTheDocument();
     expect(screen.getByTestId('screening-row-art-1')).toBeInTheDocument();
     expect(screen.getByTestId('screening-row-art-2')).toBeInTheDocument();
   });
 
-  it('renders AI score badge with green for high score', () => {
-    renderWithData();
-    const badge = screen.getByTestId('score-badge-art-1');
+  it('renders AI score badge with green for high score', async () => {
+    renderWithApollo(<ScreeningPanel sessionId="session-1" />, buildMocks());
+    const badge = await screen.findByTestId('score-badge-art-1');
     expect(badge).toHaveTextContent('85');
     expect(badge.className).toContain('bg-emerald');
   });
 
-  it('renders AI score badge with red for low score', () => {
-    renderWithData();
-    const badge = screen.getByTestId('score-badge-art-2');
+  it('renders AI score badge with red for low score', async () => {
+    renderWithApollo(<ScreeningPanel sessionId="session-1" />, buildMocks());
+    const badge = await screen.findByTestId('score-badge-art-2');
     expect(badge).toHaveTextContent('25');
     expect(badge.className).toContain('bg-red');
   });
 
-  it('renders AI score badge with orange for uncertain score', () => {
-    renderWithData();
-    const badge = screen.getByTestId('score-badge-art-4');
+  it('renders AI score badge with orange for uncertain score', async () => {
+    renderWithApollo(<ScreeningPanel sessionId="session-1" />, buildMocks());
+    const badge = await screen.findByTestId('score-badge-art-4');
     expect(badge).toHaveTextContent('55');
     expect(badge.className).toContain('bg-orange');
   });
 
-  it('selects article row on click', () => {
-    renderWithData();
-    fireEvent.click(screen.getByTestId('screening-row-art-1'));
-    expect(screen.getByTestId('screening-row-art-1').className).toContain('blue-50');
+  it('selects article row on click', async () => {
+    renderWithApollo(<ScreeningPanel sessionId="session-1" />, buildMocks());
+    const row = await screen.findByTestId('screening-row-art-1');
+    fireEvent.click(row);
+    expect(row.className).toContain('blue-50');
   });
 
   it('shows loading state', () => {
-    mockUseQuery.mockReturnValue({ data: null, loading: true, error: null });
-    render(<ScreeningPanel sessionId="session-1" />);
+    renderWithApollo(<ScreeningPanel sessionId="session-1" />, []);
     expect(screen.getByTestId('screening-loading')).toBeInTheDocument();
   });
 
-  it('shows empty state when no articles', () => {
-    renderWithData([]);
-    expect(screen.getByTestId('screening-empty')).toBeInTheDocument();
+  it('shows empty state when no articles', async () => {
+    renderWithApollo(<ScreeningPanel sessionId="session-1" />, buildMocks([]));
+    expect(await screen.findByTestId('screening-empty')).toBeInTheDocument();
   });
 
-  it('renders left border accent for included articles (green)', () => {
-    renderWithData();
-    const row = screen.getByTestId('screening-row-art-3');
+  it('renders left border accent for included articles (green)', async () => {
+    renderWithApollo(<ScreeningPanel sessionId="session-1" />, buildMocks());
+    const row = await screen.findByTestId('screening-row-art-3');
     expect(row.className).toContain('border-l-emerald');
   });
 
-  it('renders left border accent for excluded articles (red)', () => {
-    renderWithData();
-    const row = screen.getByTestId('screening-row-art-2');
+  it('renders left border accent for excluded articles (red)', async () => {
+    renderWithApollo(<ScreeningPanel sessionId="session-1" />, buildMocks());
+    const row = await screen.findByTestId('screening-row-art-2');
     expect(row.className).toContain('border-l-red');
   });
 
-  it('renders status labels', () => {
-    renderWithData();
-    expect(screen.getByTestId('status-label-art-1')).toHaveTextContent('Scored');
+  it('renders status labels', async () => {
+    renderWithApollo(<ScreeningPanel sessionId="session-1" />, buildMocks());
+    expect(await screen.findByTestId('status-label-art-1')).toHaveTextContent('Scored');
     expect(screen.getByTestId('status-label-art-2')).toHaveTextContent('Excluded');
     expect(screen.getByTestId('status-label-art-3')).toHaveTextContent('Included');
   });
 
-  it('truncates abstract preview', () => {
-    renderWithData();
+  it('truncates abstract preview', async () => {
+    renderWithApollo(<ScreeningPanel sessionId="session-1" />, buildMocks());
+    await screen.findByTestId('screening-table');
     // Abstract for art-1 is long, should be truncated to 50 chars + ellipsis
     const rows = screen.getAllByRole('row');
     // First data row (index 1, since 0 is header)
@@ -165,13 +158,17 @@ describe('ScreeningPanel', () => {
     expect(cells[2]!.textContent!.length).toBeLessThanOrEqual(54); // 50 + "..."
   });
 
-  it('shows error state', () => {
-    mockUseQuery.mockReturnValue({
-      data: null,
-      loading: false,
-      error: new Error('Network error'),
-    });
-    render(<ScreeningPanel sessionId="session-1" />);
-    expect(screen.getByTestId('screening-error')).toBeInTheDocument();
+  it('shows error state', async () => {
+    const errorMocks: MockedResponse[] = [
+      {
+        request: {
+          query: GET_SCREENING_ARTICLES,
+          variables: { sessionId: 'session-1', filter: 'all' },
+        },
+        error: new Error('Network error'),
+      },
+    ];
+    renderWithApollo(<ScreeningPanel sessionId="session-1" />, errorMocks);
+    expect(await screen.findByTestId('screening-error')).toBeInTheDocument();
   });
 });

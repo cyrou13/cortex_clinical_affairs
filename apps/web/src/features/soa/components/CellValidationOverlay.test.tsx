@@ -14,9 +14,19 @@ vi.mock('@apollo/client/react', () => ({
 import { CellValidationOverlay } from './CellValidationOverlay';
 
 describe('CellValidationOverlay', () => {
-  const mockValidate = vi.fn().mockResolvedValue({ data: { validateGridCell: { cellId: 'c1', status: 'VALIDATED' } } });
-  const mockCorrect = vi.fn().mockResolvedValue({ data: {} });
-  const mockFlag = vi.fn().mockResolvedValue({ data: { flagGridCell: { cellId: 'c1', status: 'FLAGGED' } } });
+  const mockValidate = vi
+    .fn()
+    .mockResolvedValue({
+      data: { validateCell: { cellId: 'c1', status: 'VALIDATED', value: 'Some value' } },
+    });
+  const mockCorrect = vi
+    .fn()
+    .mockResolvedValue({
+      data: { correctCell: { cellId: 'c1', status: 'CORRECTED', value: 'new' } },
+    });
+  const mockFlag = vi
+    .fn()
+    .mockResolvedValue({ data: { flagCell: { cellId: 'c1', status: 'FLAGGED', reason: 'bad' } } });
 
   beforeEach(() => {
     vi.clearAllMocks();

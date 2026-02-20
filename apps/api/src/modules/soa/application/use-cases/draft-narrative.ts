@@ -54,7 +54,7 @@ export class DraftNarrativeUseCase {
       },
     });
 
-    await this.enqueueJob('soa:draft-narrative', {
+    await this.enqueueJob('soa.draft-narrative', {
       taskId: task.id,
       sectionId: input.sectionId,
       soaAnalysisId: input.soaAnalysisId,

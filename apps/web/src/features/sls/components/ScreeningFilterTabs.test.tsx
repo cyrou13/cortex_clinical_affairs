@@ -24,18 +24,18 @@ describe('ScreeningFilterTabs', () => {
     render(<ScreeningFilterTabs {...defaultProps} />);
 
     expect(screen.getByTestId('filter-tab-all')).toBeInTheDocument();
-    expect(screen.getByTestId('filter-tab-likely-relevant')).toBeInTheDocument();
+    expect(screen.getByTestId('filter-tab-likely_relevant')).toBeInTheDocument();
     expect(screen.getByTestId('filter-tab-uncertain')).toBeInTheDocument();
-    expect(screen.getByTestId('filter-tab-likely-irrelevant')).toBeInTheDocument();
+    expect(screen.getByTestId('filter-tab-likely_irrelevant')).toBeInTheDocument();
   });
 
   it('shows correct counts', () => {
     render(<ScreeningFilterTabs {...defaultProps} />);
 
     expect(screen.getByTestId('tab-count-all')).toHaveTextContent('(4,521)');
-    expect(screen.getByTestId('tab-count-likely-relevant')).toHaveTextContent('(2,400)');
+    expect(screen.getByTestId('tab-count-likely_relevant')).toHaveTextContent('(2,400)');
     expect(screen.getByTestId('tab-count-uncertain')).toHaveTextContent('(800)');
-    expect(screen.getByTestId('tab-count-likely-irrelevant')).toHaveTextContent('(1,321)');
+    expect(screen.getByTestId('tab-count-likely_irrelevant')).toHaveTextContent('(1,321)');
   });
 
   it('active tab has aria-selected true', () => {
@@ -49,8 +49,8 @@ describe('ScreeningFilterTabs', () => {
     const onTabChange = vi.fn();
     render(<ScreeningFilterTabs {...defaultProps} onTabChange={onTabChange} />);
 
-    fireEvent.click(screen.getByTestId('filter-tab-likely-relevant'));
-    expect(onTabChange).toHaveBeenCalledWith('likely-relevant');
+    fireEvent.click(screen.getByTestId('filter-tab-likely_relevant'));
+    expect(onTabChange).toHaveBeenCalledWith('likely_relevant');
   });
 
   it('all tab shows total count', () => {
@@ -69,7 +69,7 @@ describe('ScreeningFilterTabs', () => {
     );
 
     expect(screen.getByTestId('tab-count-all')).toHaveTextContent('(0)');
-    expect(screen.getByTestId('tab-count-likely-relevant')).toHaveTextContent('(0)');
+    expect(screen.getByTestId('tab-count-likely_relevant')).toHaveTextContent('(0)');
   });
 
   it('has tablist role on container', () => {

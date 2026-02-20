@@ -1,46 +1,12 @@
 import { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client/react';
+import { useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 import { Plus, GripVertical, Pencil, Trash2, Layout } from 'lucide-react';
+import { CREATE_EXTRACTION_GRID, ADD_GRID_COLUMN } from '../graphql/mutations';
+import { TemplateSelector } from './TemplateSelector';
+import { TemplateEditor } from './TemplateEditor';
 
-export const GET_GRID_TEMPLATES = gql`
-  query GetGridTemplates {
-    gridTemplates {
-      id
-      name
-      soaType
-      columns {
-        name
-        displayName
-        dataType
-      }
-    }
-  }
-`;
-
-export const CREATE_EXTRACTION_GRID = gql`
-  mutation CreateExtractionGrid($soaAnalysisId: String!, $name: String!, $templateId: String) {
-    createExtractionGrid(soaAnalysisId: $soaAnalysisId, name: $name, templateId: $templateId) {
-      gridId
-      columnCount
-    }
-  }
-`;
-
-export const ADD_GRID_COLUMN = gql`
-  mutation AddGridColumn(
-    $gridId: String!
-    $name: String!
-    $displayName: String!
-    $dataType: String!
-  ) {
-    addGridColumn(gridId: $gridId, name: $name, displayName: $displayName, dataType: $dataType) {
-      columnId
-    }
-  }
-`;
-
-export const RENAME_GRID_COLUMN = gql`
+const RENAME_GRID_COLUMN = gql`
   mutation RenameGridColumn($gridId: String!, $columnId: String!, $newName: String!) {
     renameGridColumn(gridId: $gridId, columnId: $columnId, newName: $newName) {
       columnId
@@ -49,7 +15,7 @@ export const RENAME_GRID_COLUMN = gql`
   }
 `;
 
-export const REMOVE_GRID_COLUMN = gql`
+const REMOVE_GRID_COLUMN = gql`
   mutation RemoveGridColumn($gridId: String!, $columnId: String!) {
     removeGridColumn(gridId: $gridId, columnId: $columnId) {
       columnId
@@ -66,8 +32,26 @@ interface Column {
   orderIndex: number;
 }
 
+interface ColumnDef {
+  name: string;
+  displayName: string;
+  dataType: string;
+  isRequired: boolean;
+  orderIndex: number;
+}
+
+interface TemplateData {
+  id: string;
+  name: string;
+  soaType: string;
+  description?: string;
+  isBuiltIn: boolean;
+  columns: ColumnDef[];
+}
+
 interface GridConfiguratorProps {
   soaAnalysisId: string;
+  soaType?: string;
   gridId?: string;
   columns: Column[];
   onGridCreated?: (gridId: string) => void;
@@ -83,6 +67,7 @@ const DATA_TYPES = [
 
 export function GridConfigurator({
   soaAnalysisId,
+  soaType,
   gridId,
   columns,
   onGridCreated,
@@ -93,23 +78,14 @@ export function GridConfigurator({
   const [newColType, setNewColType] = useState('TEXT');
   const [editingColumnId, setEditingColumnId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
+  const [editorMode, setEditorMode] = useState<'create' | 'edit'>('create');
+  const [editorInitialData, setEditorInitialData] = useState<TemplateData | undefined>(undefined);
 
-  const { data: templatesData } = useQuery<any>(GET_GRID_TEMPLATES);
   const [createGrid, { loading: creating }] = useMutation<any>(CREATE_EXTRACTION_GRID);
   const [addColumn] = useMutation(ADD_GRID_COLUMN);
   const [renameColumn] = useMutation(RENAME_GRID_COLUMN);
   const [removeColumn] = useMutation(REMOVE_GRID_COLUMN);
-
-  const templates = templatesData?.gridTemplates ?? [];
-
-  const handleCreateFromTemplate = async (templateId: string) => {
-    const result = await createGrid({
-      variables: { soaAnalysisId, name: 'Extraction Grid', templateId },
-    });
-    if (result.data?.createExtractionGrid) {
-      onGridCreated?.(result.data.createExtractionGrid.gridId);
-    }
-  };
 
   const handleAddColumn = async () => {
     if (!gridId || !newColName.trim()) return;
@@ -141,41 +117,84 @@ export function GridConfigurator({
     onColumnChanged?.();
   };
 
+  const handleSelectTemplate = async (templateId: string) => {
+    const result = await createGrid({
+      variables: { soaAnalysisId, name: 'Extraction Grid', templateId },
+    });
+    if (result.data?.createExtractionGrid) {
+      onGridCreated?.(result.data.createExtractionGrid.gridId);
+    }
+  };
+
+  const handleStartEmpty = async () => {
+    const result = await createGrid({
+      variables: { soaAnalysisId, name: 'Custom Grid' },
+    });
+    if (result.data?.createExtractionGrid) {
+      onGridCreated?.(result.data.createExtractionGrid.gridId);
+    }
+  };
+
+  const handleCreateNew = () => {
+    setEditorMode('create');
+    setEditorInitialData(undefined);
+    setShowTemplateEditor(true);
+  };
+
+  const handleDuplicate = (template: TemplateData) => {
+    setEditorMode('create');
+    setEditorInitialData({
+      ...template,
+      id: undefined as any,
+      name: `${template.name} (Copy)`,
+    });
+    setShowTemplateEditor(true);
+  };
+
+  const handleEdit = (template: TemplateData) => {
+    setEditorMode('edit');
+    setEditorInitialData(template);
+    setShowTemplateEditor(true);
+  };
+
   if (!gridId) {
     return (
-      <div className="space-y-3" data-testid="grid-configurator">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--cortex-text-primary)]">
-          <Layout size={14} /> Create Extraction Grid
-        </h3>
-        <div className="space-y-2" data-testid="template-list">
-          {templates.map((t: { id: string; name: string }) => (
+      <div data-testid="grid-configurator">
+        {soaType ? (
+          <TemplateSelector
+            soaType={soaType}
+            onSelectTemplate={handleSelectTemplate}
+            onStartEmpty={handleStartEmpty}
+            onCreateNew={handleCreateNew}
+            onDuplicate={handleDuplicate}
+            onEdit={handleEdit}
+          />
+        ) : (
+          <div className="space-y-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-[var(--cortex-text-primary)]">
+              <Layout size={14} /> Create Extraction Grid
+            </h3>
             <button
-              key={t.id}
               type="button"
-              onClick={() => handleCreateFromTemplate(t.id)}
               disabled={creating}
-              className="w-full rounded border border-[var(--cortex-border)] p-3 text-left text-sm hover:bg-[var(--cortex-bg-muted)]"
-              data-testid={`template-${t.id}`}
+              onClick={handleStartEmpty}
+              className="w-full rounded border-2 border-dashed border-[var(--cortex-border)] p-3 text-sm text-[var(--cortex-text-muted)] hover:bg-gray-50"
+              data-testid="create-empty-grid-btn"
             >
-              {t.name}
+              Start with empty grid
             </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={async () => {
-            const result = await createGrid({
-              variables: { soaAnalysisId, name: 'Custom Grid' },
-            });
-            if (result.data?.createExtractionGrid) {
-              onGridCreated?.(result.data.createExtractionGrid.gridId);
-            }
-          }}
-          className="w-full rounded border-2 border-dashed border-[var(--cortex-border)] p-3 text-sm text-[var(--cortex-text-muted)]"
-          data-testid="create-empty-grid-btn"
-        >
-          Start with empty grid
-        </button>
+          </div>
+        )}
+
+        {showTemplateEditor && (
+          <TemplateEditor
+            mode={editorMode}
+            initialData={editorInitialData}
+            defaultSoaType={soaType}
+            onSave={() => setShowTemplateEditor(false)}
+            onCancel={() => setShowTemplateEditor(false)}
+          />
+        )}
       </div>
     );
   }

@@ -18,6 +18,8 @@ import {
   ClaimArticleLinkObjectType,
   ComparisonTableType,
   TraceabilityReportType,
+  GridTemplateObjectType,
+  SoaImportObjectType,
 } from './types.js';
 import {
   checkPermission,
@@ -30,6 +32,8 @@ import { ManageDeviceRegistryUseCase } from '../application/use-cases/manage-dev
 import { ManageClaimsUseCase } from '../application/use-cases/manage-claims.js';
 import { GenerateComparisonTableUseCase } from '../application/use-cases/generate-comparison-table.js';
 import { ValidateClaimsUseCase } from '../application/use-cases/validate-claims.js';
+import { ManageGridTemplatesUseCase } from '../application/use-cases/manage-grid-templates.js';
+import { GetSoaImportUseCase } from '../application/use-cases/get-soa-import.js';
 
 builder.queryField('soaAnalyses', (t) =>
   t.field({
@@ -47,6 +51,25 @@ builder.queryField('soaAnalyses', (t) =>
       });
 
       return analyses as any;
+    },
+  }),
+);
+
+builder.queryField('soaAnalysesBySlsSession', (t) =>
+  t.field({
+    type: [SoaAnalysisObjectType],
+    args: { slsSessionId: t.arg.string({ required: true }) },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'read');
+      const links = await ctx.prisma.soaSlsLink.findMany({
+        where: { slsSessionId: args.slsSessionId },
+      });
+      if (links.length === 0) return [];
+      const soaIds = links.map((l: any) => l.soaAnalysisId);
+      return ctx.prisma.soaAnalysis.findMany({
+        where: { id: { in: soaIds } },
+        orderBy: { createdAt: 'desc' },
+      }) as any;
     },
   }),
 );
@@ -634,6 +657,80 @@ builder.queryField('traceabilityReport', (t) =>
 
       const useCase = new ValidateClaimsUseCase(ctx.prisma);
       return useCase.getTraceabilityReport(args.soaAnalysisId) as any;
+    },
+  }),
+);
+
+// --- Grid Template queries (Template System) ---
+
+builder.queryField('gridTemplates', (t) =>
+  t.field({
+    type: [GridTemplateObjectType],
+    args: {
+      soaType: t.arg.string({ required: false }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'read');
+
+      const useCase = new ManageGridTemplatesUseCase(ctx.prisma);
+      return useCase.listTemplates(args.soaType ?? undefined) as any;
+    },
+  }),
+);
+
+builder.queryField('gridTemplate', (t) =>
+  t.field({
+    type: GridTemplateObjectType,
+    args: {
+      templateId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'read');
+
+      const useCase = new ManageGridTemplatesUseCase(ctx.prisma);
+      return useCase.getTemplate(args.templateId) as any;
+    },
+  }),
+);
+
+// --- SOA Import queries ---
+
+builder.queryField('soaImport', (t) =>
+  t.field({
+    type: SoaImportObjectType,
+    nullable: true,
+    args: {
+      importId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'read');
+
+      const useCase = new GetSoaImportUseCase(ctx.prisma);
+      const soaImport = await useCase.execute(args.importId);
+
+      await checkProjectMembership(ctx, soaImport.projectId);
+
+      return soaImport as any;
+    },
+  }),
+);
+
+builder.queryField('soaImports', (t) =>
+  t.field({
+    type: [SoaImportObjectType],
+    args: {
+      projectId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'read');
+      await checkProjectMembership(ctx, args.projectId);
+
+      const imports = await (ctx.prisma as any).soaImport.findMany({
+        where: { projectId: args.projectId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return imports as any;
     },
   }),
 );

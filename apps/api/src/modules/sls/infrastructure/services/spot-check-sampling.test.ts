@@ -6,18 +6,24 @@ function makePrisma(overrides: {
   articles?: Array<Record<string, unknown>>;
   spotCheckedIds?: string[];
 }) {
-  const session = overrides.session !== undefined
-    ? overrides.session
-    : { id: 'sess-1', status: 'IN_PROGRESS', likelyRelevantThreshold: 75, uncertainLowerThreshold: 40 };
+  const session =
+    overrides.session !== undefined
+      ? overrides.session
+      : {
+          id: 'sess-1',
+          status: 'IN_PROGRESS',
+          likelyRelevantThreshold: 75,
+          uncertainLowerThreshold: 40,
+        };
 
   return {
     slsSession: {
       findUnique: vi.fn().mockResolvedValue(session),
     },
     screeningDecision: {
-      findMany: vi.fn().mockResolvedValue(
-        (overrides.spotCheckedIds ?? []).map((id) => ({ articleId: id })),
-      ),
+      findMany: vi
+        .fn()
+        .mockResolvedValue((overrides.spotCheckedIds ?? []).map((id) => ({ articleId: id }))),
     },
     article: {
       findMany: vi.fn().mockResolvedValue(overrides.articles ?? []),
@@ -54,7 +60,7 @@ describe('SpotCheckSamplingService', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           sessionId: 'sess-1',
-          relevanceScore: { gte: 75 },
+          aiCategory: 'likely_relevant',
         }),
       }),
     );
@@ -72,7 +78,7 @@ describe('SpotCheckSamplingService', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           sessionId: 'sess-1',
-          relevanceScore: { lt: 40 },
+          aiCategory: 'likely_irrelevant',
         }),
       }),
     );
@@ -82,9 +88,9 @@ describe('SpotCheckSamplingService', () => {
     const prisma = makePrisma({ session: null });
     const service = new SpotCheckSamplingService(prisma);
 
-    await expect(
-      service.generateSample('missing-sess', 'likely_relevant', 5),
-    ).rejects.toThrow('not found');
+    await expect(service.generateSample('missing-sess', 'likely_relevant', 5)).rejects.toThrow(
+      'not found',
+    );
   });
 
   it('excludes already spot-checked articles', async () => {
@@ -122,7 +128,7 @@ describe('SpotCheckSamplingService', () => {
     expect(result).toHaveLength(0);
   });
 
-  it('uses session thresholds when configured', async () => {
+  it('uses aiCategory for filtering regardless of session thresholds', async () => {
     const session = {
       id: 'sess-1',
       status: 'IN_PROGRESS',
@@ -137,7 +143,7 @@ describe('SpotCheckSamplingService', () => {
     expect(prisma.article.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          relevanceScore: { gte: 80 },
+          aiCategory: 'likely_relevant',
         }),
       }),
     );

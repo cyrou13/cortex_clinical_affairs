@@ -1,50 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@apollo/client/react';
-import { gql } from '@apollo/client';
 import { Check, Edit3, Flag, Brain } from 'lucide-react';
-
-export const VALIDATE_GRID_CELL = gql`
-  mutation ValidateGridCell($gridId: String!, $articleId: String!, $columnId: String!) {
-    validateGridCell(gridId: $gridId, articleId: $articleId, columnId: $columnId) {
-      cellId
-      status
-    }
-  }
-`;
-
-export const CORRECT_GRID_CELL = gql`
-  mutation CorrectGridCell(
-    $gridId: String!
-    $articleId: String!
-    $columnId: String!
-    $newValue: String!
-  ) {
-    correctGridCell(
-      gridId: $gridId
-      articleId: $articleId
-      columnId: $columnId
-      newValue: $newValue
-    ) {
-      cellId
-      status
-      value
-    }
-  }
-`;
-
-export const FLAG_GRID_CELL = gql`
-  mutation FlagGridCell(
-    $gridId: String!
-    $articleId: String!
-    $columnId: String!
-    $reason: String!
-  ) {
-    flagGridCell(gridId: $gridId, articleId: $articleId, columnId: $columnId, reason: $reason) {
-      cellId
-      status
-    }
-  }
-`;
+import { VALIDATE_CELL, CORRECT_CELL, FLAG_CELL } from '../graphql/mutations';
 
 interface CellValidationOverlayProps {
   gridId: string;
@@ -67,7 +24,7 @@ export function CellValidationOverlay({
   gridId,
   articleId,
   columnId,
-  _value,
+  value: _value,
   aiExtractedValue,
   validationStatus,
   confidenceLevel,
@@ -77,9 +34,9 @@ export function CellValidationOverlay({
   const [flagReason, setFlagReason] = useState('');
   const [showFlagInput, setShowFlagInput] = useState(false);
 
-  const [validate] = useMutation(VALIDATE_GRID_CELL);
-  const _correct = useMutation(CORRECT_GRID_CELL);
-  const [flag] = useMutation(FLAG_GRID_CELL);
+  const [validate] = useMutation(VALIDATE_CELL);
+  const [_correct] = useMutation(CORRECT_CELL);
+  const [flag] = useMutation(FLAG_CELL);
 
   const handleValidate = async () => {
     await validate({ variables: { gridId, articleId, columnId } });

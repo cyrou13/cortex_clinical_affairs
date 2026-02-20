@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { generateId } from '@cortex/shared';
+import type * as CortexShared from '@cortex/shared';
 
 vi.mock('@cortex/shared', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@cortex/shared')>();
+  const actual = await importOriginal<typeof CortexShared>();
   return {
     ...actual,
     generateId: vi.fn(),
@@ -14,12 +15,9 @@ import { ExecuteQueryUseCase } from './execute-query.js';
 const generateIdMock = vi.mocked(generateId);
 
 const TEST_SESSION_ID = '660e8400-e29b-41d4-a716-446655440000';
-const TEST_QUERY_ID = '550e8400-e29b-41d4-a716-446655440000';
+const _TEST_QUERY_ID = '550e8400-e29b-41d4-a716-446655440000';
 
-function makePrisma(overrides?: {
-  queryResult?: unknown;
-  sessionResult?: unknown;
-}) {
+function makePrisma(overrides?: { queryResult?: unknown; sessionResult?: unknown }) {
   return {
     slsQuery: {
       findUnique: vi.fn().mockResolvedValue(
@@ -29,13 +27,14 @@ function makePrisma(overrides?: {
               id: 'query-1',
               sessionId: TEST_SESSION_ID,
               queryString: '(spinal fusion) AND (outcomes)',
-              session: overrides?.sessionResult !== undefined
-                ? overrides.sessionResult
-                : {
-                    id: TEST_SESSION_ID,
-                    status: 'DRAFT',
-                    projectId: 'project-1',
-                  },
+              session:
+                overrides?.sessionResult !== undefined
+                  ? overrides.sessionResult
+                  : {
+                      id: TEST_SESSION_ID,
+                      status: 'DRAFT',
+                      projectId: 'project-1',
+                    },
             },
       ),
     },
@@ -55,7 +54,7 @@ function makePrisma(overrides?: {
     asyncTask: {
       create: vi.fn().mockResolvedValue({
         id: 'task-1',
-        type: 'sls:execute-query',
+        type: 'sls.execute-query',
         status: 'PENDING',
         progress: 0,
         metadata: {},
@@ -95,7 +94,7 @@ describe('ExecuteQueryUseCase', () => {
     const result = await useCase.execute(
       {
         queryId: '550e8400-e29b-41d4-a716-446655440000',
-        databases: ['PUBMED', 'COCHRANE'],
+        databases: ['PUBMED', 'PMC'],
         sessionId: '660e8400-e29b-41d4-a716-446655440000',
       },
       'user-1',
@@ -119,7 +118,7 @@ describe('ExecuteQueryUseCase', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           id: 'exec-id-2',
-          database: 'COCHRANE',
+          database: 'PMC',
           status: 'RUNNING',
         }),
       }),
@@ -129,7 +128,7 @@ describe('ExecuteQueryUseCase', () => {
     expect(prisma.asyncTask.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          type: 'sls:execute-query',
+          type: 'sls.execute-query',
           status: 'PENDING',
         }),
       }),

@@ -38,7 +38,7 @@ builder.mutationField('createValidationStudy', (t) =>
       name: t.arg.string({ required: true }),
       type: t.arg.string({ required: true }),
       description: t.arg.string({ required: false }),
-      soaAnalysisId: t.arg.string({ required: true }),
+      soaAnalysisId: t.arg.string({ required: false }),
     },
     resolve: async (_parent, args, ctx) => {
       checkPermission(ctx, 'validation', 'write');
@@ -50,7 +50,7 @@ builder.mutationField('createValidationStudy', (t) =>
         name: args.name,
         type: args.type,
         description: args.description ?? undefined,
-        soaAnalysisId: args.soaAnalysisId,
+        soaAnalysisId: args.soaAnalysisId ?? undefined,
         userId: ctx.user!.id,
       }) as any;
     },
@@ -312,6 +312,52 @@ builder.mutationField('lockValidationStudy', (t) =>
         validationStudyId: args.validationStudyId,
         userId: ctx.user!.id,
       }) as any;
+    },
+  }),
+);
+
+// --- Delete Validation Study ---
+
+builder.mutationField('deleteValidationStudy', (t) =>
+  t.field({
+    type: 'Boolean',
+    args: {
+      validationStudyId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'validation', 'write');
+
+      const study = await ctx.prisma.validationStudy.findUnique({
+        where: { id: args.validationStudyId },
+      });
+
+      if (!study) {
+        throw new NotFoundError('ValidationStudy', args.validationStudyId);
+      }
+
+      await checkProjectMembership(ctx, study.projectId);
+
+      if (study.status !== 'DRAFT') {
+        throw new Error('Cannot delete a locked validation study');
+      }
+
+      await ctx.prisma.$transaction([
+        ctx.prisma.gsprMapping.deleteMany({ where: { validationStudyId: args.validationStudyId } }),
+        (ctx.prisma as any).resultsMapping.deleteMany({
+          where: { acceptanceCriterion: { validationStudyId: args.validationStudyId } },
+        }),
+        ctx.prisma.acceptanceCriterion.deleteMany({
+          where: { validationStudyId: args.validationStudyId },
+        }),
+        (ctx.prisma as any).protocolAmendment.deleteMany({
+          where: { protocol: { validationStudyId: args.validationStudyId } },
+        }),
+        ctx.prisma.protocol.deleteMany({ where: { validationStudyId: args.validationStudyId } }),
+        ctx.prisma.dataImport.deleteMany({ where: { validationStudyId: args.validationStudyId } }),
+        ctx.prisma.validationStudy.delete({ where: { id: args.validationStudyId } }),
+      ]);
+
+      return true;
     },
   }),
 );

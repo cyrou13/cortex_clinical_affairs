@@ -17,11 +17,6 @@ export class BulkScreenArticlesUseCase {
 
     const { articleIds, decision, exclusionCodeId, reason } = parsed.data;
 
-    // Validate exclusion code required for EXCLUDED
-    if (decision === 'EXCLUDED' && !exclusionCodeId) {
-      throw new ValidationError('Exclusion code is required when excluding articles');
-    }
-
     // Validate session is not LOCKED
     const session = await this.prisma.slsSession.findUnique({
       where: { id: sessionId },
@@ -33,6 +28,16 @@ export class BulkScreenArticlesUseCase {
 
     if (session.status === 'LOCKED') {
       throw new ValidationError('Cannot screen articles: session is locked');
+    }
+
+    // Validate exclusion code required for EXCLUDED (only if codes are configured)
+    if (decision === 'EXCLUDED' && !exclusionCodeId) {
+      const codeCount = await this.prisma.exclusionCode.count({
+        where: { sessionId, isHidden: false },
+      });
+      if (codeCount > 0) {
+        throw new ValidationError('Exclusion code is required when excluding articles');
+      }
     }
 
     // Fetch all articles
@@ -117,10 +122,7 @@ export class BulkScreenArticlesUseCase {
     return { successCount, totalRequested: articleIds.length };
   }
 
-  private detectAiOverride(
-    article: { aiCategory: string | null },
-    decision: string,
-  ): boolean {
+  private detectAiOverride(article: { aiCategory: string | null }, decision: string): boolean {
     if (!article.aiCategory) return false;
     if (article.aiCategory === 'likely_irrelevant' && decision === 'INCLUDED') return true;
     if (article.aiCategory === 'likely_relevant' && decision === 'EXCLUDED') return true;

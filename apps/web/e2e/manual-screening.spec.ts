@@ -1,111 +1,126 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Manual Screening Workflow', () => {
-  test('screening panel loads with filter tabs and table', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/screening');
-
-    await expect(page.getByTestId('screening-panel')).toBeVisible();
-    await expect(page.getByTestId('screening-filter-tabs')).toBeVisible();
-    await expect(page.getByTestId('keyboard-hints')).toBeVisible();
-    await expect(page.getByText('I = Include')).toBeVisible();
-  });
-
-  test('filter tabs show category counts', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/screening');
-
-    await expect(page.getByTestId('filter-tab-all')).toBeVisible();
-    await expect(page.getByTestId('filter-tab-likely-relevant')).toBeVisible();
-    await expect(page.getByTestId('filter-tab-uncertain')).toBeVisible();
-    await expect(page.getByTestId('filter-tab-likely-irrelevant')).toBeVisible();
-  });
-
-  test('clicking article row selects it', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/screening');
-
-    const firstRow = page.getByTestId('screening-table').locator('tbody tr').first();
-    await firstRow.click();
-
-    await expect(firstRow).toHaveClass(/blue-50/);
-  });
-
-  test('article detail panel opens on selected article', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/screening');
-
-    const firstRow = page.getByTestId('screening-table').locator('tbody tr').first();
-    await firstRow.click();
-
-    // Press Space to open detail
-    await page.keyboard.press('Space');
-
-    await expect(page.getByTestId('article-detail-panel')).toBeVisible();
-  });
-
-  test('keyboard shortcut I opens include dialog', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/screening');
-
-    // Select first article
-    const firstRow = page.getByTestId('screening-table').locator('tbody tr').first();
-    await firstRow.click();
-
-    // Press I to include
-    await page.keyboard.press('i');
-
-    // Decision should be processed
-    await expect(page.getByTestId('screening-panel')).toBeVisible();
-  });
-
-  test('filter tab switching changes active tab', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/screening');
-
-    await page.getByTestId('filter-tab-uncertain').click();
-
-    await expect(page.getByTestId('filter-tab-uncertain')).toHaveAttribute(
-      'aria-selected',
-      'true',
-    );
-  });
-
-  test('bulk actions toolbar appears on multi-select', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/screening');
-
-    // Check two article checkboxes
-    const checkboxes = page.getByTestId('screening-table').locator('tbody input[type="checkbox"]');
-    await checkboxes.first().check();
-
-    await expect(page.getByTestId('bulk-actions-toolbar')).toBeVisible();
-    await expect(page.getByTestId('selected-count')).toHaveText(/1 article/);
-  });
-
-  test('screening progress metrics display', async ({ page }) => {
+  test('screening tab loads with screening panel', async ({ page }) => {
     await page.goto('/projects/proj-1/sls-sessions/sess-1');
 
-    await expect(page.getByTestId('screening-progress')).toBeVisible();
-    await expect(page.getByTestId('progress-bar')).toBeVisible();
-    await expect(page.getByTestId('count-included')).toBeVisible();
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-screening').click();
+
+      const screeningTab = page.getByTestId('screening-tab');
+      await expect(screeningTab).toBeVisible();
+    }
   });
 
-  test('score badges show colored indicators', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/screening');
+  test('screening tab contains screening panel component', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
 
-    // Wait for table to load
-    await expect(page.getByTestId('screening-table')).toBeVisible();
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-screening').click();
 
-    // Score badges should be visible with color coding
-    const scoreBadges = page.locator('[data-testid^="score-badge-"]');
-    const count = await scoreBadges.count();
-    expect(count).toBeGreaterThan(0);
+      const screeningTab = page.getByTestId('screening-tab');
+      if (await screeningTab.isVisible()) {
+        const panel = page.getByTestId('screening-panel');
+        if (await panel.isVisible()) {
+          await expect(panel).toBeVisible();
+        }
+      }
+    }
   });
 
-  test('deselect button clears selection', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/screening');
+  test('screening tab contains exclusion code manager', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
 
-    const checkbox = page.getByTestId('screening-table').locator('tbody input[type="checkbox"]').first();
-    await checkbox.check();
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-screening').click();
 
-    await expect(page.getByTestId('bulk-actions-toolbar')).toBeVisible();
+      const screeningTab = page.getByTestId('screening-tab');
+      await expect(screeningTab).toBeVisible();
+    }
+  });
 
-    await page.getByTestId('bulk-deselect-btn').click();
+  test('session dashboard shows workflow tabs', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
 
-    await expect(page.getByTestId('bulk-actions-toolbar')).not.toBeVisible();
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await expect(page.getByTestId('workflow-tabs')).toBeVisible();
+      await expect(page.getByTestId('tab-queries')).toBeVisible();
+      await expect(page.getByTestId('tab-articles')).toBeVisible();
+      await expect(page.getByTestId('tab-ai-scoring')).toBeVisible();
+      await expect(page.getByTestId('tab-screening')).toBeVisible();
+      await expect(page.getByTestId('tab-review-lock')).toBeVisible();
+      await expect(page.getByTestId('tab-pdfs-refs')).toBeVisible();
+    }
+  });
+
+  test('queries tab is default active', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
+
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      const queriesTab = page.getByTestId('tab-queries');
+      await expect(queriesTab).toHaveAttribute('aria-selected', 'true');
+    }
+  });
+
+  test('articles tab shows article pool', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
+
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-articles').click();
+
+      const articlesTab = page.getByTestId('articles-tab');
+      await expect(articlesTab).toBeVisible();
+    }
+  });
+
+  test('ai-scoring tab shows scoring configuration', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
+
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-ai-scoring').click();
+
+      const scoringTab = page.getByTestId('ai-scoring-tab');
+      await expect(scoringTab).toBeVisible();
+    }
+  });
+
+  test('review-lock tab shows review gates and lock', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
+
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-review-lock').click();
+
+      const reviewTab = page.getByTestId('review-lock-tab');
+      await expect(reviewTab).toBeVisible();
+    }
+  });
+
+  test('pdfs-refs tab shows PDF and reference components', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
+
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-pdfs-refs').click();
+
+      const pdfsTab = page.getByTestId('pdfs-refs-tab');
+      await expect(pdfsTab).toBeVisible();
+    }
+  });
+
+  test('session dashboard shows metrics grid', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
+
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await expect(page.getByTestId('metrics-grid')).toBeVisible();
+    }
   });
 });

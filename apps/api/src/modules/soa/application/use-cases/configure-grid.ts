@@ -1,6 +1,6 @@
 import type { PrismaClient } from '@prisma/client';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
-import { getTemplateById } from '@cortex/shared';
+import { ManageGridTemplatesUseCase } from './manage-grid-templates.js';
 
 interface CreateGridInput {
   soaAnalysisId: string;
@@ -46,10 +46,8 @@ export class ConfigureGridUseCase {
     });
 
     if (input.templateId) {
-      const template = getTemplateById(input.templateId);
-      if (!template) {
-        throw new NotFoundError('GridTemplate', input.templateId);
-      }
+      const templateUseCase = new ManageGridTemplatesUseCase(this.prisma);
+      const template = await templateUseCase.getTemplate(input.templateId);
       for (const col of template.columns) {
         await this.prisma.gridColumn.create({
           data: {

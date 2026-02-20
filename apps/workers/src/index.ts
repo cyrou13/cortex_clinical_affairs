@@ -1,7 +1,8 @@
-import { Worker, type Job } from 'bullmq';
+import { Worker, Queue, type Job } from 'bullmq';
+import { Redis } from 'ioredis';
 import { PrismaClient } from '@prisma/client';
 import { APP_NAME, APP_VERSION } from '@cortex/shared';
-import { getRedis, getBullMQConnection, disconnectRedis } from './config/redis.js';
+import { getRedis, getRedisUrl, getBullMQConnection, disconnectRedis } from './config/redis.js';
 import type { TaskJobData } from './shared/base-processor.js';
 import {
   LlmService,
@@ -27,6 +28,7 @@ import { ImportXlsDataProcessor } from './processors/validation/import-xls-data.
 import { GeneratePmcfReportProcessor } from './processors/pms/generate-pmcf-report.js';
 import { GeneratePsurProcessor } from './processors/pms/generate-psur.js';
 import { CustomFilterScoreProcessor } from './processors/sls/custom-filter-score.js';
+import { ImportSoaDocumentProcessor } from './processors/soa/import-soa-document.js';
 
 const log = {
   info: (msg: string) => process.stdout.write(`[INFO] ${msg}\n`),
@@ -125,28 +127,102 @@ const llmService = new LlmService(providers, redis, configResolver);
 
 // Map queue names to processor instances
 const processors: Record<string, { process: (job: Job<TaskJobData>) => Promise<unknown> }> = {
-  'sample:echo': new EchoProcessor(redis),
-  'sls:execute-query': new ExecuteQueryProcessor(redis),
-  'sls:score-articles': new ScoreArticlesProcessor(redis),
-  'sls:retrieve-pdfs': new RetrievePdfsProcessor(redis),
-  'sls:mine-references': new MineReferencesProcessor(redis),
-  'soa:extract-grid-data': new ExtractGridDataProcessor(redis, prisma, llmService),
-  'soa:assess-quality': new AssessQualityProcessor(redis, prisma, llmService),
-  'soa:draft-narrative': new DraftNarrativeProcessor(redis, prisma, llmService),
-  'cer:draft-section': new DraftSectionProcessor(redis, undefined as never),
-  'cer:generate-docx': new GenerateDocxProcessor(redis),
-  'validation:generate-report': new GenerateReportsProcessor(redis) as unknown as {
+  'sample.echo': new EchoProcessor(redis),
+  'sls.execute-query': new ExecuteQueryProcessor(redis, prisma),
+  'sls.score-articles': new ScoreArticlesProcessor(redis, llmService, prisma),
+  'sls.retrieve-pdfs': new RetrievePdfsProcessor(redis, prisma),
+  'sls.mine-references': new MineReferencesProcessor(redis),
+  'soa.extract-grid-data': new ExtractGridDataProcessor(redis, prisma, llmService),
+  'soa.assess-quality': new AssessQualityProcessor(redis, prisma, llmService),
+  'soa.draft-narrative': new DraftNarrativeProcessor(redis, prisma, llmService),
+  'cer.draft-section': new DraftSectionProcessor(redis, undefined as never),
+  'cer.generate-docx': new GenerateDocxProcessor(redis),
+  'validation.generate-report': new GenerateReportsProcessor(redis) as unknown as {
     process: (job: Job<TaskJobData>) => Promise<unknown>;
   },
-  'validation:import-xls': new ImportXlsDataProcessor(redis) as unknown as {
+  'validation.import-xls': new ImportXlsDataProcessor(redis) as unknown as {
     process: (job: Job<TaskJobData>) => Promise<unknown>;
   },
-  'pms:generate-pmcf-report': new GeneratePmcfReportProcessor(redis),
-  'pms:generate-psur': new GeneratePsurProcessor(redis),
-  'sls:custom-filter-score': new CustomFilterScoreProcessor(redis),
+  'pms.generate-pmcf-report': new GeneratePmcfReportProcessor(redis),
+  'pms.generate-psur': new GeneratePsurProcessor(redis),
+  'sls.custom-filter-score': new CustomFilterScoreProcessor(redis),
+  'soa.import-document': new ImportSoaDocumentProcessor(redis, prisma, llmService),
 };
 
 const workers: Worker[] = [];
+
+// BullMQ queues for dispatching jobs (lazy-initialized per queue name)
+const queues = new Map<string, Queue<TaskJobData>>();
+
+function getQueue(queueName: string): Queue<TaskJobData> {
+  let queue = queues.get(queueName);
+  if (!queue) {
+    queue = new Queue<TaskJobData>(queueName, { connection: bullmqConnection });
+    queues.set(queueName, queue);
+  }
+  return queue;
+}
+
+// Subscriber Redis connection (separate from command connection — required by Redis pub/sub)
+let subscriberRedis: Redis | null = null;
+
+function startTaskDispatcher(): void {
+  subscriberRedis = new Redis(getRedisUrl(), {
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+  });
+
+  subscriberRedis.subscribe('task:enqueued', (err) => {
+    if (err) {
+      log.error(`Failed to subscribe to task:enqueued: ${err.message}`);
+      return;
+    }
+    log.info('Subscribed to task:enqueued channel');
+  });
+
+  subscriberRedis.on('message', (_channel: string, message: string) => {
+    try {
+      const event = JSON.parse(message) as {
+        taskId: string;
+        type: string;
+        status: string;
+        metadata: Record<string, unknown>;
+        createdBy: string;
+      };
+
+      const queueName = event.type;
+
+      if (!processors[queueName]) {
+        log.error(`No processor registered for queue: ${queueName}`);
+        return;
+      }
+
+      const jobData: TaskJobData = {
+        taskId: event.taskId,
+        type: event.type,
+        metadata: event.metadata ?? {},
+        createdBy: event.createdBy,
+      };
+
+      const queue = getQueue(queueName);
+      void queue
+        .add(queueName, jobData, {
+          jobId: event.taskId,
+          removeOnComplete: 100,
+          removeOnFail: 100,
+        })
+        .then(() => {
+          log.info(`Dispatched job ${event.taskId} to queue ${queueName}`);
+        })
+        .catch((err: Error) => {
+          log.error(`Failed to dispatch job ${event.taskId}: ${err.message}`);
+        });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      log.error(`Failed to parse task:enqueued event: ${message}`);
+    }
+  });
+}
 
 function startWorkers(): void {
   log.info(`${APP_NAME} Workers v${APP_VERSION} starting...`);
@@ -155,14 +231,72 @@ function startWorkers(): void {
     const worker = new Worker<TaskJobData>(
       queueName,
       async (job: Job<TaskJobData>) => {
-        log.info(`Processing job ${job.id} on queue ${queueName}`);
+        const { taskId, createdBy } = job.data;
+        log.info(`Processing job ${job.id} (task ${taskId}) on queue ${queueName}`);
+
+        // Mark task as RUNNING in DB
+        try {
+          await prisma.asyncTask.update({
+            where: { id: taskId },
+            data: { status: 'RUNNING', startedAt: new Date() },
+          });
+        } catch {
+          // Task may not exist if created externally; continue anyway
+        }
+
         try {
           const result = await processor.process(job);
-          log.info(`Job ${job.id} on queue ${queueName} completed`);
+
+          // Mark task as COMPLETED in DB
+          await prisma.asyncTask.update({
+            where: { id: taskId },
+            data: { status: 'COMPLETED', progress: 100, completedAt: new Date() },
+          });
+
+          // Publish completion event
+          await redis.publish(
+            `task:progress:${createdBy}`,
+            JSON.stringify({
+              taskId,
+              type: queueName,
+              status: 'COMPLETED',
+              progress: 100,
+              message: 'Task completed',
+            }),
+          );
+
+          log.info(`Job ${job.id} (task ${taskId}) on queue ${queueName} completed`);
           return result;
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
-          log.error(`Job ${job.id} on queue ${queueName} failed: ${message}`);
+
+          // Mark task as FAILED in DB
+          try {
+            await prisma.asyncTask.update({
+              where: { id: taskId },
+              data: {
+                status: 'FAILED',
+                completedAt: new Date(),
+                error: message,
+              },
+            });
+
+            // Publish failure event
+            await redis.publish(
+              `task:progress:${createdBy}`,
+              JSON.stringify({
+                taskId,
+                type: queueName,
+                status: 'FAILED',
+                progress: 0,
+                message,
+              }),
+            );
+          } catch {
+            // Best effort DB update
+          }
+
+          log.error(`Job ${job.id} (task ${taskId}) on queue ${queueName} failed: ${message}`);
           throw err;
         }
       },
@@ -186,6 +320,27 @@ function startWorkers(): void {
 async function shutdown(): Promise<void> {
   log.info('Shutting down workers...');
 
+  // Close subscriber connection
+  if (subscriberRedis) {
+    try {
+      await subscriberRedis.quit();
+    } catch {
+      // Ignore close errors during shutdown
+    }
+  }
+
+  // Close BullMQ queues
+  await Promise.all(
+    [...queues.values()].map(async (queue) => {
+      try {
+        await queue.close();
+      } catch {
+        // Ignore close errors during shutdown
+      }
+    }),
+  );
+
+  // Close BullMQ workers
   await Promise.all(
     workers.map(async (worker) => {
       try {
@@ -205,4 +360,5 @@ async function shutdown(): Promise<void> {
 process.on('SIGINT', () => void shutdown());
 process.on('SIGTERM', () => void shutdown());
 
+startTaskDispatcher();
 startWorkers();

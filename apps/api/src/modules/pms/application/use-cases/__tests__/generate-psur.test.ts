@@ -33,7 +33,7 @@ describe('GeneratePsurUseCase', () => {
     expect(result.pmsCycleId).toBe('cycle-1');
     expect(result.status).toBe('GENERATING');
     expect(mockTaskService.enqueueTask).toHaveBeenCalledWith(
-      'pms:generate-psur',
+      'pms.generate-psur',
       { pmsCycleId: 'cycle-1' },
       'user-1',
     );
@@ -52,7 +52,7 @@ describe('GeneratePsurUseCase', () => {
     await useCase.execute('cycle-1', 'user-1');
 
     expect(mockTaskService.enqueueTask).toHaveBeenCalledWith(
-      'pms:generate-psur',
+      'pms.generate-psur',
       expect.any(Object),
       'user-1',
     );

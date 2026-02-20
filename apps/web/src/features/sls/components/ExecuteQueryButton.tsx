@@ -6,20 +6,22 @@ import { EXECUTE_QUERY } from '../graphql/mutations';
 
 interface ExecuteQueryData {
   executeQuery: {
-    id: string;
-    status: string;
+    taskId: string;
+    executionIds: string[];
   };
 }
 
 interface ExecuteQueryVars {
   queryId: string;
   databases: string[];
+  sessionId: string;
 }
 
 const DATABASES = [
-  { id: 'pubmed', label: 'PubMed', defaultChecked: true },
-  { id: 'cochrane', label: 'Cochrane', defaultChecked: false },
-  { id: 'embase', label: 'Embase', defaultChecked: false },
+  { id: 'PUBMED', label: 'PubMed', defaultChecked: true },
+  { id: 'PMC', label: 'PubMed Central', defaultChecked: false },
+  { id: 'GOOGLE_SCHOLAR', label: 'Google Scholar', defaultChecked: false },
+  { id: 'CLINICAL_TRIALS', label: 'ClinicalTrials.gov', defaultChecked: false },
 ] as const;
 
 interface ExecuteQueryButtonProps {
@@ -37,19 +39,18 @@ export function ExecuteQueryButton({
   hasValidationErrors,
   onExecutionStarted,
 }: ExecuteQueryButtonProps) {
-  const [selectedDatabases, setSelectedDatabases] = useState<string[]>(['pubmed']);
+  const [selectedDatabases, setSelectedDatabases] = useState<string[]>(['PUBMED']);
   const [isOpen, setIsOpen] = useState(false);
 
-  const [executeQuery, { loading }] = useMutation<ExecuteQueryData, ExecuteQueryVars>(EXECUTE_QUERY);
+  const [executeQuery, { loading }] = useMutation<ExecuteQueryData, ExecuteQueryVars>(
+    EXECUTE_QUERY,
+  );
 
-  const isDisabled =
-    hasValidationErrors || sessionStatus === 'LOCKED' || loading;
+  const isDisabled = hasValidationErrors || sessionStatus === 'LOCKED' || loading;
 
   function handleToggleDatabase(dbId: string) {
     setSelectedDatabases((prev) =>
-      prev.includes(dbId)
-        ? prev.filter((d) => d !== dbId)
-        : [...prev, dbId],
+      prev.includes(dbId) ? prev.filter((d) => d !== dbId) : [...prev, dbId],
     );
   }
 
@@ -61,12 +62,13 @@ export function ExecuteQueryButton({
         variables: {
           queryId,
           databases: selectedDatabases,
+          sessionId,
         },
       });
 
-      const executionId = result.data?.executeQuery?.id;
-      if (executionId) {
-        onExecutionStarted(executionId);
+      const taskId = result.data?.executeQuery?.taskId;
+      if (taskId) {
+        onExecutionStarted(taskId);
         setIsOpen(false);
       }
     } catch {

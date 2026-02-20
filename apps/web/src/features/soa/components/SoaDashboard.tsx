@@ -1,30 +1,6 @@
 import { useQuery } from '@apollo/client/react';
-import { gql } from '@apollo/client';
 import { Lock, FileText, CheckCircle, Clock, Edit3 } from 'lucide-react';
-
-export const GET_SOA_DETAILS = gql`
-  query GetSoaDetails($soaId: String!) {
-    soaAnalysis(id: $soaId) {
-      id
-      name
-      type
-      status
-      description
-      linkedSessions {
-        id
-        name
-        lockedAt
-      }
-      sections {
-        id
-        sectionKey
-        title
-        status
-        orderIndex
-      }
-    }
-  }
-`;
+import { GET_SOA_ANALYSIS, GET_SOA_SECTIONS, GET_SOA_LINKED_SESSIONS } from '../graphql/queries';
 
 interface ThematicSection {
   id: string;
@@ -68,11 +44,23 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export function SoaDashboard({ soaId }: SoaDashboardProps) {
-  const { data, loading, error } = useQuery<any>(GET_SOA_DETAILS, {
-    variables: { soaId },
+  const {
+    data: soaData,
+    loading: soaLoading,
+    error: soaError,
+  } = useQuery<any>(GET_SOA_ANALYSIS, {
+    variables: { id: soaId },
+  });
+  const { data: sectionsData } = useQuery<any>(GET_SOA_SECTIONS, {
+    variables: { soaAnalysisId: soaId },
+    skip: !soaId,
+  });
+  const { data: linkedData } = useQuery<any>(GET_SOA_LINKED_SESSIONS, {
+    variables: { soaAnalysisId: soaId },
+    skip: !soaId,
   });
 
-  if (loading) {
+  if (soaLoading) {
     return (
       <div
         className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
@@ -83,7 +71,7 @@ export function SoaDashboard({ soaId }: SoaDashboardProps) {
     );
   }
 
-  if (error) {
+  if (soaError) {
     return (
       <div className="py-8 text-center text-sm text-[var(--cortex-error)]" data-testid="soa-error">
         Failed to load SOA analysis.
@@ -91,7 +79,7 @@ export function SoaDashboard({ soaId }: SoaDashboardProps) {
     );
   }
 
-  const soa = data?.soaAnalysis;
+  const soa = soaData?.soaAnalysis;
   if (!soa) {
     return (
       <div
@@ -103,9 +91,10 @@ export function SoaDashboard({ soaId }: SoaDashboardProps) {
     );
   }
 
-  const sections: ThematicSection[] = [...(soa.sections ?? [])].sort(
+  const sections: ThematicSection[] = [...(sectionsData?.soaSections ?? [])].sort(
     (a: ThematicSection, b: ThematicSection) => a.orderIndex - b.orderIndex,
   );
+  const linkedSessions = linkedData?.soaLinkedSessions ?? [];
   const finalizedCount = sections.filter((s) => s.status === 'FINALIZED').length;
 
   return (
@@ -138,14 +127,14 @@ export function SoaDashboard({ soaId }: SoaDashboardProps) {
           <Lock size={14} /> Linked SLS Sessions
         </h3>
         <div className="space-y-1" data-testid="linked-sessions">
-          {(soa.linkedSessions ?? []).map((s: { id: string; name: string }) => (
+          {linkedSessions.map((link: { id: string; slsSessionId: string }) => (
             <div
-              key={s.id}
+              key={link.id}
               className="flex items-center gap-2 text-sm text-[var(--cortex-text-primary)]"
-              data-testid={`linked-session-${s.id}`}
+              data-testid={`linked-session-${link.id}`}
             >
               <Lock size={12} className="text-blue-500" />
-              {s.name}
+              Session: {link.slsSessionId}
             </div>
           ))}
         </div>

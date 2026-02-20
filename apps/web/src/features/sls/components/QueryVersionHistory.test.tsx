@@ -1,19 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
-
-vi.mock('@apollo/client', () => ({
-  gql: (str: TemplateStringsArray) => str[0],
-}));
-
-const mockUseQuery = vi.fn();
-const mockUpdateQuery = vi.fn();
-const mockUseMutation = vi.fn().mockReturnValue([mockUpdateQuery, { loading: false }]);
-
-vi.mock('@apollo/client/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: (...args: unknown[]) => mockUseMutation(...args),
-}));
-
+import { screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { renderWithApollo, type MockedResponse } from '../../../test-utils/apollo-wrapper';
+import { GET_QUERY_VERSIONS } from '../graphql/queries';
+import { UPDATE_QUERY } from '../graphql/mutations';
 import { QueryVersionHistory } from './QueryVersionHistory';
 
 const mockVersions = [
@@ -43,6 +32,18 @@ const mockVersions = [
   },
 ];
 
+function buildQueryMock(versions = mockVersions): MockedResponse {
+  return {
+    request: {
+      query: GET_QUERY_VERSIONS,
+      variables: { queryId: 'q-1' },
+    },
+    result: {
+      data: { queryVersions: versions },
+    },
+  };
+}
+
 describe('QueryVersionHistory', () => {
   const defaultProps = {
     queryId: 'q-1',
@@ -52,129 +53,112 @@ describe('QueryVersionHistory', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseMutation.mockReturnValue([mockUpdateQuery, { loading: false }]);
   });
 
-  it('renders version history panel', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryVersions: mockVersions },
-      loading: false,
-    });
+  it('renders version history panel', async () => {
+    renderWithApollo(<QueryVersionHistory {...defaultProps} />, [buildQueryMock()]);
 
-    render(<QueryVersionHistory {...defaultProps} />);
-
+    await screen.findByText('Version History');
     expect(screen.getByTestId('version-history-panel')).toBeInTheDocument();
-    expect(screen.getByText('Version History')).toBeInTheDocument();
   });
 
-  it('renders all version items', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryVersions: mockVersions },
-      loading: false,
-    });
+  it('renders all version items', async () => {
+    renderWithApollo(<QueryVersionHistory {...defaultProps} />, [buildQueryMock()]);
 
-    render(<QueryVersionHistory {...defaultProps} />);
-
-    expect(screen.getByTestId('version-item-v-1')).toBeInTheDocument();
+    await screen.findByTestId('version-item-v-1');
     expect(screen.getByTestId('version-item-v-2')).toBeInTheDocument();
     expect(screen.getByTestId('version-item-v-3')).toBeInTheDocument();
   });
 
-  it('shows version numbers', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryVersions: mockVersions },
-      loading: false,
-    });
+  it('shows version numbers', async () => {
+    renderWithApollo(<QueryVersionHistory {...defaultProps} />, [buildQueryMock()]);
 
-    render(<QueryVersionHistory {...defaultProps} />);
-
-    expect(screen.getByText('Version 1')).toBeInTheDocument();
+    await screen.findByText('Version 1');
     expect(screen.getByText('Version 2')).toBeInTheDocument();
     expect(screen.getByText('Version 3')).toBeInTheDocument();
   });
 
-  it('shows created by user', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryVersions: mockVersions },
-      loading: false,
-    });
+  it('shows created by user', async () => {
+    renderWithApollo(<QueryVersionHistory {...defaultProps} />, [buildQueryMock()]);
 
-    render(<QueryVersionHistory {...defaultProps} />);
-
+    await screen.findByText('by user-2');
     expect(screen.getAllByText('by user-1')).toHaveLength(2);
-    expect(screen.getByText('by user-2')).toBeInTheDocument();
   });
 
-  it('displays diff with additions and removals', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryVersions: mockVersions },
-      loading: false,
-    });
+  it('displays diff with additions and removals', async () => {
+    renderWithApollo(<QueryVersionHistory {...defaultProps} />, [buildQueryMock()]);
 
-    render(<QueryVersionHistory {...defaultProps} />);
-
+    await screen.findByTestId('version-item-v-2');
     const diffDisplays = screen.getAllByTestId('diff-display');
     // v-2 and v-3 have diffs, v-1 does not
     expect(diffDisplays).toHaveLength(2);
   });
 
-  it('highlights additions in green', () => {
-    mockUseQuery.mockReturnValue({
-      data: {
-        queryVersions: [
-          {
-            id: 'v-2',
-            version: 2,
-            queryString: 'cancer AND treatment AND surgery',
-            diff: '+cancer AND treatment AND surgery',
-            createdAt: '2026-02-14T12:00:00Z',
-            createdById: 'user-2',
-          },
-        ],
+  it('highlights additions in green', async () => {
+    const singleVersionMock: MockedResponse = {
+      request: {
+        query: GET_QUERY_VERSIONS,
+        variables: { queryId: 'q-1' },
       },
-      loading: false,
-    });
+      result: {
+        data: {
+          queryVersions: [
+            {
+              id: 'v-2',
+              version: 2,
+              queryString: 'cancer AND treatment AND surgery',
+              diff: '+cancer AND treatment AND surgery',
+              createdAt: '2026-02-14T12:00:00Z',
+              createdById: 'user-2',
+            },
+          ],
+        },
+      },
+    };
 
-    render(<QueryVersionHistory {...defaultProps} />);
+    renderWithApollo(<QueryVersionHistory {...defaultProps} />, [singleVersionMock]);
 
-    const diffDisplay = screen.getByTestId('diff-display');
+    const diffDisplay = await screen.findByTestId('diff-display');
     const additionLine = diffDisplay.querySelector('.bg-green-100');
     expect(additionLine).toBeTruthy();
   });
 
-  it('highlights removals in red', () => {
-    mockUseQuery.mockReturnValue({
-      data: {
-        queryVersions: [
-          {
-            id: 'v-2',
-            version: 2,
-            queryString: 'cancer AND treatment AND surgery',
-            diff: '-cancer AND treatment',
-            createdAt: '2026-02-14T12:00:00Z',
-            createdById: 'user-2',
-          },
-        ],
+  it('highlights removals in red', async () => {
+    const singleVersionMock: MockedResponse = {
+      request: {
+        query: GET_QUERY_VERSIONS,
+        variables: { queryId: 'q-1' },
       },
-      loading: false,
-    });
+      result: {
+        data: {
+          queryVersions: [
+            {
+              id: 'v-2',
+              version: 2,
+              queryString: 'cancer AND treatment AND surgery',
+              diff: '-cancer AND treatment',
+              createdAt: '2026-02-14T12:00:00Z',
+              createdById: 'user-2',
+            },
+          ],
+        },
+      },
+    };
 
-    render(<QueryVersionHistory {...defaultProps} />);
+    renderWithApollo(<QueryVersionHistory {...defaultProps} />, [singleVersionMock]);
 
-    const diffDisplay = screen.getByTestId('diff-display');
+    const diffDisplay = await screen.findByTestId('diff-display');
     const removalLine = diffDisplay.querySelector('.bg-red-100');
     expect(removalLine).toBeTruthy();
   });
 
-  it('calls onClose when close button is clicked', () => {
+  it('calls onClose when close button is clicked', async () => {
     const onClose = vi.fn();
-    mockUseQuery.mockReturnValue({
-      data: { queryVersions: mockVersions },
-      loading: false,
-    });
+    renderWithApollo(<QueryVersionHistory {...defaultProps} onClose={onClose} />, [
+      buildQueryMock(),
+    ]);
 
-    render(<QueryVersionHistory {...defaultProps} onClose={onClose} />);
-
+    await screen.findByTestId('close-version-history');
     fireEvent.click(screen.getByTestId('close-version-history'));
 
     expect(onClose).toHaveBeenCalled();
@@ -182,67 +166,56 @@ describe('QueryVersionHistory', () => {
 
   it('calls updateQuery and onRestore when restore is clicked', async () => {
     const onRestore = vi.fn();
-    mockUpdateQuery.mockResolvedValue({ data: { updateQuery: { id: 'q-1', queryString: 'cancer AND treatment', version: 4 } } });
-    mockUseQuery.mockReturnValue({
-      data: { queryVersions: mockVersions },
-      loading: false,
-    });
+    const updateMock: MockedResponse = {
+      request: {
+        query: UPDATE_QUERY,
+        variables: { id: 'q-1', queryString: 'cancer AND treatment' },
+      },
+      result: {
+        data: { updateQuery: { id: 'q-1', queryString: 'cancer AND treatment', version: 4 } },
+      },
+    };
 
-    render(<QueryVersionHistory {...defaultProps} onRestore={onRestore} />);
+    renderWithApollo(<QueryVersionHistory {...defaultProps} onRestore={onRestore} />, [
+      buildQueryMock(),
+      updateMock,
+    ]);
+
+    await screen.findByTestId('restore-button-v-1');
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('restore-button-v-1'));
     });
 
-    expect(mockUpdateQuery).toHaveBeenCalledWith({
-      variables: { id: 'q-1', queryString: 'cancer AND treatment' },
+    await waitFor(() => {
+      expect(onRestore).toHaveBeenCalledWith('cancer AND treatment');
     });
-    expect(onRestore).toHaveBeenCalledWith('cancer AND treatment');
   });
 
   it('shows loading state', () => {
-    mockUseQuery.mockReturnValue({
-      data: null,
-      loading: true,
-    });
-
-    render(<QueryVersionHistory {...defaultProps} />);
+    renderWithApollo(<QueryVersionHistory {...defaultProps} />, []);
 
     expect(screen.getByText(/loading versions/i)).toBeInTheDocument();
   });
 
-  it('shows empty state when no versions', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryVersions: [] },
-      loading: false,
-    });
+  it('shows empty state when no versions', async () => {
+    renderWithApollo(<QueryVersionHistory {...defaultProps} />, [buildQueryMock([])]);
 
-    render(<QueryVersionHistory {...defaultProps} />);
-
-    expect(screen.getByTestId('no-versions')).toBeInTheDocument();
+    await screen.findByTestId('no-versions');
   });
 
-  it('has restore buttons for each version', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryVersions: mockVersions },
-      loading: false,
-    });
+  it('has restore buttons for each version', async () => {
+    renderWithApollo(<QueryVersionHistory {...defaultProps} />, [buildQueryMock()]);
 
-    render(<QueryVersionHistory {...defaultProps} />);
-
-    expect(screen.getByTestId('restore-button-v-1')).toBeInTheDocument();
+    await screen.findByTestId('restore-button-v-1');
     expect(screen.getByTestId('restore-button-v-2')).toBeInTheDocument();
     expect(screen.getByTestId('restore-button-v-3')).toBeInTheDocument();
   });
 
-  it('has fixed position and correct width', () => {
-    mockUseQuery.mockReturnValue({
-      data: { queryVersions: [] },
-      loading: false,
-    });
+  it('has fixed position and correct width', async () => {
+    renderWithApollo(<QueryVersionHistory {...defaultProps} />, [buildQueryMock([])]);
 
-    render(<QueryVersionHistory {...defaultProps} />);
-
+    await screen.findByTestId('version-history-panel');
     const panel = screen.getByTestId('version-history-panel');
     expect(panel.className).toContain('fixed');
     expect(panel.className).toContain('w-[380px]');

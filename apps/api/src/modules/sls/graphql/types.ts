@@ -116,6 +116,8 @@ export const SlsQueryObjectType = builder.objectRef<{
   version: number;
   isActive: boolean;
   parentQueryId: string | null;
+  dateFrom: Date | null;
+  dateTo: Date | null;
   createdById: string;
   createdAt: Date;
   updatedAt: Date;
@@ -130,9 +132,27 @@ builder.objectType(SlsQueryObjectType, {
     version: t.exposeInt('version'),
     isActive: t.exposeBoolean('isActive'),
     parentQueryId: t.exposeString('parentQueryId', { nullable: true }),
+    dateFrom: t.expose('dateFrom', { type: 'DateTime', nullable: true }),
+    dateTo: t.expose('dateTo', { type: 'DateTime', nullable: true }),
     createdById: t.exposeString('createdById'),
     createdAt: t.expose('createdAt', { type: 'DateTime' }),
     updatedAt: t.expose('updatedAt', { type: 'DateTime' }),
+  }),
+});
+
+// --- Generate Query Result type ---
+
+export const GenerateQueryResultType = builder.objectRef<{
+  queryString: string;
+  suggestedDateFrom: string | null;
+  suggestedDateTo: string | null;
+}>('GenerateQueryResult');
+
+builder.objectType(GenerateQueryResultType, {
+  fields: (t) => ({
+    queryString: t.exposeString('queryString'),
+    suggestedDateFrom: t.exposeString('suggestedDateFrom', { nullable: true }),
+    suggestedDateTo: t.exposeString('suggestedDateTo', { nullable: true }),
   }),
 });
 
@@ -163,7 +183,7 @@ builder.objectType(QueryVersionObjectType, {
 // --- Database Source enum ---
 
 export const DatabaseSourceEnum = builder.enumType('DatabaseSource', {
-  values: ['PUBMED', 'COCHRANE', 'EMBASE'] as const,
+  values: ['PUBMED', 'PMC', 'GOOGLE_SCHOLAR', 'CLINICAL_TRIALS'] as const,
 });
 
 // --- Execution Status enum ---
@@ -233,6 +253,8 @@ export const ArticleObjectType = builder.objectRef<{
   publicationDate: Date | null;
   journal: string | null;
   sourceDatabase: string | null;
+  pdfStatus: string | null;
+  pdfVerificationResult: unknown;
   status: string;
   relevanceScore: number | null;
   aiExclusionCode: string | null;
@@ -256,6 +278,8 @@ builder.objectType(ArticleObjectType, {
     publicationDate: t.expose('publicationDate', { type: 'DateTime', nullable: true }),
     journal: t.exposeString('journal', { nullable: true }),
     sourceDatabase: t.exposeString('sourceDatabase', { nullable: true }),
+    pdfStatus: t.exposeString('pdfStatus', { nullable: true }),
+    pdfVerificationResult: t.expose('pdfVerificationResult', { type: 'JSON', nullable: true }),
     status: t.exposeString('status'),
     relevanceScore: t.exposeFloat('relevanceScore', { nullable: true }),
     aiExclusionCode: t.exposeString('aiExclusionCode', { nullable: true }),
@@ -277,6 +301,7 @@ export const ArticleFilterInput = builder.inputType('ArticleFilterInput', {
     yearTo: t.int({ required: false }),
     sourceDatabase: t.string({ required: false }),
     searchText: t.string({ required: false }),
+    pdfStatus: t.string({ required: false }),
   }),
 });
 
@@ -294,6 +319,8 @@ export const PaginatedArticlesType = builder.objectRef<{
     publicationDate: Date | null;
     journal: string | null;
     sourceDatabase: string | null;
+    pdfStatus: string | null;
+    pdfVerificationResult: unknown;
     status: string;
     relevanceScore: number | null;
     aiExclusionCode: string | null;
@@ -357,12 +384,14 @@ builder.objectType(ImportArticlesResultType, {
 // --- Article Count By Status type ---
 
 export const ArticleCountByStatusType = builder.objectRef<{
-  counts: Record<string, number>;
+  status: string;
+  count: number;
 }>('ArticleCountByStatus');
 
 builder.objectType(ArticleCountByStatusType, {
   fields: (t) => ({
-    counts: t.expose('counts', { type: 'JSON' }),
+    status: t.exposeString('status'),
+    count: t.exposeInt('count'),
   }),
 });
 
@@ -395,6 +424,26 @@ export const LaunchScoringResultType = builder.objectRef<{
 builder.objectType(LaunchScoringResultType, {
   fields: (t) => ({
     taskId: t.exposeString('taskId'),
+  }),
+});
+
+// --- AI Scoring Progress type (for polling) ---
+
+export const AiScoringProgressType = builder.objectRef<{
+  taskId: string;
+  status: string;
+  scored: number;
+  total: number;
+  estimatedSecondsRemaining: number | null;
+}>('AiScoringProgress');
+
+builder.objectType(AiScoringProgressType, {
+  fields: (t) => ({
+    taskId: t.exposeString('taskId'),
+    status: t.exposeString('status'),
+    scored: t.exposeInt('scored'),
+    total: t.exposeInt('total'),
+    estimatedSecondsRemaining: t.exposeFloat('estimatedSecondsRemaining', { nullable: true }),
   }),
 });
 
@@ -631,6 +680,7 @@ export const LockPreflightCheckType = builder.objectRef<{
   includedCount: number;
   excludedCount: number;
   totalArticles: number;
+  sessionStatus: string;
 }>('LockPreflightCheck');
 
 builder.objectType(LockPreflightCheckType, {
@@ -640,6 +690,7 @@ builder.objectType(LockPreflightCheckType, {
     includedCount: t.exposeInt('includedCount'),
     excludedCount: t.exposeInt('excludedCount'),
     totalArticles: t.exposeInt('totalArticles'),
+    sessionStatus: t.exposeString('sessionStatus'),
   }),
 });
 
@@ -728,18 +779,15 @@ builder.objectType(MineReferencesResultType, {
 export const MinedReferenceObjectType = builder.objectRef<{
   id: string;
   sessionId: string;
-  sourceArticleId: string;
   title: string;
   authors: unknown;
   year: number | null;
   journal: string | null;
   doi: string | null;
   pmid: string | null;
-  rawCitation: string | null;
-  validationStatus: string;
-  validationSource: string | null;
+  validationStatus: string | null;
   isDuplicate: boolean;
-  duplicateOfArticleId: string | null;
+  rejectionReason: string | null;
   approvalStatus: string;
   approvedById: string | null;
   approvedAt: Date | null;
@@ -750,18 +798,15 @@ builder.objectType(MinedReferenceObjectType, {
   fields: (t) => ({
     id: t.exposeString('id'),
     sessionId: t.exposeString('sessionId'),
-    sourceArticleId: t.exposeString('sourceArticleId'),
     title: t.exposeString('title'),
     authors: t.expose('authors', { type: 'JSON', nullable: true }),
     year: t.exposeInt('year', { nullable: true }),
     journal: t.exposeString('journal', { nullable: true }),
     doi: t.exposeString('doi', { nullable: true }),
     pmid: t.exposeString('pmid', { nullable: true }),
-    rawCitation: t.exposeString('rawCitation', { nullable: true }),
-    validationStatus: t.exposeString('validationStatus'),
-    validationSource: t.exposeString('validationSource', { nullable: true }),
+    validationStatus: t.exposeString('validationStatus', { nullable: true }),
     isDuplicate: t.exposeBoolean('isDuplicate'),
-    duplicateOfArticleId: t.exposeString('duplicateOfArticleId', { nullable: true }),
+    rejectionReason: t.exposeString('rejectionReason', { nullable: true }),
     approvalStatus: t.exposeString('approvalStatus'),
     approvedById: t.exposeString('approvedById', { nullable: true }),
     approvedAt: t.expose('approvedAt', { type: 'DateTime', nullable: true }),

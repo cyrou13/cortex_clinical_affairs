@@ -111,9 +111,9 @@ describe('getDefaultPipelineStatus', () => {
   it('returns correct defaults for a new project', () => {
     const status = getDefaultPipelineStatus();
     expect(status.sls).toBe('NOT_STARTED');
-    expect(status.soa).toBe('BLOCKED');
-    expect(status.validation).toBe('BLOCKED');
-    expect(status.cer).toBe('BLOCKED');
-    expect(status.pms).toBe('BLOCKED');
+    expect(status.soa).toBe('NOT_STARTED');
+    expect(status.validation).toBe('NOT_STARTED');
+    expect(status.cer).toBe('NOT_STARTED');
+    expect(status.pms).toBe('NOT_STARTED');
   });
 });

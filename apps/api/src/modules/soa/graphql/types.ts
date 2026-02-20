@@ -613,3 +613,136 @@ builder.objectType(LockSoaResultType, {
     sectionCount: t.exposeInt('sectionCount'),
   }),
 });
+
+// --- Grid Template types (Template System) ---
+
+export const GridColumnDefinitionType = builder.objectRef<{
+  name: string;
+  displayName: string;
+  dataType: string;
+  isRequired: boolean;
+  orderIndex: number;
+}>('GridColumnDefinition');
+
+builder.objectType(GridColumnDefinitionType, {
+  fields: (t) => ({
+    name: t.exposeString('name'),
+    displayName: t.exposeString('displayName'),
+    dataType: t.exposeString('dataType'),
+    isRequired: t.exposeBoolean('isRequired'),
+    orderIndex: t.exposeInt('orderIndex'),
+  }),
+});
+
+export const GridTemplateObjectType = builder.objectRef<{
+  id: string;
+  name: string;
+  soaType: string;
+  description?: string;
+  isBuiltIn: boolean;
+  columns: Array<{
+    name: string;
+    displayName: string;
+    dataType: string;
+    isRequired: boolean;
+    orderIndex: number;
+  }>;
+}>('GridTemplate');
+
+builder.objectType(GridTemplateObjectType, {
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    name: t.exposeString('name'),
+    soaType: t.exposeString('soaType'),
+    description: t.exposeString('description', { nullable: true }),
+    isBuiltIn: t.exposeBoolean('isBuiltIn'),
+    columns: t.field({
+      type: [GridColumnDefinitionType],
+      resolve: (parent) => parent.columns,
+    }),
+  }),
+});
+
+export const CreateTemplateResultType = builder.objectRef<{
+  templateId: string;
+  columnCount: number;
+}>('CreateTemplateResult');
+
+builder.objectType(CreateTemplateResultType, {
+  fields: (t) => ({
+    templateId: t.exposeString('templateId'),
+    columnCount: t.exposeInt('columnCount'),
+  }),
+});
+
+export const DeleteTemplateResultType = builder.objectRef<{
+  templateId: string;
+  deleted: boolean;
+}>('DeleteTemplateResult');
+
+builder.objectType(DeleteTemplateResultType, {
+  fields: (t) => ({
+    templateId: t.exposeString('templateId'),
+    deleted: t.exposeBoolean('deleted'),
+  }),
+});
+
+// --- SOA Import types ---
+
+export const SoaImportObjectType = builder.objectRef<{
+  id: string;
+  projectId: string;
+  status: string;
+  sourceFileName: string;
+  sourceFormat: string;
+  extractedData: unknown;
+  gapReport: unknown;
+  taskId: string | null;
+  soaAnalysisId: string | null;
+  createdById: string;
+  createdAt: Date;
+  updatedAt: Date;
+}>('SoaImport');
+
+builder.objectType(SoaImportObjectType, {
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    projectId: t.exposeString('projectId'),
+    status: t.exposeString('status'),
+    sourceFileName: t.exposeString('sourceFileName'),
+    sourceFormat: t.exposeString('sourceFormat'),
+    extractedData: t.expose('extractedData', { type: 'JSON', nullable: true }),
+    gapReport: t.expose('gapReport', { type: 'JSON', nullable: true }),
+    taskId: t.exposeString('taskId', { nullable: true }),
+    soaAnalysisId: t.exposeString('soaAnalysisId', { nullable: true }),
+    createdById: t.exposeString('createdById'),
+    createdAt: t.expose('createdAt', { type: 'DateTime' }),
+    updatedAt: t.expose('updatedAt', { type: 'DateTime' }),
+  }),
+});
+
+export const ImportSoaDocumentResultType = builder.objectRef<{
+  importId: string;
+  taskId: string;
+}>('ImportSoaDocumentResult');
+
+builder.objectType(ImportSoaDocumentResultType, {
+  fields: (t) => ({
+    importId: t.exposeString('importId'),
+    taskId: t.exposeString('taskId'),
+  }),
+});
+
+export const ConfirmSoaImportResultType = builder.objectRef<{
+  soaAnalysisId: string;
+  articleCount: number;
+  sessionIds: string[];
+}>('ConfirmSoaImportResult');
+
+builder.objectType(ConfirmSoaImportResultType, {
+  fields: (t) => ({
+    soaAnalysisId: t.exposeString('soaAnalysisId'),
+    articleCount: t.exposeInt('articleCount'),
+    sessionIds: t.exposeStringList('sessionIds'),
+  }),
+});

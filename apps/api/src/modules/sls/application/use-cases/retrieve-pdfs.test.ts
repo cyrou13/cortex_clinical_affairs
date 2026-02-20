@@ -46,7 +46,7 @@ describe('RetrievePdfsUseCase', () => {
     expect(result.taskId).toBe('task-1');
     expect(result.articleCount).toBe(3);
     expect(mockEnqueue).toHaveBeenCalledWith(
-      'sls:retrieve-pdfs',
+      'sls.retrieve-pdfs',
       expect.objectContaining({
         sessionId: SESSION_ID,
         taskId: 'task-1',
@@ -95,7 +95,7 @@ describe('RetrievePdfsUseCase', () => {
       where: {
         sessionId: SESSION_ID,
         status: { in: ['INCLUDED', 'FINAL_INCLUDED'] },
-        OR: [{ pdfStatus: 'NONE' }, { pdfStatus: null }],
+        OR: [{ pdfStatus: 'NONE' }, { pdfStatus: null }, { pdfStatus: 'RETRIEVING' }],
       },
       select: { id: true },
     });

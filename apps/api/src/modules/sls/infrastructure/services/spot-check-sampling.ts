@@ -28,15 +28,6 @@ export class SpotCheckSamplingService {
       throw new NotFoundError('SlsSession', sessionId);
     }
 
-    const likelyRelevantThreshold = session.likelyRelevantThreshold ?? 75;
-    const uncertainLowerThreshold = session.uncertainLowerThreshold ?? 40;
-
-    // Build score filter based on category
-    const scoreFilter =
-      category === 'likely_relevant'
-        ? { gte: likelyRelevantThreshold }
-        : { lt: uncertainLowerThreshold };
-
     // Get articles in category that haven't been spot-checked
     const spotCheckedArticleIds = await this.prisma.screeningDecision
       .findMany({
@@ -51,7 +42,7 @@ export class SpotCheckSamplingService {
     const eligibleArticles = await this.prisma.article.findMany({
       where: {
         sessionId,
-        relevanceScore: scoreFilter,
+        aiCategory: category,
         id: spotCheckedArticleIds.length > 0 ? { notIn: spotCheckedArticleIds } : undefined,
       },
       select: {

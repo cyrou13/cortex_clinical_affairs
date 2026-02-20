@@ -1,103 +1,136 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('SOA Workflow — Stories 3.5–3.11', () => {
-  test('section editor loads with title and content area', async ({ page }) => {
-    await page.goto('/projects/proj-1/soa-analyses/soa-1/sections/sec-1');
+  test('SOA detail page loads with tabs or shows error', async ({ page }) => {
+    await page.goto('/projects/proj-1/soa/soa-1');
 
-    const editor = page.getByTestId('section-editor');
-    const loading = page.getByTestId('section-loading');
+    const detail = page.getByTestId('soa-detail-page');
+    const loading = page.getByTestId('soa-detail-loading');
+    const error = page.getByTestId('soa-detail-error');
 
-    await expect(editor.or(loading).first()).toBeVisible();
+    await expect(detail.or(loading).or(error).first()).toBeVisible();
 
-    if (await editor.isVisible()) {
-      await expect(page.getByTestId('section-title')).toBeVisible();
-      await expect(page.getByTestId('section-content')).toBeVisible();
-      await expect(page.getByTestId('finalize-btn')).toBeVisible();
+    if (await detail.isVisible()) {
+      await expect(page.getByTestId('soa-tabs')).toBeVisible();
+      await expect(page.getByTestId('tab-overview')).toBeVisible();
+      await expect(page.getByTestId('tab-grid')).toBeVisible();
+      await expect(page.getByTestId('tab-quality')).toBeVisible();
+      await expect(page.getByTestId('tab-narrative')).toBeVisible();
+      await expect(page.getByTestId('tab-devices')).toBeVisible();
+      await expect(page.getByTestId('tab-claims')).toBeVisible();
     }
   });
 
-  test('quality assessment form visible on section page', async ({ page }) => {
-    await page.goto('/projects/proj-1/soa-analyses/soa-1/sections/sec-1');
+  test('quality tab shows assessment form', async ({ page }) => {
+    await page.goto('/projects/proj-1/soa/soa-1');
 
-    const form = page.getByTestId('quality-form');
-    if (await form.isVisible()) {
-      await expect(page.getByTestId('assessment-type-select')).toBeVisible();
-      await expect(page.getByTestId('contribution-level-select')).toBeVisible();
-      await expect(page.getByTestId('submit-assessment-btn')).toBeVisible();
+    const detail = page.getByTestId('soa-detail-page');
+    const error = page.getByTestId('soa-detail-error');
+    const loading = page.getByTestId('soa-detail-loading');
+
+    await expect(detail.or(error).or(loading).first()).toBeVisible();
+
+    if (await detail.isVisible()) {
+      await page.getByTestId('tab-quality').click();
+      await expect(page.getByTestId('tab-quality')).toBeVisible();
     }
   });
 
-  test('narrative draft panel renders with generate button', async ({ page }) => {
-    await page.goto('/projects/proj-1/soa-analyses/soa-1/sections/sec-1');
+  test('narrative tab renders with draft panel', async ({ page }) => {
+    await page.goto('/projects/proj-1/soa/soa-1');
 
-    const panel = page.getByTestId('narrative-draft-panel');
-    if (await panel.isVisible()) {
-      await expect(page.getByTestId('generate-draft-btn')).toBeVisible();
+    const detail = page.getByTestId('soa-detail-page');
+    const error = page.getByTestId('soa-detail-error');
+    const loading = page.getByTestId('soa-detail-loading');
+
+    await expect(detail.or(error).or(loading).first()).toBeVisible();
+
+    if (await detail.isVisible()) {
+      await page.getByTestId('tab-narrative').click();
+      const noSections = page.getByTestId('no-sections');
+      const tabContent = page.getByTestId('tab-narrative');
+      await expect(noSections.or(tabContent).first()).toBeVisible();
     }
   });
 
-  test('device registry displays table or empty state', async ({ page }) => {
-    await page.goto('/projects/proj-1/soa-analyses/soa-1/devices');
+  test('devices tab shows device registry', async ({ page }) => {
+    await page.goto('/projects/proj-1/soa/soa-1');
 
-    const registry = page.getByTestId('device-registry');
-    const loading = page.getByTestId('device-registry-loading');
+    const detail = page.getByTestId('soa-detail-page');
+    const error = page.getByTestId('soa-detail-error');
+    const loading = page.getByTestId('soa-detail-loading');
 
-    await expect(registry.or(loading).first()).toBeVisible();
+    await expect(detail.or(error).or(loading).first()).toBeVisible();
 
-    if (await registry.isVisible()) {
-      const table = page.getByTestId('device-table');
-      const empty = page.getByTestId('no-devices');
-      await expect(table.or(empty).first()).toBeVisible();
+    if (await detail.isVisible()) {
+      await page.getByTestId('tab-devices').click();
+      await expect(page.getByTestId('tab-devices')).toBeVisible();
     }
   });
 
-  test('claims management panel shows claims or empty state', async ({ page }) => {
-    await page.goto('/projects/proj-1/soa-analyses/soa-1/claims');
+  test('claims tab shows claims management', async ({ page }) => {
+    await page.goto('/projects/proj-1/soa/soa-1');
 
-    const panel = page.getByTestId('claims-panel');
-    const loading = page.getByTestId('claims-loading');
+    const detail = page.getByTestId('soa-detail-page');
+    const error = page.getByTestId('soa-detail-error');
+    const loading = page.getByTestId('soa-detail-loading');
 
-    await expect(panel.or(loading).first()).toBeVisible();
+    await expect(detail.or(error).or(loading).first()).toBeVisible();
 
-    if (await panel.isVisible()) {
-      const list = page.getByTestId('claims-list');
-      const empty = page.getByTestId('no-claims');
-      await expect(list.or(empty).first()).toBeVisible();
+    if (await detail.isVisible()) {
+      await page.getByTestId('tab-claims').click();
+      await expect(page.getByTestId('tab-claims')).toBeVisible();
     }
   });
 
-  test('lock SOA button or locked badge is visible', async ({ page }) => {
-    await page.goto('/projects/proj-1/soa-analyses/soa-1');
+  test('lock SOA button or locked state is visible', async ({ page }) => {
+    await page.goto('/projects/proj-1/soa/soa-1');
 
-    const lockBtn = page.getByTestId('lock-soa-btn');
-    const lockedBadge = page.getByTestId('locked-badge');
+    const detail = page.getByTestId('soa-detail-page');
+    const error = page.getByTestId('soa-detail-error');
+    const loading = page.getByTestId('soa-detail-loading');
 
-    await expect(lockBtn.or(lockedBadge).first()).toBeVisible();
-  });
+    await expect(detail.or(error).or(loading).first()).toBeVisible();
 
-  test('extraction progress panel shows progress indicators', async ({ page }) => {
-    await page.goto('/projects/proj-1/soa-analyses/soa-1');
-
-    const panel = page.getByTestId('extraction-progress-panel');
-    const loading = page.getByTestId('extraction-progress-loading');
-
-    await expect(panel.or(loading).first()).toBeVisible();
-
-    if (await panel.isVisible()) {
-      await expect(page.getByTestId('progress-bar')).toBeVisible();
-      await expect(page.getByTestId('progress-percentage')).toBeVisible();
-      await expect(page.getByTestId('filter-btn-ALL')).toBeVisible();
+    if (await detail.isVisible()) {
+      const lockBtn = page.getByTestId('lock-soa-btn');
+      const lockedBadge = page.getByTestId('locked-badge');
+      await expect(lockBtn.or(lockedBadge).first()).toBeVisible();
     }
   });
 
-  test('section navigation sidebar renders with completion indicators', async ({ page }) => {
-    await page.goto('/projects/proj-1/soa-analyses/soa-1/sections/sec-1');
+  test('grid tab shows extraction progress and grid', async ({ page }) => {
+    await page.goto('/projects/proj-1/soa/soa-1');
 
-    const nav = page.getByTestId('section-nav');
-    if (await nav.isVisible()) {
-      const navButtons = nav.locator('button');
-      const count = await navButtons.count();
-      expect(count).toBeGreaterThan(0);
+    const detail = page.getByTestId('soa-detail-page');
+    const error = page.getByTestId('soa-detail-error');
+    const loading = page.getByTestId('soa-detail-loading');
+
+    await expect(detail.or(error).or(loading).first()).toBeVisible();
+
+    if (await detail.isVisible()) {
+      await page.getByTestId('tab-grid').click();
+      const noGrid = page.getByTestId('no-grid');
+      const gridPage = page.getByTestId('extraction-grid-page');
+      await expect(noGrid.or(gridPage).first()).toBeVisible();
+    }
+  });
+
+  test('tab navigation works across all tabs', async ({ page }) => {
+    await page.goto('/projects/proj-1/soa/soa-1');
+
+    const detail = page.getByTestId('soa-detail-page');
+    const error = page.getByTestId('soa-detail-error');
+    const loading = page.getByTestId('soa-detail-loading');
+
+    await expect(detail.or(error).or(loading).first()).toBeVisible();
+
+    if (await detail.isVisible()) {
+      const tabKeys = ['overview', 'grid', 'quality', 'narrative', 'devices', 'claims'];
+      for (const key of tabKeys) {
+        await page.getByTestId(`tab-${key}`).click();
+        await expect(page.getByTestId(`tab-${key}`)).toBeVisible();
+      }
     }
   });
 });

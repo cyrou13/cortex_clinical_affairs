@@ -9,11 +9,7 @@ export {
   type PipelineStatus,
 } from './project.schema.js';
 
-export {
-  TaskStatus,
-  TaskProgressEvent,
-  EnqueueTaskInput,
-} from './async-task.schema.js';
+export { TaskStatus, TaskProgressEvent, EnqueueTaskInput } from './async-task.schema.js';
 
 export {
   SlsSessionType,
@@ -31,6 +27,7 @@ export {
 export {
   CreateQueryInput,
   UpdateQueryInput,
+  GenerateQueryFromTextInput,
   type BooleanQueryValidationResult,
 } from './query.schema.js';
 
@@ -72,3 +69,22 @@ export {
   ScreenArticleInput,
   BulkScreenArticlesInput,
 } from './screening.schema.js';
+
+export {
+  ImportSoaDocumentInput,
+  ConfirmSoaImportInput,
+  SoaExtractedData,
+  GapReport,
+  GapReportItem,
+  ExtractedArticle,
+  ExtractedSection,
+  ExtractedGridColumn,
+  ExtractedGridCell,
+  ExtractedClaim,
+  ExtractedDevice,
+  ExtractedBenchmark,
+  ExtractedQualityAssessment,
+  ExtractedSlsSession,
+  ExtractedSlsQuery,
+  ExtractedExclusionCode,
+} from './soa-import.schema.js';

@@ -7,7 +7,7 @@ function createMockJob(overrides?: Partial<GenerateReportJobData>): Job<Generate
   return {
     data: {
       taskId: 'task-001',
-      type: 'validation:generate-report',
+      type: 'validation.generate-report',
       createdBy: 'user-1',
       metadata: {
         studyId: 'study-1',

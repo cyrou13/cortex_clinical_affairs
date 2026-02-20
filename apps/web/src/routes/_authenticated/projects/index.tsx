@@ -90,6 +90,7 @@ interface Project {
 
 export default function ProjectsPage() {
   const [showCreateWizard, setShowCreateWizard] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const { data, loading } = useQuery<{ projects: Project[] }>(PROJECTS_QUERY);
   const { data: usersData } = useQuery<{
@@ -116,43 +117,64 @@ export default function ProjectsPage() {
     },
     teamMembers: Array<{ userId: string; role: string }>,
   ) => {
-    const { data: result } = await createProject({
-      variables: {
-        name: formData.name,
-        deviceName: formData.deviceName,
-        deviceClass: formData.deviceClass,
-        regulatoryContext: formData.regulatoryContext,
-      },
-      refetchQueries: [{ query: PROJECTS_QUERY }],
-    });
-
-    const projectId = (result as any)?.createProject?.id;
-    if (!projectId) return;
-
-    // Configure CEP if any fields were filled
-    if (formData.cepScope || formData.cepObjectives || formData.cepDeviceClassification || formData.cepClinicalBackground) {
-      await configureCep({
+    setError(null);
+    try {
+      const createResult = await createProject({
         variables: {
-          projectId,
-          scope: formData.cepScope || null,
-          objectives: formData.cepObjectives || null,
-          deviceClassification: formData.cepDeviceClassification || null,
-          clinicalBackground: formData.cepClinicalBackground || null,
+          name: formData.name,
+          deviceName: formData.deviceName,
+          deviceClass: formData.deviceClass,
+          regulatoryContext: formData.regulatoryContext,
         },
+        refetchQueries: [{ query: PROJECTS_QUERY }],
       });
-    }
 
-    // Assign team members
-    if (teamMembers.length > 0) {
-      await assignUsers({
-        variables: {
-          projectId,
-          userIds: teamMembers.map((m) => m.userId),
-        },
-      });
-    }
+      const gqlErrors = (createResult as any).errors;
+      if (gqlErrors?.length) {
+        setError(gqlErrors.map((e: any) => e.message).join(', '));
+        return;
+      }
 
-    setShowCreateWizard(false);
+      const result = createResult.data;
+
+      const projectId = (result as any)?.createProject?.id;
+      if (!projectId) {
+        setError('Failed to create project — no ID returned');
+        return;
+      }
+
+      // Configure CEP if any fields were filled
+      if (
+        formData.cepScope ||
+        formData.cepObjectives ||
+        formData.cepDeviceClassification ||
+        formData.cepClinicalBackground
+      ) {
+        await configureCep({
+          variables: {
+            projectId,
+            scope: formData.cepScope || null,
+            objectives: formData.cepObjectives || null,
+            deviceClassification: formData.cepDeviceClassification || null,
+            clinicalBackground: formData.cepClinicalBackground || null,
+          },
+        });
+      }
+
+      // Assign team members
+      if (teamMembers.length > 0) {
+        await assignUsers({
+          variables: {
+            projectId,
+            userIds: teamMembers.map((m) => m.userId),
+          },
+        });
+      }
+
+      setShowCreateWizard(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create project');
+    }
   };
 
   const handleProjectClick = (id: string) => {
@@ -162,6 +184,18 @@ export default function ProjectsPage() {
   if (showCreateWizard) {
     return (
       <div className="p-6">
+        {error && (
+          <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {error}
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              className="ml-2 font-medium underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
         <ProjectCreateWizard
           availableUsers={availableUsers}
           onSubmit={handleCreateProject}
@@ -171,18 +205,13 @@ export default function ProjectsPage() {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center p-12">
-        <p className="text-[var(--cortex-text-muted)]">Loading projects...</p>
-      </div>
-    );
-  }
-
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-[var(--cortex-text-primary)]">Projects</h1>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <FolderOpen size={24} className="text-[var(--cortex-blue-500)]" />
+          <h1 className="text-2xl font-semibold text-[var(--cortex-text-primary)]">Projects</h1>
+        </div>
         <button
           type="button"
           onClick={() => setShowCreateWizard(true)}
@@ -193,8 +222,14 @@ export default function ProjectsPage() {
         </button>
       </div>
 
+      {loading && (
+        <div className="py-12 text-center text-sm text-[var(--cortex-text-muted)]">
+          Loading projects...
+        </div>
+      )}
+
       {/* Onboarding banner for first-time users */}
-      {projects.length === 0 && (
+      {!loading && projects.length === 0 && (
         <div className="mb-6 rounded-lg border border-[var(--cortex-blue-200)] bg-[var(--cortex-blue-50)] p-6 text-center">
           <FolderOpen size={48} className="mx-auto mb-3 text-[var(--cortex-blue-400)]" />
           <h2 className="mb-2 text-lg font-medium text-[var(--cortex-text-primary)]">
@@ -214,7 +249,7 @@ export default function ProjectsPage() {
       )}
 
       {/* Project grid */}
-      {projects.length > 0 && (
+      {!loading && projects.length > 0 && (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
             <ProjectCard

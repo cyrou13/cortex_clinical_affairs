@@ -39,7 +39,7 @@ function createMockJob(overrides?: Partial<TaskJobData>): Job<TaskJobData> {
   return {
     data: {
       taskId: 'task-001',
-      type: 'sls:score-articles',
+      type: 'sls.score-articles',
       metadata: {
         sessionId: 'session-1',
         articleIds,
@@ -71,6 +71,9 @@ describe('ScoreArticlesProcessor', () => {
       findMany: ReturnType<typeof vi.fn>;
       update: ReturnType<typeof vi.fn>;
     };
+    asyncTask: {
+      update: ReturnType<typeof vi.fn>;
+    };
   };
 
   beforeEach(() => {
@@ -88,6 +91,9 @@ describe('ScoreArticlesProcessor', () => {
     mockPrisma = {
       article: {
         findMany: vi.fn().mockResolvedValue(makeArticles(3)),
+        update: vi.fn().mockResolvedValue({}),
+      },
+      asyncTask: {
         update: vi.fn().mockResolvedValue({}),
       },
     };
@@ -192,21 +198,20 @@ describe('ScoreArticlesProcessor', () => {
 
     await processor.process(job);
 
-    // Should have published multiple progress events plus the completion event
+    // Should have published multiple progress events
     expect(mockRedis.publish).toHaveBeenCalled();
 
-    // Find the completion event
-    const completionCalls = mockRedis.publish.mock.calls.filter((call: string[]) => {
+    // Find the final progress event (progress === 100)
+    const finalCalls = mockRedis.publish.mock.calls.filter((call: string[]) => {
       const parsed = JSON.parse(call[1] as string);
-      return parsed.type === 'sls:score-articles:completed';
+      return parsed.type === 'sls.score-articles' && parsed.progress === 100;
     });
 
-    expect(completionCalls).toHaveLength(1);
-    const completionEvent = JSON.parse(completionCalls[0]![1] as string);
-    expect(completionEvent.taskId).toBe('task-001');
-    expect(completionEvent.sessionId).toBe('session-1');
-    expect(completionEvent.articlesScored).toBe(3);
-    expect(completionEvent.totalArticles).toBe(3);
+    expect(finalCalls).toHaveLength(1);
+    const finalEvent = JSON.parse(finalCalls[0]![1] as string);
+    expect(finalEvent.taskId).toBe('task-001');
+    expect(finalEvent.current).toBe(3);
+    expect(finalEvent.total).toBe(3);
   });
 
   it('checks for cancellation between batches', async () => {
@@ -277,12 +282,12 @@ describe('ScoreArticlesProcessor', () => {
     // Should only update 5 articles (second batch only)
     expect(mockPrisma.article.update).toHaveBeenCalledTimes(5);
 
-    // Should still emit completion event
-    const completionCalls = mockRedis.publish.mock.calls.filter((call: string[]) => {
+    // Should still emit final progress event
+    const finalCalls = mockRedis.publish.mock.calls.filter((call: string[]) => {
       const parsed = JSON.parse(call[1] as string);
-      return parsed.type === 'sls:score-articles:completed';
+      return parsed.type === 'sls.score-articles' && parsed.progress === 100;
     });
-    expect(completionCalls).toHaveLength(1);
+    expect(finalCalls).toHaveLength(1);
   });
 
   it('handles empty articles list', async () => {
@@ -294,14 +299,14 @@ describe('ScoreArticlesProcessor', () => {
     // Should not call LLM
     expect(mockLlmService.complete).not.toHaveBeenCalled();
 
-    // Should emit completion event with 0 articles scored
-    const completionCalls = mockRedis.publish.mock.calls.filter((call: string[]) => {
+    // Should emit final progress event with 0 articles scored
+    const finalCalls = mockRedis.publish.mock.calls.filter((call: string[]) => {
       const parsed = JSON.parse(call[1] as string);
-      return parsed.type === 'sls:score-articles:completed';
+      return parsed.type === 'sls.score-articles' && parsed.progress === 100;
     });
-    expect(completionCalls).toHaveLength(1);
-    const completionEvent = JSON.parse(completionCalls[0]![1] as string);
-    expect(completionEvent.articlesScored).toBe(0);
+    expect(finalCalls).toHaveLength(1);
+    const finalEvent = JSON.parse(finalCalls[0]![1] as string);
+    expect(finalEvent.current).toBe(0);
   });
 
   it('publishes on correct channel using createdBy', async () => {
@@ -412,10 +417,10 @@ describe('ScoreArticlesProcessor', () => {
     expect(mockPrisma.article.update).not.toHaveBeenCalled();
 
     // Should still complete (error is caught and continued)
-    const completionCalls = mockRedis.publish.mock.calls.filter((call: string[]) => {
+    const finalCalls = mockRedis.publish.mock.calls.filter((call: string[]) => {
       const parsed = JSON.parse(call[1] as string);
-      return parsed.type === 'sls:score-articles:completed';
+      return parsed.type === 'sls.score-articles' && parsed.progress === 100;
     });
-    expect(completionCalls).toHaveLength(1);
+    expect(finalCalls).toHaveLength(1);
   });
 });

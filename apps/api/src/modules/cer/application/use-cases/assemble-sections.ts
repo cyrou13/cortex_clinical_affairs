@@ -93,9 +93,9 @@ export class AssembleSectionsUseCase {
 
       // Enqueue drafting job
       const taskId = crypto.randomUUID();
-      const jobId = await this.jobEnqueuer.enqueue('cer:draft-section', {
+      const jobId = await this.jobEnqueuer.enqueue('cer.draft-section', {
         taskId,
-        type: 'cer:draft-section',
+        type: 'cer.draft-section',
         metadata: {
           cerVersionId,
           cerSectionId: sectionId,

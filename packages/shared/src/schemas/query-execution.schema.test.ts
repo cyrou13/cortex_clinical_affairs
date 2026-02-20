@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { DatabaseSource, ExecutionStatus, ExecuteQueryInput } from './query-execution.schema.js';
 
 describe('DatabaseSource enum', () => {
-  it.each(['PUBMED', 'COCHRANE', 'EMBASE'])('accepts %s', (value) => {
+  it.each(['PUBMED', 'PMC', 'GOOGLE_SCHOLAR', 'CLINICAL_TRIALS'])('accepts %s', (value) => {
     expect(DatabaseSource.safeParse(value).success).toBe(true);
   });
 
@@ -16,12 +16,9 @@ describe('DatabaseSource enum', () => {
 });
 
 describe('ExecutionStatus enum', () => {
-  it.each(['RUNNING', 'SUCCESS', 'PARTIAL', 'FAILED', 'CANCELLED'])(
-    'accepts %s',
-    (value) => {
-      expect(ExecutionStatus.safeParse(value).success).toBe(true);
-    },
-  );
+  it.each(['RUNNING', 'SUCCESS', 'PARTIAL', 'FAILED', 'CANCELLED'])('accepts %s', (value) => {
+    expect(ExecutionStatus.safeParse(value).success).toBe(true);
+  });
 
   it('rejects invalid value', () => {
     expect(ExecutionStatus.safeParse('PENDING').success).toBe(false);
@@ -47,7 +44,7 @@ describe('ExecuteQueryInput schema', () => {
   it('accepts valid input with multiple databases', () => {
     const result = ExecuteQueryInput.safeParse({
       ...validInput,
-      databases: ['PUBMED', 'COCHRANE', 'EMBASE'],
+      databases: ['PUBMED', 'PMC', 'GOOGLE_SCHOLAR', 'CLINICAL_TRIALS'],
     });
     expect(result.success).toBe(true);
   });

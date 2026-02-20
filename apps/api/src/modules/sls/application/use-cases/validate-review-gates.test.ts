@@ -13,11 +13,14 @@ function makeSession(overrides?: Partial<Record<string, unknown>>) {
   };
 }
 
-function makeArticles(configs: Array<{ status: string; relevanceScore: number | null }>) {
+function makeArticles(
+  configs: Array<{ status: string; relevanceScore: number | null; aiCategory?: string | null }>,
+) {
   return configs.map((c, i) => ({
     id: `article-${i}`,
     status: c.status,
     relevanceScore: c.relevanceScore,
+    aiCategory: c.aiCategory ?? null,
   }));
 }
 
@@ -28,9 +31,9 @@ function makePrisma(overrides?: {
 }) {
   return {
     slsSession: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.session !== undefined ? overrides.session : makeSession(),
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(overrides?.session !== undefined ? overrides.session : makeSession()),
     },
     article: {
       findMany: vi.fn().mockResolvedValue(overrides?.articles ?? []),
@@ -94,9 +97,13 @@ describe('ValidateReviewGatesUseCase', () => {
   });
 
   it('calculates likely relevant spot-check requirement', async () => {
-    // 10 likely relevant articles (score >= 75) -> need 10% = 1 spot-check
+    // 10 likely relevant articles -> need 10% = 1 spot-check
     const articles = makeArticles(
-      Array.from({ length: 10 }, () => ({ status: 'INCLUDED', relevanceScore: 85 })),
+      Array.from({ length: 10 }, () => ({
+        status: 'INCLUDED',
+        relevanceScore: 85,
+        aiCategory: 'likely_relevant',
+      })),
     );
     const prisma = makePrisma({ articles, spotCheckCount: 1 });
     useCase = new ValidateReviewGatesUseCase(prisma);
@@ -109,7 +116,11 @@ describe('ValidateReviewGatesUseCase', () => {
 
   it('likely relevant gate fails when not enough spot-checks', async () => {
     const articles = makeArticles(
-      Array.from({ length: 20 }, () => ({ status: 'INCLUDED', relevanceScore: 85 })),
+      Array.from({ length: 20 }, () => ({
+        status: 'INCLUDED',
+        relevanceScore: 85,
+        aiCategory: 'likely_relevant',
+      })),
     );
     // Need 10% of 20 = 2, but only have 0
     const prisma = makePrisma({ articles, spotCheckCount: 0 });
@@ -122,9 +133,13 @@ describe('ValidateReviewGatesUseCase', () => {
   });
 
   it('calculates likely irrelevant spot-check requirement', async () => {
-    // 20 likely irrelevant articles (score < 40) -> need 5% = 1
+    // 20 likely irrelevant articles -> need 5% = 1
     const articles = makeArticles(
-      Array.from({ length: 20 }, () => ({ status: 'EXCLUDED', relevanceScore: 20 })),
+      Array.from({ length: 20 }, () => ({
+        status: 'EXCLUDED',
+        relevanceScore: 20,
+        aiCategory: 'likely_irrelevant',
+      })),
     );
     const prisma = makePrisma({ articles, spotCheckCount: 1 });
     useCase = new ValidateReviewGatesUseCase(prisma);
@@ -137,13 +152,17 @@ describe('ValidateReviewGatesUseCase', () => {
 
   it('supports custom thresholds', async () => {
     const articles = makeArticles(
-      Array.from({ length: 10 }, () => ({ status: 'INCLUDED', relevanceScore: 85 })),
+      Array.from({ length: 10 }, () => ({
+        status: 'INCLUDED',
+        relevanceScore: 85,
+        aiCategory: 'likely_relevant',
+      })),
     );
     const prisma = makePrisma({ articles, spotCheckCount: 2 });
     useCase = new ValidateReviewGatesUseCase(prisma);
 
     const result = await useCase.execute(TEST_SESSION_ID, {
-      likelyRelevantPercentage: 0.20, // 20% -> 2 required
+      likelyRelevantPercentage: 0.2, // 20% -> 2 required
     });
 
     expect(result.likelyRelevantSpotChecked.required).toBe(2);

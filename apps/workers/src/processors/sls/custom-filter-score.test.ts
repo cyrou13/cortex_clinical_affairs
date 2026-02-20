@@ -7,7 +7,7 @@ function createMockJob(overrides?: Partial<TaskJobData>): Job<TaskJobData> {
   return {
     data: {
       taskId: 'task-001',
-      type: 'sls:custom-filter-score',
+      type: 'sls.custom-filter-score',
       metadata: {
         sessionId: 'session-1',
         filterId: 'filter-1',
@@ -21,7 +21,9 @@ function createMockJob(overrides?: Partial<TaskJobData>): Job<TaskJobData> {
   } as unknown as Job<TaskJobData>;
 }
 
-function createMockPrisma(articles: Array<{ id: string; title: string; abstract: string | null }> = []) {
+function createMockPrisma(
+  articles: Array<{ id: string; title: string; abstract: string | null }> = [],
+) {
   return {
     article: {
       findMany: vi.fn().mockResolvedValue(articles),
@@ -108,9 +110,7 @@ describe('CustomFilterScoreProcessor', () => {
   });
 
   it('uses LLM service with correct prompt', async () => {
-    const articles = [
-      { id: 'art-1', title: 'Test Article', abstract: 'Test abstract' },
-    ];
+    const articles = [{ id: 'art-1', title: 'Test Article', abstract: 'Test abstract' }];
     mockPrisma = createMockPrisma(articles);
     mockLlmService = createMockLlmService('{"score": 70}');
 
@@ -138,9 +138,7 @@ describe('CustomFilterScoreProcessor', () => {
   });
 
   it('falls back to score 50 without LLM service', async () => {
-    const articles = [
-      { id: 'art-1', title: 'Test Article', abstract: 'Test abstract' },
-    ];
+    const articles = [{ id: 'art-1', title: 'Test Article', abstract: 'Test abstract' }];
     mockPrisma = createMockPrisma(articles);
     processor.setPrisma(mockPrisma);
     // Not setting LLM service
@@ -157,9 +155,7 @@ describe('CustomFilterScoreProcessor', () => {
   });
 
   it('handles invalid LLM response by defaulting to 50', async () => {
-    const articles = [
-      { id: 'art-1', title: 'Test Article', abstract: 'Test abstract' },
-    ];
+    const articles = [{ id: 'art-1', title: 'Test Article', abstract: 'Test abstract' }];
     mockPrisma = createMockPrisma(articles);
     mockLlmService = createMockLlmService('invalid json');
 
@@ -178,9 +174,7 @@ describe('CustomFilterScoreProcessor', () => {
   });
 
   it('handles out-of-range score by defaulting to 50', async () => {
-    const articles = [
-      { id: 'art-1', title: 'Test Article', abstract: 'Test abstract' },
-    ];
+    const articles = [{ id: 'art-1', title: 'Test Article', abstract: 'Test abstract' }];
     mockPrisma = createMockPrisma(articles);
     mockLlmService = createMockLlmService('{"score": 150}');
 
@@ -199,9 +193,7 @@ describe('CustomFilterScoreProcessor', () => {
   });
 
   it('checks for cancellation between batches', async () => {
-    const articles = [
-      { id: 'art-1', title: 'Article 1', abstract: 'Abstract 1' },
-    ];
+    const articles = [{ id: 'art-1', title: 'Article 1', abstract: 'Abstract 1' }];
     mockPrisma = createMockPrisma(articles);
     processor.setPrisma(mockPrisma);
 
@@ -253,9 +245,7 @@ describe('CustomFilterScoreProcessor', () => {
   });
 
   it('handles LLM service errors gracefully', async () => {
-    const articles = [
-      { id: 'art-1', title: 'Article 1', abstract: 'Abstract 1' },
-    ];
+    const articles = [{ id: 'art-1', title: 'Article 1', abstract: 'Abstract 1' }];
     mockPrisma = createMockPrisma(articles);
     mockLlmService = {
       complete: vi.fn().mockRejectedValue(new Error('LLM service unavailable')),

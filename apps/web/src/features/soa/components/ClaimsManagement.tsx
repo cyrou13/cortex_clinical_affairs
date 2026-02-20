@@ -1,50 +1,14 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { gql } from '@apollo/client';
 import { FileCheck, Plus, Link } from 'lucide-react';
-
-export const GET_CLAIMS = gql`
-  query GetClaims($soaAnalysisId: String!) {
-    soaClaims(soaAnalysisId: $soaAnalysisId) {
-      id
-      statement
-      status
-      linkedArticles {
-        id
-        title
-      }
-    }
-  }
-`;
-
-export const CREATE_CLAIM = gql`
-  mutation CreateClaim($soaAnalysisId: String!, $statement: String!) {
-    createSoaClaim(soaAnalysisId: $soaAnalysisId, statement: $statement) {
-      claimId
-      statement
-    }
-  }
-`;
-
-export const LINK_ARTICLE_TO_CLAIM = gql`
-  mutation LinkArticleToClaim($claimId: String!, $articleId: String!) {
-    linkArticleToClaim(claimId: $claimId, articleId: $articleId) {
-      claimId
-      articleId
-    }
-  }
-`;
-
-interface LinkedArticle {
-  id: string;
-  title: string;
-}
+import { GET_CLAIMS } from '../graphql/queries';
+import { CREATE_CLAIM, LINK_CLAIM_TO_ARTICLE } from '../graphql/mutations';
 
 interface Claim {
   id: string;
-  statement: string;
-  status: string;
-  linkedArticles: LinkedArticle[];
+  statementText: string;
+  thematicSectionId: string | null;
+  createdAt: string;
 }
 
 interface ClaimsManagementProps {
@@ -68,17 +32,17 @@ export function ClaimsManagement({
   });
 
   const [createClaim] = useMutation<any>(CREATE_CLAIM);
-  const [linkArticle] = useMutation(LINK_ARTICLE_TO_CLAIM);
+  const [linkArticle] = useMutation(LINK_CLAIM_TO_ARTICLE);
 
-  const claims: Claim[] = data?.soaClaims ?? [];
+  const claims: Claim[] = data?.claims ?? [];
 
   const handleCreateClaim = async () => {
     if (!claimText.trim()) return;
     const result = await createClaim({
-      variables: { soaAnalysisId, statement: claimText.trim() },
+      variables: { soaAnalysisId, statementText: claimText.trim() },
     });
-    if (result.data?.createSoaClaim) {
-      onClaimCreated?.(result.data.createSoaClaim.claimId);
+    if (result.data?.createClaim) {
+      onClaimCreated?.(result.data.createClaim.id);
       setClaimText('');
       setShowCreateForm(false);
     }
@@ -167,28 +131,12 @@ export function ClaimsManagement({
               className="rounded-lg border border-[var(--cortex-border)] p-3"
               data-testid={`claim-${claim.id}`}
             >
-              <div className="mb-2 flex items-start justify-between">
-                <p
-                  className="flex-1 text-sm text-[var(--cortex-text-primary)]"
-                  data-testid={`claim-statement-${claim.id}`}
-                >
-                  {claim.statement}
-                </p>
-                <span className="ml-2 shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
-                  {claim.status}
-                </span>
-              </div>
-
-              {claim.linkedArticles.length > 0 && (
-                <div className="mb-2 space-y-1">
-                  {claim.linkedArticles.map((article) => (
-                    <div key={article.id} className="flex items-center gap-1 text-xs text-blue-600">
-                      <Link size={10} />
-                      <span data-testid={`linked-article-${article.id}`}>{article.title}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <p
+                className="mb-2 text-sm text-[var(--cortex-text-primary)]"
+                data-testid={`claim-statement-${claim.id}`}
+              >
+                {claim.statementText}
+              </p>
 
               {!locked && (
                 <>

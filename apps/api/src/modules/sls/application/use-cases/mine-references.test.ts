@@ -7,13 +7,14 @@ function makePrisma(overrides?: {
 }) {
   return {
     slsSession: {
-      findUnique: vi.fn().mockResolvedValue(overrides?.session !== undefined ? overrides.session : { id: 'sess-1' }),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(overrides?.session !== undefined ? overrides.session : { id: 'sess-1' }),
     },
     article: {
-      findMany: vi.fn().mockResolvedValue(overrides?.articles ?? [
-        { id: 'art-1' },
-        { id: 'art-2' },
-      ]),
+      findMany: vi
+        .fn()
+        .mockResolvedValue(overrides?.articles ?? [{ id: 'art-1' }, { id: 'art-2' }]),
     },
     asyncTask: {
       create: vi.fn().mockResolvedValue({ id: 'task-1' }),
@@ -42,7 +43,7 @@ describe('MineReferencesUseCase', () => {
     expect(result.taskId).toBe('task-1');
     expect(result.articleCount).toBe(2);
     expect(mockEnqueue).toHaveBeenCalledWith(
-      'sls:mine-references',
+      'sls.mine-references',
       expect.objectContaining({
         sessionId: 'sess-1',
         articleIds: ['art-1', 'art-2'],
@@ -72,7 +73,11 @@ describe('MineReferencesUseCase', () => {
     const prisma = makePrisma();
     const useCase = new MineReferencesUseCase(prisma, mockEnqueue);
 
-    await useCase.execute({ sessionId: 'sess-1', articleIds: ['art-1', 'art-3'], userId: 'user-1' });
+    await useCase.execute({
+      sessionId: 'sess-1',
+      articleIds: ['art-1', 'art-3'],
+      userId: 'user-1',
+    });
 
     expect(prisma.article.findMany).toHaveBeenCalledWith(
       expect.objectContaining({

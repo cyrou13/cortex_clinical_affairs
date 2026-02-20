@@ -1,16 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-
-vi.mock('@apollo/client', () => ({
-  gql: (str: TemplateStringsArray) => str[0],
-}));
-
-const mockUseQuery = vi.fn();
-
-vi.mock('@apollo/client/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-}));
-
+import { screen, fireEvent } from '@testing-library/react';
+import { renderWithApollo, type MockedResponse } from '../../../test-utils/apollo-wrapper';
+import { GET_SLS_SESSIONS } from '../graphql/queries';
 import { SlsSidebar } from './SlsSidebar';
 
 const mockSessions = [
@@ -40,6 +31,18 @@ const mockSessions = [
   },
 ];
 
+function buildQueryMock(sessions = mockSessions): MockedResponse {
+  return {
+    request: {
+      query: GET_SLS_SESSIONS,
+      variables: { projectId: 'proj-1' },
+    },
+    result: {
+      data: { slsSessions: sessions },
+    },
+  };
+}
+
 describe('SlsSidebar', () => {
   const defaultProps = {
     projectId: 'proj-1',
@@ -51,118 +54,77 @@ describe('SlsSidebar', () => {
     vi.clearAllMocks();
   });
 
-  it('renders session list', () => {
-    mockUseQuery.mockReturnValue({
-      data: { slsSessions: mockSessions },
-      loading: false,
-    });
+  it('renders session list', async () => {
+    renderWithApollo(<SlsSidebar {...defaultProps} />, [buildQueryMock()]);
 
-    render(<SlsSidebar {...defaultProps} />);
-
-    expect(screen.getByText('CSpine Clinical Review')).toBeInTheDocument();
+    await screen.findByText('CSpine Clinical Review');
     expect(screen.getByText('Device SOA Search')).toBeInTheDocument();
     expect(screen.getByText('PMS Update 2026')).toBeInTheDocument();
   });
 
-  it('shows session count badge', () => {
-    mockUseQuery.mockReturnValue({
-      data: { slsSessions: mockSessions },
-      loading: false,
-    });
+  it('shows session count badge', async () => {
+    renderWithApollo(<SlsSidebar {...defaultProps} />, [buildQueryMock()]);
 
-    render(<SlsSidebar {...defaultProps} />);
-
-    const countBadge = screen.getByTestId('session-count');
+    const countBadge = await screen.findByTestId('session-count');
     expect(countBadge).toHaveTextContent('3');
   });
 
-  it('highlights active session', () => {
-    mockUseQuery.mockReturnValue({
-      data: { slsSessions: mockSessions },
-      loading: false,
-    });
+  it('highlights active session', async () => {
+    renderWithApollo(<SlsSidebar {...defaultProps} activeSessionId="sess-2" />, [buildQueryMock()]);
 
-    render(<SlsSidebar {...defaultProps} activeSessionId="sess-2" />);
-
-    const activeItem = screen.getByTestId('session-item-sess-2');
+    const activeItem = await screen.findByTestId('session-item-sess-2');
     expect(activeItem).toHaveAttribute('aria-current', 'true');
   });
 
-  it('calls onNewSession when New Session button is clicked', () => {
+  it('calls onNewSession when New Session button is clicked', async () => {
     const onNewSession = vi.fn();
-    mockUseQuery.mockReturnValue({
-      data: { slsSessions: [] },
-      loading: false,
-    });
+    renderWithApollo(<SlsSidebar {...defaultProps} onNewSession={onNewSession} />, [
+      buildQueryMock([]),
+    ]);
 
-    render(<SlsSidebar {...defaultProps} onNewSession={onNewSession} />);
-
+    await screen.findByTestId('new-session-button');
     fireEvent.click(screen.getByTestId('new-session-button'));
     expect(onNewSession).toHaveBeenCalled();
   });
 
-  it('shows empty state when no sessions exist', () => {
-    mockUseQuery.mockReturnValue({
-      data: { slsSessions: [] },
-      loading: false,
-    });
+  it('shows empty state when no sessions exist', async () => {
+    renderWithApollo(<SlsSidebar {...defaultProps} />, [buildQueryMock([])]);
 
-    render(<SlsSidebar {...defaultProps} />);
-
-    const emptyState = screen.getByTestId('empty-state');
+    const emptyState = await screen.findByTestId('empty-state');
     expect(emptyState).toBeInTheDocument();
-    expect(
-      screen.getByText(/no sls sessions yet/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/no sls sessions yet/i)).toBeInTheDocument();
   });
 
-  it('shows type labels for sessions', () => {
-    mockUseQuery.mockReturnValue({
-      data: { slsSessions: mockSessions },
-      loading: false,
-    });
+  it('shows type labels for sessions', async () => {
+    renderWithApollo(<SlsSidebar {...defaultProps} />, [buildQueryMock()]);
 
-    render(<SlsSidebar {...defaultProps} />);
-
-    expect(screen.getByText('SOA Clinical')).toBeInTheDocument();
+    await screen.findByText('SOA Clinical');
     expect(screen.getByText('SOA Device')).toBeInTheDocument();
     expect(screen.getByText('PMS Update')).toBeInTheDocument();
   });
 
-  it('calls onSelectSession when a session is clicked', () => {
+  it('calls onSelectSession when a session is clicked', async () => {
     const onSelectSession = vi.fn();
-    mockUseQuery.mockReturnValue({
-      data: { slsSessions: mockSessions },
-      loading: false,
-    });
+    renderWithApollo(<SlsSidebar {...defaultProps} onSelectSession={onSelectSession} />, [
+      buildQueryMock(),
+    ]);
 
-    render(
-      <SlsSidebar {...defaultProps} onSelectSession={onSelectSession} />,
-    );
-
+    await screen.findByTestId('session-item-sess-1');
     fireEvent.click(screen.getByTestId('session-item-sess-1'));
     expect(onSelectSession).toHaveBeenCalledWith('sess-1');
   });
 
   it('shows loading state', () => {
-    mockUseQuery.mockReturnValue({
-      data: null,
-      loading: true,
-    });
-
-    render(<SlsSidebar {...defaultProps} />);
+    // No mocks = query never resolves = loading state
+    renderWithApollo(<SlsSidebar {...defaultProps} />, []);
 
     expect(screen.getByText(/loading sessions/i)).toBeInTheDocument();
   });
 
-  it('does not show session count badge when no sessions', () => {
-    mockUseQuery.mockReturnValue({
-      data: { slsSessions: [] },
-      loading: false,
-    });
+  it('does not show session count badge when no sessions', async () => {
+    renderWithApollo(<SlsSidebar {...defaultProps} />, [buildQueryMock([])]);
 
-    render(<SlsSidebar {...defaultProps} />);
-
+    await screen.findByTestId('empty-state');
     expect(screen.queryByTestId('session-count')).not.toBeInTheDocument();
   });
 });

@@ -1,44 +1,56 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-
-vi.mock('@apollo/client', () => ({
-  gql: (str: TemplateStringsArray) => str[0],
-}));
-
-const mockUseMutation = vi.fn();
-
-vi.mock('@apollo/client/react', () => ({
-  useMutation: (...args: unknown[]) => mockUseMutation(...args),
-}));
-
-import { ManualArticleAddForm } from './ManualArticleAddForm';
+import { screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { renderWithApollo, type MockedResponse } from '../../../test-utils/apollo-wrapper';
+import { ManualArticleAddForm, ADD_MANUAL_ARTICLE } from './ManualArticleAddForm';
 
 describe('ManualArticleAddForm', () => {
-  const mockMutate = vi.fn().mockResolvedValue({
-    data: { addManualArticle: { articleId: 'art-new', title: 'Test', status: 'PENDING' } },
-  });
-
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseMutation.mockReturnValue([mockMutate, { loading: false }]);
   });
 
+  function buildMutationMock(): MockedResponse {
+    return {
+      request: {
+        query: ADD_MANUAL_ARTICLE,
+        variables: {
+          sessionId: 's-1',
+          title: 'Extracted title from PDF',
+          authors: [{ firstName: 'John', lastName: 'Smith' }],
+          year: 2024,
+          journal: 'Journal of Medical Research',
+          doi: null,
+          pmid: null,
+          pdfStorageKey: 'manual-upload-pending',
+        },
+      },
+      result: {
+        data: {
+          addManualArticle: {
+            articleId: 'art-new',
+            title: 'Extracted title from PDF',
+            status: 'PENDING',
+          },
+        },
+      },
+    };
+  }
+
   it('renders upload step initially', () => {
-    render(<ManualArticleAddForm sessionId="s-1" />);
+    renderWithApollo(<ManualArticleAddForm sessionId="s-1" />, []);
 
     expect(screen.getByTestId('manual-article-form')).toBeInTheDocument();
     expect(screen.getByTestId('manual-upload-zone')).toBeInTheDocument();
   });
 
   it('shows file input for PDF', () => {
-    render(<ManualArticleAddForm sessionId="s-1" />);
+    renderWithApollo(<ManualArticleAddForm sessionId="s-1" />, []);
 
     expect(screen.getByTestId('manual-file-input')).toBeInTheDocument();
   });
 
   it('shows extracting state on file upload', async () => {
     vi.useFakeTimers();
-    render(<ManualArticleAddForm sessionId="s-1" />);
+    renderWithApollo(<ManualArticleAddForm sessionId="s-1" />, []);
 
     const file = new File(['%PDF'], 'test.pdf', { type: 'application/pdf' });
     fireEvent.change(screen.getByTestId('manual-file-input'), { target: { files: [file] } });
@@ -49,12 +61,14 @@ describe('ManualArticleAddForm', () => {
 
   it('shows edit form after extraction', async () => {
     vi.useFakeTimers();
-    render(<ManualArticleAddForm sessionId="s-1" />);
+    renderWithApollo(<ManualArticleAddForm sessionId="s-1" />, []);
 
     const file = new File(['%PDF'], 'test.pdf', { type: 'application/pdf' });
     fireEvent.change(screen.getByTestId('manual-file-input'), { target: { files: [file] } });
 
-    await act(async () => { vi.advanceTimersByTime(1100); });
+    await act(async () => {
+      vi.advanceTimersByTime(1100);
+    });
 
     expect(screen.getByTestId('metadata-title')).toBeInTheDocument();
     vi.useRealTimers();
@@ -62,12 +76,14 @@ describe('ManualArticleAddForm', () => {
 
   it('renders metadata fields in edit step', async () => {
     vi.useFakeTimers();
-    render(<ManualArticleAddForm sessionId="s-1" />);
+    renderWithApollo(<ManualArticleAddForm sessionId="s-1" />, []);
 
     const file = new File(['%PDF'], 'test.pdf', { type: 'application/pdf' });
     fireEvent.change(screen.getByTestId('manual-file-input'), { target: { files: [file] } });
 
-    await act(async () => { vi.advanceTimersByTime(1100); });
+    await act(async () => {
+      vi.advanceTimersByTime(1100);
+    });
 
     expect(screen.getByTestId('metadata-title')).toBeInTheDocument();
     expect(screen.getByTestId('metadata-year')).toBeInTheDocument();
@@ -80,12 +96,14 @@ describe('ManualArticleAddForm', () => {
 
   it('has add author button', async () => {
     vi.useFakeTimers();
-    render(<ManualArticleAddForm sessionId="s-1" />);
+    renderWithApollo(<ManualArticleAddForm sessionId="s-1" />, []);
 
     const file = new File(['%PDF'], 'test.pdf', { type: 'application/pdf' });
     fireEvent.change(screen.getByTestId('manual-file-input'), { target: { files: [file] } });
 
-    await act(async () => { vi.advanceTimersByTime(1100); });
+    await act(async () => {
+      vi.advanceTimersByTime(1100);
+    });
 
     expect(screen.getByTestId('add-author-btn')).toBeInTheDocument();
     vi.useRealTimers();
@@ -93,36 +111,35 @@ describe('ManualArticleAddForm', () => {
 
   it('calls mutation on confirm', async () => {
     vi.useFakeTimers();
-    render(<ManualArticleAddForm sessionId="s-1" />);
+    renderWithApollo(<ManualArticleAddForm sessionId="s-1" />, [buildMutationMock()]);
 
     const file = new File(['%PDF'], 'test.pdf', { type: 'application/pdf' });
     fireEvent.change(screen.getByTestId('manual-file-input'), { target: { files: [file] } });
 
-    await act(async () => { vi.advanceTimersByTime(1100); });
+    await act(async () => {
+      vi.advanceTimersByTime(1100);
+    });
     vi.useRealTimers();
 
     expect(screen.getByTestId('confirm-article-btn')).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('confirm-article-btn'));
 
+    // Verify the mutation was called by checking the UI transitioned to done step
     await waitFor(() => {
-      expect(mockMutate).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variables: expect.objectContaining({
-            sessionId: 's-1',
-          }),
-        }),
-      );
+      expect(screen.getByTestId('manual-add-done')).toBeInTheDocument();
     });
   });
 
   it('shows done step after successful add', async () => {
     vi.useFakeTimers();
-    render(<ManualArticleAddForm sessionId="s-1" />);
+    renderWithApollo(<ManualArticleAddForm sessionId="s-1" />, [buildMutationMock()]);
 
     const file = new File(['%PDF'], 'test.pdf', { type: 'application/pdf' });
     fireEvent.change(screen.getByTestId('manual-file-input'), { target: { files: [file] } });
 
-    await act(async () => { vi.advanceTimersByTime(1100); });
+    await act(async () => {
+      vi.advanceTimersByTime(1100);
+    });
     vi.useRealTimers();
 
     expect(screen.getByTestId('confirm-article-btn')).toBeInTheDocument();

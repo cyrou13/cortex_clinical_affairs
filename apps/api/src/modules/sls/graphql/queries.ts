@@ -9,6 +9,7 @@ import {
   ArticleCountByStatusType,
   ArticleFilterInput,
   AiScoringStatsType,
+  AiScoringProgressType,
   ExclusionCodeObjectType,
   CustomAiFilterObjectType,
   RelevanceThresholdsType,
@@ -44,6 +45,21 @@ builder.queryField('slsSessions', (t) =>
 
       const useCase = new GetSlsSessionsUseCase(ctx.prisma);
       return useCase.execute(args.projectId, args.status ?? undefined) as any;
+    },
+  }),
+);
+
+builder.queryField('lockedSlsSessions', (t) =>
+  t.field({
+    type: [SlsSessionObjectType],
+    args: { projectId: t.arg.string({ required: true }) },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'sls', 'read');
+      await checkProjectMembership(ctx, args.projectId);
+      return ctx.prisma.slsSession.findMany({
+        where: { projectId: args.projectId, status: 'LOCKED' },
+        orderBy: { updatedAt: 'desc' },
+      }) as any;
     },
   }),
 );
@@ -208,6 +224,7 @@ builder.queryField('articles', (t) =>
             yearTo: args.filter.yearTo ?? undefined,
             sourceDatabase: args.filter.sourceDatabase ?? undefined,
             searchText: args.filter.searchText ?? undefined,
+            pdfStatus: args.filter.pdfStatus ?? undefined,
           }
         : undefined;
 
@@ -256,7 +273,7 @@ builder.queryField('article', (t) =>
 
 builder.queryField('articleCountByStatus', (t) =>
   t.field({
-    type: ArticleCountByStatusType,
+    type: [ArticleCountByStatusType],
     args: {
       sessionId: t.arg.string({ required: true }),
     },
@@ -277,7 +294,11 @@ builder.queryField('articleCountByStatus', (t) =>
       const repo = new ArticleRepository(ctx.prisma);
       const counts = await repo.countByStatus(args.sessionId);
 
-      return { counts } as any;
+      // Transform Record<status, count> to Array<{status, count}>
+      return Object.entries(counts).map(([status, count]) => ({
+        status,
+        count,
+      })) as any;
     },
   }),
 );
@@ -344,6 +365,140 @@ builder.queryField('aiScoringStats', (t) =>
         totalScored,
         acceptanceRate,
       } as any;
+    },
+  }),
+);
+
+// --- AI Scoring Progress query (polling-based) ---
+
+builder.queryField('aiScoringProgress', (t) =>
+  t.field({
+    type: AiScoringProgressType,
+    args: {
+      taskId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      const task = await ctx.prisma.asyncTask.findUnique({
+        where: { id: args.taskId },
+      });
+
+      if (!task) {
+        throw new NotFoundError('AsyncTask', args.taskId);
+      }
+
+      const metadata = (task.metadata ?? {}) as Record<string, unknown>;
+      const totalArticles = (metadata.totalArticles as number) ?? 0;
+      const scored = totalArticles > 0 ? Math.round((task.progress / 100) * totalArticles) : 0;
+
+      // Estimate remaining time from startedAt and progress
+      let estimatedSecondsRemaining: number | null = null;
+      if (task.startedAt && task.progress > 0 && task.progress < 100) {
+        const elapsed = (Date.now() - task.startedAt.getTime()) / 1000;
+        const rate = task.progress / elapsed;
+        estimatedSecondsRemaining = Math.round((100 - task.progress) / rate);
+      }
+
+      return {
+        taskId: task.id,
+        status: task.status,
+        scored,
+        total: totalArticles,
+        estimatedSecondsRemaining,
+      };
+    },
+  }),
+);
+
+// --- Active Scoring Task query (recover on page refresh) ---
+
+builder.queryField('activeScoringTask', (t) =>
+  t.field({
+    type: AiScoringProgressType,
+    nullable: true,
+    args: {
+      sessionId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      // Find a PENDING or RUNNING scoring task for this session
+      const tasks = await ctx.prisma.asyncTask.findMany({
+        where: {
+          type: 'sls.score-articles',
+          status: { in: ['PENDING', 'RUNNING'] },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      });
+
+      // Filter by sessionId in metadata
+      const task = tasks.find((t) => {
+        const meta = (t.metadata ?? {}) as Record<string, unknown>;
+        return meta.sessionId === args.sessionId;
+      });
+
+      if (!task) return null;
+
+      const metadata = (task.metadata ?? {}) as Record<string, unknown>;
+      const totalArticles = (metadata.totalArticles as number) ?? 0;
+      const scored = totalArticles > 0 ? Math.round((task.progress / 100) * totalArticles) : 0;
+
+      let estimatedSecondsRemaining: number | null = null;
+      if (task.startedAt && task.progress > 0 && task.progress < 100) {
+        const elapsed = (Date.now() - task.startedAt.getTime()) / 1000;
+        const rate = task.progress / elapsed;
+        estimatedSecondsRemaining = Math.round((100 - task.progress) / rate);
+      }
+
+      return {
+        taskId: task.id,
+        status: task.status,
+        scored,
+        total: totalArticles,
+        estimatedSecondsRemaining,
+      };
+    },
+  }),
+);
+
+// --- Screening Articles query (for ScreeningPanel) ---
+
+builder.queryField('screeningArticles', (t) =>
+  t.field({
+    type: [ArticleObjectType],
+    args: {
+      sessionId: t.arg.string({ required: true }),
+      filter: t.arg.string({ required: false }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'sls', 'read');
+
+      const session = await ctx.prisma.slsSession.findUnique({
+        where: { id: args.sessionId },
+      });
+
+      if (!session) {
+        throw new NotFoundError('SlsSession', args.sessionId);
+      }
+
+      await checkProjectMembership(ctx, session.projectId);
+
+      // Build where clause: SCORED and PENDING articles (ready for screening)
+      const where: Record<string, unknown> = {
+        sessionId: args.sessionId,
+        status: { in: ['SCORED', 'PENDING'] },
+      };
+
+      // Filter by AI category tab
+      if (args.filter && args.filter !== 'all') {
+        where.aiCategory = args.filter;
+      }
+
+      const articles = await ctx.prisma.article.findMany({
+        where,
+        orderBy: [{ relevanceScore: 'desc' }, { createdAt: 'desc' }],
+        take: 500,
+      });
+
+      return articles as any;
     },
   }),
 );
@@ -631,6 +786,7 @@ builder.queryField('lockPreflightCheck', (t) =>
         includedCount,
         excludedCount,
         totalArticles: articles.length,
+        sessionStatus: session.status,
       } as any;
     },
   }),
@@ -729,6 +885,40 @@ builder.queryField('pdfRetrievalStats', (t) =>
         verified,
         retrieving,
       } as any;
+    },
+  }),
+);
+
+// --- PDF Mismatches query (Story 2.11) ---
+
+builder.queryField('pdfMismatches', (t) =>
+  t.field({
+    type: [ArticleObjectType],
+    args: {
+      sessionId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'sls', 'read');
+
+      const session = await ctx.prisma.slsSession.findUnique({
+        where: { id: args.sessionId },
+      });
+
+      if (!session) {
+        throw new NotFoundError('SlsSession', args.sessionId);
+      }
+
+      await checkProjectMembership(ctx, session.projectId);
+
+      const articles = await ctx.prisma.article.findMany({
+        where: {
+          sessionId: args.sessionId,
+          pdfStatus: 'MISMATCH',
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return articles as any;
     },
   }),
 );

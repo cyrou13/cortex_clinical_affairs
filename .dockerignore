@@ -1,0 +1,15 @@
+node_modules
+.git
+.turbo
+.claude
+.husky
+.vscode
+dist
+.env*
+!.env.example
+docs
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/e2e
+**/__tests__

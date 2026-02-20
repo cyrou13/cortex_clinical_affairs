@@ -1,47 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { gql } from '@apollo/client';
 import { FileText, CheckCircle, Clock, Edit3, Lock } from 'lucide-react';
-
-export const GET_SECTION_DETAILS = gql`
-  query GetSectionDetails($sectionId: String!) {
-    soaSection(id: $sectionId) {
-      id
-      sectionKey
-      title
-      status
-      narrativeContent
-    }
-  }
-`;
-
-export const UPDATE_SECTION_CONTENT = gql`
-  mutation UpdateSectionContent($sectionId: String!, $content: String!) {
-    updateSectionContent(sectionId: $sectionId, content: $content) {
-      sectionId
-      status
-    }
-  }
-`;
-
-export const FINALIZE_SECTION = gql`
-  mutation FinalizeSection($sectionId: String!) {
-    finalizeSection(sectionId: $sectionId) {
-      sectionId
-      status
-    }
-  }
-`;
+import { GET_SOA_SECTIONS } from '../graphql/queries';
+import { UPDATE_SECTION_CONTENT, FINALIZE_SECTION } from '../graphql/mutations';
 
 interface SectionNavItem {
   id: string;
   sectionKey: string;
   title: string;
   status: 'DRAFT' | 'IN_PROGRESS' | 'FINALIZED';
+  narrativeContent?: string;
 }
 
 interface ThematicSectionEditorProps {
   sectionId: string;
+  soaAnalysisId: string;
   sections: SectionNavItem[];
   locked?: boolean;
   onSectionSelect?: (sectionId: string) => void;
@@ -78,6 +51,7 @@ function CompletionIcon({ status }: { status: string }) {
 
 export function ThematicSectionEditor({
   sectionId,
+  soaAnalysisId,
   sections,
   locked = false,
   onSectionSelect,
@@ -86,26 +60,28 @@ export function ThematicSectionEditor({
   const [content, setContent] = useState('');
   const [contentInitialized, setContentInitialized] = useState(false);
 
-  const { data, loading } = useQuery<any>(GET_SECTION_DETAILS, {
-    variables: { sectionId },
+  const { data, loading } = useQuery<any>(GET_SOA_SECTIONS, {
+    variables: { soaAnalysisId },
   });
 
   const [updateContent] = useMutation(UPDATE_SECTION_CONTENT);
   const [finalizeSection, { loading: finalizing }] = useMutation(FINALIZE_SECTION);
 
-  const section = data?.soaSection;
+  const allSections = data?.soaSections ?? [];
+  const section = allSections.find((s: any) => s.id === sectionId);
 
   useEffect(() => {
-    if (!contentInitialized && data?.soaSection?.narrativeContent) {
-      setContent(data.soaSection.narrativeContent);
+    if (!contentInitialized && section?.narrativeContent) {
+      setContent(section.narrativeContent);
       setContentInitialized(true);
     }
-  }, [data, contentInitialized]);
+  }, [section, contentInitialized]);
+
   const isFinalized = section?.status === 'FINALIZED';
 
   const handleContentChange = (newContent: string) => {
     setContent(newContent);
-    updateContent({ variables: { sectionId, content: newContent } });
+    updateContent({ variables: { sectionId, narrativeContent: newContent } });
   };
 
   const handleFinalize = async () => {
@@ -157,7 +133,7 @@ export function ThematicSectionEditor({
       <div className="flex-1 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <FileText size={16} className="text-[var(--cortex-primary)]" />
+            <FileText size={16} className="text-[var(--cortex-blue-500)]" />
             <h3
               className="text-lg font-semibold text-[var(--cortex-text-primary)]"
               data-testid="section-title"

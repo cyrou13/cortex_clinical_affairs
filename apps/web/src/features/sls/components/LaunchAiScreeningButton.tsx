@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { useMutation } from '@apollo/client/react';
+import { useState, useEffect } from 'react';
+import { useMutation, useQuery } from '@apollo/client/react';
 import { Brain, Loader2 } from 'lucide-react';
 import { cn } from '../../../shared/utils/cn';
 import { LAUNCH_AI_SCORING } from '../graphql/mutations';
+import { GET_ACTIVE_SCORING_TASK } from '../graphql/queries';
 import { AiScoringProgress } from './AiScoringProgress';
 
 interface LaunchAiScoringData {
@@ -13,6 +14,13 @@ interface LaunchAiScoringData {
 
 interface LaunchAiScoringVars {
   sessionId: string;
+}
+
+interface ActiveScoringTaskData {
+  activeScoringTask: {
+    taskId: string;
+    status: string;
+  } | null;
 }
 
 interface LaunchAiScreeningButtonProps {
@@ -37,10 +45,22 @@ export function LaunchAiScreeningButton({
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [taskId, setTaskId] = useState<string | null>(null);
 
-  const [launchAiScoring, { loading }] = useMutation<
-    LaunchAiScoringData,
-    LaunchAiScoringVars
-  >(LAUNCH_AI_SCORING);
+  // Check for an active scoring task on mount (survives page refresh)
+  const { data: activeData } = useQuery<ActiveScoringTaskData>(GET_ACTIVE_SCORING_TASK, {
+    variables: { sessionId },
+    fetchPolicy: 'network-only',
+  });
+
+  useEffect(() => {
+    const active = activeData?.activeScoringTask;
+    if (active && !taskId) {
+      setTaskId(active.taskId);
+    }
+  }, [activeData, taskId]);
+
+  const [launchAiScoring, { loading }] = useMutation<LaunchAiScoringData, LaunchAiScoringVars>(
+    LAUNCH_AI_SCORING,
+  );
 
   const isDisabled = isLocked || pendingCount === 0 || loading;
 
@@ -73,11 +93,7 @@ export function LaunchAiScreeningButton({
   // Show progress if task is active
   if (taskId) {
     return (
-      <AiScoringProgress
-        taskId={taskId}
-        onComplete={handleComplete}
-        onCancel={handleCancel}
-      />
+      <AiScoringProgress taskId={taskId} onComplete={handleComplete} onCancel={handleCancel} />
     );
   }
 
@@ -113,13 +129,19 @@ export function LaunchAiScreeningButton({
           </h4>
 
           <div className="mb-4 space-y-2 text-sm text-[var(--cortex-text-secondary)]">
-            <div className="flex items-center justify-between" data-testid="confirmation-article-count">
+            <div
+              className="flex items-center justify-between"
+              data-testid="confirmation-article-count"
+            >
               <span>Articles to score:</span>
               <span className="font-medium text-[var(--cortex-text-primary)]">
                 {pendingCount.toLocaleString()}
               </span>
             </div>
-            <div className="flex items-center justify-between" data-testid="confirmation-estimated-time">
+            <div
+              className="flex items-center justify-between"
+              data-testid="confirmation-estimated-time"
+            >
               <span>Estimated time:</span>
               <span className="font-medium text-[var(--cortex-text-primary)]">
                 {estimateTime(pendingCount)}

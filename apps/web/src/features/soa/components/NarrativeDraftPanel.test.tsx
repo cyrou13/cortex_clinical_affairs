@@ -16,104 +16,74 @@ import { NarrativeDraftPanel } from './NarrativeDraftPanel';
 describe('NarrativeDraftPanel', () => {
   const mockGenerate = vi.fn().mockResolvedValue({
     data: {
-      generateNarrativeDraft: {
-        draftId: 'draft-1',
-        content: 'This is the AI-generated narrative draft content for the clinical evaluation.',
-        status: 'GENERATED',
+      draftNarrative: {
+        taskId: 'task-123',
       },
     },
-  });
-  const mockAccept = vi.fn().mockResolvedValue({
-    data: { acceptNarrativeDraft: { sectionId: 'sec-1', status: 'ACCEPTED' } },
   });
 
   beforeEach(() => {
     vi.clearAllMocks();
-    const mutationReturns = [
-      [mockGenerate, { loading: false }],
-      [mockAccept, { loading: false }],
-    ];
-    let callIndex = 0;
-    mockUseMutation.mockImplementation(() => {
-      const result = mutationReturns[callIndex % mutationReturns.length];
-      callIndex++;
-      return result;
-    });
+    mockUseMutation.mockReturnValue([mockGenerate, { loading: false }]);
   });
 
   it('renders the narrative draft panel', () => {
-    render(<NarrativeDraftPanel sectionId="sec-1" />);
+    render(<NarrativeDraftPanel sectionId="sec-1" soaAnalysisId="soa-1" />);
 
     expect(screen.getByTestId('narrative-draft-panel')).toBeInTheDocument();
   });
 
   it('shows generate draft button initially', () => {
-    render(<NarrativeDraftPanel sectionId="sec-1" />);
+    render(<NarrativeDraftPanel sectionId="sec-1" soaAnalysisId="soa-1" />);
 
     expect(screen.getByTestId('generate-draft-btn')).toBeInTheDocument();
   });
 
   it('shows loading state when generating', () => {
-    const mutationReturns = [
-      [mockGenerate, { loading: true }],
-      [mockAccept, { loading: false }],
-    ];
-    let callIndex = 0;
-    mockUseMutation.mockImplementation(() => {
-      const result = mutationReturns[callIndex % mutationReturns.length];
-      callIndex++;
-      return result;
-    });
+    mockUseMutation.mockReturnValue([mockGenerate, { loading: true }]);
 
-    render(<NarrativeDraftPanel sectionId="sec-1" />);
+    render(<NarrativeDraftPanel sectionId="sec-1" soaAnalysisId="soa-1" />);
 
     expect(screen.getByTestId('draft-loading')).toBeInTheDocument();
   });
 
-  it('shows draft preview after generation', async () => {
-    render(<NarrativeDraftPanel sectionId="sec-1" />);
+  it('shows task submitted message after generation', async () => {
+    render(<NarrativeDraftPanel sectionId="sec-1" soaAnalysisId="soa-1" />);
 
     fireEvent.click(screen.getByTestId('generate-draft-btn'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('draft-preview')).toBeInTheDocument();
-      expect(screen.getByTestId('draft-preview')).toHaveTextContent(
-        'This is the AI-generated narrative draft content',
+      expect(screen.getByTestId('draft-submitted')).toBeInTheDocument();
+      expect(screen.getByTestId('draft-submitted')).toHaveTextContent('task-123');
+    });
+  });
+
+  it('calls draftNarrative mutation with sectionId and soaAnalysisId', async () => {
+    render(<NarrativeDraftPanel sectionId="sec-1" soaAnalysisId="soa-1" />);
+
+    fireEvent.click(screen.getByTestId('generate-draft-btn'));
+
+    await waitFor(() => {
+      expect(mockGenerate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variables: { sectionId: 'sec-1', soaAnalysisId: 'soa-1' },
+        }),
       );
     });
   });
 
-  it('shows accept and edit buttons after generation', async () => {
-    render(<NarrativeDraftPanel sectionId="sec-1" />);
+  it('shows regenerate button after task is submitted', async () => {
+    render(<NarrativeDraftPanel sectionId="sec-1" soaAnalysisId="soa-1" />);
 
     fireEvent.click(screen.getByTestId('generate-draft-btn'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('accept-draft-btn')).toBeInTheDocument();
-      expect(screen.getByTestId('edit-draft-btn')).toBeInTheDocument();
-    });
-  });
-
-  it('calls accept mutation on accept', async () => {
-    render(<NarrativeDraftPanel sectionId="sec-1" />);
-
-    fireEvent.click(screen.getByTestId('generate-draft-btn'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('accept-draft-btn')).toBeInTheDocument();
-    });
-
-    fireEvent.click(screen.getByTestId('accept-draft-btn'));
-
-    await waitFor(() => {
-      expect(mockAccept).toHaveBeenCalledWith(
-        expect.objectContaining({ variables: { draftId: 'draft-1' } }),
-      );
+      expect(screen.getByTestId('regenerate-draft-btn')).toBeInTheDocument();
     });
   });
 
   it('disables generate button when locked', () => {
-    render(<NarrativeDraftPanel sectionId="sec-1" locked />);
+    render(<NarrativeDraftPanel sectionId="sec-1" soaAnalysisId="soa-1" locked />);
 
     expect(screen.getByTestId('generate-draft-btn')).toBeDisabled();
   });

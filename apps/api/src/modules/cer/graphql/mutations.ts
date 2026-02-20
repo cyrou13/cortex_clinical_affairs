@@ -633,3 +633,66 @@ builder.mutationField('lockCer', (t) =>
     },
   }),
 );
+
+// --- Delete CER Version ---
+
+builder.mutationField('deleteCerVersion', (t) =>
+  t.field({
+    type: 'Boolean',
+    args: {
+      cerVersionId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'cer', 'write');
+
+      const cer = await ctx.prisma.cerVersion.findUnique({
+        where: { id: args.cerVersionId },
+      });
+
+      if (!cer) {
+        throw new NotFoundError('CerVersion', args.cerVersionId);
+      }
+
+      await checkProjectMembership(ctx, cer.projectId);
+
+      if (cer.status !== 'DRAFT') {
+        throw new Error('Cannot delete a locked or finalized CER version');
+      }
+
+      // Cascade delete children in transaction
+      await ctx.prisma.$transaction([
+        ctx.prisma.eSignature.deleteMany({ where: { cerVersionId: args.cerVersionId } }),
+        ctx.prisma.crossReference.deleteMany({ where: { cerVersionId: args.cerVersionId } }),
+        ctx.prisma.generatedReport.deleteMany({ where: { cerVersionId: args.cerVersionId } }),
+        ctx.prisma.bibliographyEntry.deleteMany({ where: { cerVersionId: args.cerVersionId } }),
+        ctx.prisma.namedDeviceSearch.deleteMany({ where: { cerVersionId: args.cerVersionId } }),
+        ctx.prisma.pccpAcceptanceCriteria.deleteMany({
+          where: { cerVersionId: args.cerVersionId },
+        }),
+        (ctx.prisma as any).pccpDeviationConfig.deleteMany({
+          where: { cerVersionId: args.cerVersionId },
+        }),
+        ctx.prisma.pccpDeviation.deleteMany({ where: { cerVersionId: args.cerVersionId } }),
+        ctx.prisma.benefitRiskMitigation.deleteMany({ where: { cerVersionId: args.cerVersionId } }),
+        (ctx.prisma as any).benefitRiskAssessment.deleteMany({
+          where: { cerVersionId: args.cerVersionId },
+        }),
+        ctx.prisma.benefitRiskItem.deleteMany({ where: { cerVersionId: args.cerVersionId } }),
+        ctx.prisma.gsprMatrixRow.deleteMany({ where: { cerVersionId: args.cerVersionId } }),
+        ctx.prisma.evaluator.deleteMany({ where: { cerVersionId: args.cerVersionId } }),
+        (ctx.prisma as any).cerSectionDocLink.deleteMany({
+          where: { cerSection: { cerVersionId: args.cerVersionId } },
+        }),
+        (ctx.prisma as any).claimTrace.deleteMany({
+          where: { cerSection: { cerVersionId: args.cerVersionId } },
+        }),
+        ctx.prisma.cerSection.deleteMany({ where: { cerVersionId: args.cerVersionId } }),
+        ctx.prisma.cerUpstreamLink.deleteMany({ where: { cerVersionId: args.cerVersionId } }),
+        ctx.prisma.cerExternalDocument.deleteMany({ where: { cerVersionId: args.cerVersionId } }),
+        ctx.prisma.cerVersion.delete({ where: { id: args.cerVersionId } }),
+      ]);
+
+      return true;
+    },
+  }),
+);

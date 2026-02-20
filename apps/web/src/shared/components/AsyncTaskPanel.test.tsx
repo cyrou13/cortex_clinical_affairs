@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import type { TaskProgressEvent } from '../../stores/task-panel-store';
 
 vi.mock('@apollo/client', () => ({
   gql: (str: TemplateStringsArray) => str[0],
@@ -13,8 +14,8 @@ vi.mock('@apollo/client/react', () => ({
 
 const mockStore = {
   isOpen: false,
-  tasks: [] as import('../../stores/task-panel-store').TaskProgressEvent[],
-  history: [] as import('../../stores/task-panel-store').TaskProgressEvent[],
+  tasks: [] as TaskProgressEvent[],
+  history: [] as TaskProgressEvent[],
   open: vi.fn(),
   close: vi.fn(),
   toggle: vi.fn(),
@@ -33,7 +34,7 @@ vi.mock('../../stores/task-panel-store', () => ({
 vi.mock('../../features/async-tasks/task-display', () => ({
   getTaskDisplay: (type: string) => {
     const map: Record<string, { icon: () => null; name: string }> = {
-      'sls:score-articles': { icon: () => null, name: 'AI Screening' },
+      'sls.score-articles': { icon: () => null, name: 'AI Screening' },
     };
     return map[type] ?? { icon: () => null, name: 'Background Task' };
   },
@@ -86,7 +87,7 @@ describe('AsyncTaskPanel', () => {
     mockStore.tasks = [
       {
         taskId: 'task-1',
-        type: 'sls:score-articles',
+        type: 'sls.score-articles',
         status: 'RUNNING',
         progress: 45,
         total: 100,
@@ -112,7 +113,7 @@ describe('AsyncTaskPanel', () => {
     mockStore.tasks = [
       {
         taskId: 'task-1',
-        type: 'sls:score-articles',
+        type: 'sls.score-articles',
         status: 'RUNNING',
         progress: 60,
         total: 100,
@@ -133,7 +134,7 @@ describe('AsyncTaskPanel', () => {
     mockStore.tasks = [
       {
         taskId: 'task-1',
-        type: 'sls:score-articles',
+        type: 'sls.score-articles',
         status: 'RUNNING',
         progress: 50,
         total: 100,
@@ -168,7 +169,7 @@ describe('AsyncTaskPanel', () => {
     mockStore.history = [
       {
         taskId: 'task-done',
-        type: 'sls:score-articles',
+        type: 'sls.score-articles',
         status: 'COMPLETED',
         progress: 100,
         total: 100,
@@ -215,7 +216,7 @@ describe('AsyncTaskPanel', () => {
     mockStore.history = [
       {
         taskId: 'task-done',
-        type: 'sls:score-articles',
+        type: 'sls.score-articles',
         status: 'COMPLETED',
         progress: 100,
         total: 100,

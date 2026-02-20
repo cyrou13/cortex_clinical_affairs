@@ -8,7 +8,11 @@ interface GeneratePmcfReportResult {
 }
 
 interface TaskEnqueuer {
-  enqueueTask: (type: string, data: Record<string, unknown> | undefined, userId: string) => Promise<{ id: string }>;
+  enqueueTask: (
+    type: string,
+    data: Record<string, unknown> | undefined,
+    userId: string,
+  ) => Promise<{ id: string }>;
 }
 
 export class GeneratePmcfReportUseCase {
@@ -28,7 +32,7 @@ export class GeneratePmcfReportUseCase {
     }
 
     const task = await this.taskService.enqueueTask(
-      'pms:generate-pmcf-report',
+      'pms.generate-pmcf-report',
       { pmsCycleId },
       userId,
     );

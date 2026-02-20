@@ -1,57 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { gql } from '@apollo/client';
 import { Table, Download, Sparkles } from 'lucide-react';
-
-export const GET_EXTRACTION_GRID = gql`
-  query GetExtractionGrid($gridId: String!) {
-    extractionGrid(id: $gridId) {
-      id
-      name
-      columns {
-        id
-        name
-        displayName
-        dataType
-        orderIndex
-      }
-    }
-  }
-`;
-
-export const GET_GRID_CELLS = gql`
-  query GetGridCells($gridId: String!, $offset: Int, $limit: Int) {
-    extractionGridCells(gridId: $gridId, offset: $offset, limit: $limit) {
-      items {
-        id
-        articleId
-        gridColumnId
-        value
-        aiExtractedValue
-        confidenceLevel
-        validationStatus
-      }
-      total
-      offset
-      limit
-    }
-  }
-`;
-
-export const UPDATE_GRID_CELL = gql`
-  mutation UpdateGridCell(
-    $gridId: String!
-    $articleId: String!
-    $columnId: String!
-    $value: String
-  ) {
-    updateGridCell(gridId: $gridId, articleId: $articleId, columnId: $columnId, value: $value) {
-      cellId
-      value
-      validationStatus
-    }
-  }
-`;
+import { GET_GRID_COLUMNS, GET_GRID_CELLS } from '../graphql/queries';
+import { UPDATE_GRID_CELL } from '../graphql/mutations';
 
 interface Column {
   id: string;
@@ -80,19 +31,19 @@ export function ExtractionGridPage({ gridId, soaStatus }: ExtractionGridPageProp
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
 
-  const { data: gridData, loading: gridLoading } = useQuery<any>(GET_EXTRACTION_GRID, {
+  const { data: columnsData, loading: colsLoading } = useQuery<any>(GET_GRID_COLUMNS, {
     variables: { gridId },
   });
 
   const { data: cellsData, loading: cellsLoading } = useQuery<any>(GET_GRID_CELLS, {
-    variables: { gridId, offset: 0, limit: 100 },
+    variables: { gridId },
   });
 
   const [updateCell] = useMutation(UPDATE_GRID_CELL);
 
   const isLocked = soaStatus === 'LOCKED';
 
-  if (gridLoading || cellsLoading) {
+  if (colsLoading || cellsLoading) {
     return (
       <div
         className="py-8 text-center text-sm text-[var(--cortex-text-muted)]"
@@ -103,17 +54,17 @@ export function ExtractionGridPage({ gridId, soaStatus }: ExtractionGridPageProp
     );
   }
 
-  const columns: Column[] = [...(gridData?.extractionGrid?.columns ?? [])].sort(
+  const columns: Column[] = [...(columnsData?.gridColumns ?? [])].sort(
     (a: Column, b: Column) => a.orderIndex - b.orderIndex,
   );
-  const cells: Cell[] = cellsData?.extractionGridCells?.items ?? [];
-  const totalArticles = cellsData?.extractionGridCells?.total ?? 0;
+  const cells: Cell[] = cellsData?.gridCells ?? [];
 
   const articleIds = [...new Set(cells.map((c) => c.articleId))];
+  const totalArticles = articleIds.length;
 
   const getCellValue = (articleId: string, columnId: string) => {
     const cell = cells.find((c) => c.articleId === articleId && c.gridColumnId === columnId);
-    return cell?.value ?? '';
+    return cell?.value ?? cell?.aiExtractedValue ?? '';
   };
 
   const getCellKey = (articleId: string, columnId: string) => `${articleId}-${columnId}`;
@@ -151,7 +102,7 @@ export function ExtractionGridPage({ gridId, soaStatus }: ExtractionGridPageProp
     <div className="space-y-4" data-testid="extraction-grid-page">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Table size={16} className="text-[var(--cortex-primary)]" />
+          <Table size={16} className="text-[var(--cortex-blue-500)]" />
           <h3 className="text-lg font-semibold text-[var(--cortex-text-primary)]">
             Extraction Grid
           </h3>
@@ -171,7 +122,7 @@ export function ExtractionGridPage({ gridId, soaStatus }: ExtractionGridPageProp
           <button
             type="button"
             onClick={handleExport}
-            className="inline-flex items-center gap-1 rounded border border-[var(--cortex-border)] px-3 py-1.5 text-xs hover:bg-[var(--cortex-bg-muted)]"
+            className="inline-flex items-center gap-1 rounded border border-[var(--cortex-border)] px-3 py-1.5 text-xs hover:bg-gray-50"
             data-testid="export-btn"
           >
             <Download size={12} /> Export CSV

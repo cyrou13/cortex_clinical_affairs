@@ -24,11 +24,25 @@ export class ArticleRepository {
         }
         where.publicationDate = dateFilter;
       }
+      if (filter.pdfStatus) {
+        if (filter.pdfStatus === 'NONE') {
+          where.OR = [{ pdfStatus: 'NONE' }, { pdfStatus: null }];
+        } else {
+          where.pdfStatus = filter.pdfStatus;
+        }
+      }
       if (filter.searchText) {
-        where.OR = [
+        // Use AND to combine with potential pdfStatus OR clause
+        const textFilter = [
           { title: { contains: filter.searchText, mode: 'insensitive' } },
           { abstract: { contains: filter.searchText, mode: 'insensitive' } },
         ];
+        if (where.OR) {
+          where.AND = [{ OR: where.OR }, { OR: textFilter }];
+          delete where.OR;
+        } else {
+          where.OR = textFilter;
+        }
       }
     }
 

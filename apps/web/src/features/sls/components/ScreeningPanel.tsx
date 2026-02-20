@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 import { cn } from '../../../shared/utils/cn';
+import { SCREEN_ARTICLE, BULK_SCREEN_ARTICLES } from '../graphql/mutations';
 import { ScreeningFilterTabs } from './ScreeningFilterTabs';
 import { BulkActionsToolbar } from './BulkActionsToolbar';
 import { ArticleDetailPanel } from './ArticleDetailPanel';
@@ -18,15 +19,6 @@ export const GET_SCREENING_ARTICLES = gql`
       aiCategory
       aiExclusionCode
       aiReasoning
-    }
-  }
-`;
-
-export const SCREEN_ARTICLE = gql`
-  mutation ScreenArticle($input: ScreenArticleInput!) {
-    screenArticle(input: $input) {
-      id
-      status
     }
   }
 `;
@@ -86,32 +78,33 @@ export function ScreeningPanel({ sessionId }: ScreeningPanelProps) {
   });
 
   const [screenArticle] = useMutation(SCREEN_ARTICLE);
+  const [bulkScreenArticles] = useMutation(BULK_SCREEN_ARTICLES);
 
   const articles: Article[] = data?.screeningArticles ?? [];
 
   const counts = useMemo(() => {
     const all = articles.length;
-    const likelyRelevant = articles.filter(
-      (a) => a.relevanceScore !== null && a.relevanceScore >= 75,
-    ).length;
-    const uncertain = articles.filter(
-      (a) => a.relevanceScore !== null && a.relevanceScore >= 40 && a.relevanceScore < 75,
-    ).length;
-    const likelyIrrelevant = articles.filter(
-      (a) => a.relevanceScore !== null && a.relevanceScore < 40,
-    ).length;
+    const likelyRelevant = articles.filter((a) => a.aiCategory === 'likely_relevant').length;
+    const uncertain = articles.filter((a) => a.aiCategory === 'uncertain').length;
+    const likelyIrrelevant = articles.filter((a) => a.aiCategory === 'likely_irrelevant').length;
     return { all, likelyRelevant, uncertain, likelyIrrelevant };
   }, [articles]);
 
   const handleInclude = (articleId: string) => {
     void screenArticle({
-      variables: { input: { articleId, decision: 'INCLUDED', reason: 'Relevant' } },
+      variables: { articleId, decision: 'INCLUDED', reason: 'Relevant' },
+      refetchQueries: [
+        { query: GET_SCREENING_ARTICLES, variables: { sessionId, filter: activeTab } },
+      ],
     });
   };
 
   const handleExclude = (articleId: string) => {
     void screenArticle({
-      variables: { input: { articleId, decision: 'EXCLUDED', reason: 'Excluded' } },
+      variables: { articleId, decision: 'EXCLUDED', reason: 'Excluded' },
+      refetchQueries: [
+        { query: GET_SCREENING_ARTICLES, variables: { sessionId, filter: activeTab } },
+      ],
     });
   };
 
@@ -121,8 +114,41 @@ export function ScreeningPanel({ sessionId }: ScreeningPanelProps) {
 
   const handleSkip = (articleId: string) => {
     void screenArticle({
-      variables: { input: { articleId, decision: 'SKIPPED', reason: 'Skipped' } },
+      variables: { articleId, decision: 'SKIPPED', reason: 'Skipped' },
+      refetchQueries: [
+        { query: GET_SCREENING_ARTICLES, variables: { sessionId, filter: activeTab } },
+      ],
     });
+  };
+
+  const handleBulkInclude = () => {
+    if (selectedIds.size === 0) return;
+    void bulkScreenArticles({
+      variables: {
+        sessionId,
+        articleIds: Array.from(selectedIds),
+        decision: 'INCLUDED',
+        reason: 'Bulk include — likely relevant',
+      },
+      refetchQueries: [
+        { query: GET_SCREENING_ARTICLES, variables: { sessionId, filter: activeTab } },
+      ],
+    }).then(() => setSelectedIds(new Set()));
+  };
+
+  const handleBulkExclude = () => {
+    if (selectedIds.size === 0) return;
+    void bulkScreenArticles({
+      variables: {
+        sessionId,
+        articleIds: Array.from(selectedIds),
+        decision: 'EXCLUDED',
+        reason: 'Bulk exclude — likely irrelevant',
+      },
+      refetchQueries: [
+        { query: GET_SCREENING_ARTICLES, variables: { sessionId, filter: activeTab } },
+      ],
+    }).then(() => setSelectedIds(new Set()));
   };
 
   useScreeningKeyboard(
@@ -160,8 +186,8 @@ export function ScreeningPanel({ sessionId }: ScreeningPanelProps) {
         {/* Bulk actions */}
         <BulkActionsToolbar
           selectedCount={selectedIds.size}
-          onIncludeAll={() => {}}
-          onExcludeAll={() => {}}
+          onIncludeAll={handleBulkInclude}
+          onExcludeAll={handleBulkExclude}
           onDeselectAll={() => setSelectedIds(new Set())}
         />
 
@@ -199,12 +225,25 @@ export function ScreeningPanel({ sessionId }: ScreeningPanelProps) {
               <thead>
                 <tr className="border-b border-[var(--cortex-border)] text-left text-xs font-medium text-[var(--cortex-text-muted)]">
                   <th className="w-8 px-2 py-2">
-                    <input type="checkbox" aria-label="Select all" />
+                    <input
+                      type="checkbox"
+                      aria-label="Select all"
+                      checked={articles.length > 0 && selectedIds.size === articles.length}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedIds(new Set(articles.map((a) => a.id)));
+                        } else {
+                          setSelectedIds(new Set());
+                        }
+                      }}
+                    />
                   </th>
                   <th className="px-3 py-2">Title</th>
+                  <th className="w-24 px-3 py-2">Status</th>
                   <th className="px-3 py-2">Abstract</th>
                   <th className="w-20 px-3 py-2">Score</th>
-                  <th className="w-24 px-3 py-2">Status</th>
+                  <th className="w-24 px-3 py-2">Category</th>
+                  <th className="w-44 px-3 py-2">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,6 +272,14 @@ export function ScreeningPanel({ sessionId }: ScreeningPanelProps) {
                     <td className="px-3 py-2 font-medium text-[var(--cortex-text-primary)]">
                       {truncate(article.title, 80)}
                     </td>
+                    <td className="px-3 py-2">
+                      <span
+                        className="text-xs text-[var(--cortex-text-muted)]"
+                        data-testid={`status-label-${article.id}`}
+                      >
+                        {statusLabels[article.status] ?? article.status}
+                      </span>
+                    </td>
                     <td className="px-3 py-2 text-[var(--cortex-text-secondary)]">
                       {truncate(article.abstract, 50)}
                     </td>
@@ -245,17 +292,65 @@ export function ScreeningPanel({ sessionId }: ScreeningPanelProps) {
                           )}
                           data-testid={`score-badge-${article.id}`}
                         >
-                          {Math.round(article.relevanceScore)}
+                          {Math.round(article.relevanceScore)}%
                         </span>
                       )}
                     </td>
                     <td className="px-3 py-2">
                       <span
-                        className="text-xs font-medium"
-                        data-testid={`status-label-${article.id}`}
+                        className={cn(
+                          'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                          article.aiCategory === 'likely_relevant'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : article.aiCategory === 'uncertain'
+                              ? 'bg-orange-100 text-orange-700'
+                              : 'bg-red-100 text-red-700',
+                        )}
+                        data-testid={`category-badge-${article.id}`}
                       >
-                        {statusLabels[article.status] ?? article.status}
+                        {article.aiCategory === 'likely_relevant'
+                          ? 'Relevant'
+                          : article.aiCategory === 'uncertain'
+                            ? 'Uncertain'
+                            : 'Irrelevant'}
                       </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          className="rounded bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleInclude(article.id);
+                          }}
+                          data-testid={`include-btn-${article.id}`}
+                        >
+                          Include
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded bg-red-50 px-2 py-1 text-xs font-medium text-red-700 transition-colors hover:bg-red-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleExclude(article.id);
+                          }}
+                          data-testid={`exclude-btn-${article.id}`}
+                        >
+                          Exclude
+                        </button>
+                        <button
+                          type="button"
+                          className="rounded bg-gray-50 px-2 py-1 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSkip(article.id);
+                          }}
+                          data-testid={`skip-btn-${article.id}`}
+                        >
+                          Skip
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

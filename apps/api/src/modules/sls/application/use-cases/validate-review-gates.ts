@@ -26,13 +26,13 @@ export class ValidateReviewGatesUseCase {
       throw new NotFoundError('SlsSession', sessionId);
     }
 
-    const likelyRelevantPct = thresholds?.likelyRelevantPercentage ?? 0.10;
+    const likelyRelevantPct = thresholds?.likelyRelevantPercentage ?? 0.1;
     const likelyIrrelevantPct = thresholds?.likelyIrrelevantPercentage ?? 0.05;
 
-    // Count articles by status
+    // Count articles by status and aiCategory
     const articles = await this.prisma.article.findMany({
       where: { sessionId },
-      select: { id: true, status: true, relevanceScore: true },
+      select: { id: true, status: true, aiCategory: true },
     });
 
     const totalArticles = articles.length;
@@ -48,23 +48,23 @@ export class ValidateReviewGatesUseCase {
       total: totalArticles,
     };
 
-    // Gate 2: Likely relevant spot-checked
+    // Gate 2: Likely relevant spot-checked (use aiCategory)
     const likelyRelevant = articles.filter(
-      (a: { relevanceScore: number | null }) =>
-        a.relevanceScore !== null && a.relevanceScore >= (session.likelyRelevantThreshold ?? 75),
+      (a: { aiCategory: string | null }) => a.aiCategory === 'likely_relevant',
     );
     const likelyRelevantRequired = Math.ceil(likelyRelevant.length * likelyRelevantPct);
 
     // Count spot-checks for likely relevant
     const likelyRelevantIds = likelyRelevant.map((a: { id: string }) => a.id);
-    const likelyRelevantSpotChecks = likelyRelevantIds.length > 0
-      ? await this.prisma.screeningDecision.count({
-          where: {
-            articleId: { in: likelyRelevantIds },
-            decision: { not: 'SKIPPED' },
-          },
-        })
-      : 0;
+    const likelyRelevantSpotChecks =
+      likelyRelevantIds.length > 0
+        ? await this.prisma.screeningDecision.count({
+            where: {
+              articleId: { in: likelyRelevantIds },
+              decision: { not: 'SKIPPED' },
+            },
+          })
+        : 0;
 
     const likelyRelevantSpotChecked = {
       met: likelyRelevantSpotChecks >= likelyRelevantRequired,
@@ -73,22 +73,22 @@ export class ValidateReviewGatesUseCase {
       total: likelyRelevant.length,
     };
 
-    // Gate 3: Likely irrelevant spot-checked
+    // Gate 3: Likely irrelevant spot-checked (use aiCategory)
     const likelyIrrelevant = articles.filter(
-      (a: { relevanceScore: number | null }) =>
-        a.relevanceScore !== null && a.relevanceScore < (session.uncertainLowerThreshold ?? 40),
+      (a: { aiCategory: string | null }) => a.aiCategory === 'likely_irrelevant',
     );
     const likelyIrrelevantRequired = Math.ceil(likelyIrrelevant.length * likelyIrrelevantPct);
 
     const likelyIrrelevantIds = likelyIrrelevant.map((a: { id: string }) => a.id);
-    const likelyIrrelevantSpotChecks = likelyIrrelevantIds.length > 0
-      ? await this.prisma.screeningDecision.count({
-          where: {
-            articleId: { in: likelyIrrelevantIds },
-            decision: { not: 'SKIPPED' },
-          },
-        })
-      : 0;
+    const likelyIrrelevantSpotChecks =
+      likelyIrrelevantIds.length > 0
+        ? await this.prisma.screeningDecision.count({
+            where: {
+              articleId: { in: likelyIrrelevantIds },
+              decision: { not: 'SKIPPED' },
+            },
+          })
+        : 0;
 
     const likelyIrrelevantSpotChecked = {
       met: likelyIrrelevantSpotChecks >= likelyIrrelevantRequired,
@@ -102,9 +102,7 @@ export class ValidateReviewGatesUseCase {
       likelyRelevantSpotChecked,
       likelyIrrelevantSpotChecked,
       allGatesMet:
-        allArticlesReviewed.met &&
-        likelyRelevantSpotChecked.met &&
-        likelyIrrelevantSpotChecked.met,
+        allArticlesReviewed.met && likelyRelevantSpotChecked.met && likelyIrrelevantSpotChecked.met,
     };
   }
 }

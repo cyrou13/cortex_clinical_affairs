@@ -1,8 +1,13 @@
 import { gql } from '@apollo/client';
 
 export const CREATE_SLS_SESSION = gql`
-  mutation CreateSlsSession($input: CreateSlsSessionInput!) {
-    createSlsSession(input: $input) {
+  mutation CreateSlsSession(
+    $name: String!
+    $type: String!
+    $projectId: String!
+    $scopeFields: JSON
+  ) {
+    createSlsSession(name: $name, type: $type, projectId: $projectId, scopeFields: $scopeFields) {
       id
       name
       type
@@ -12,8 +17,8 @@ export const CREATE_SLS_SESSION = gql`
 `;
 
 export const UPDATE_SLS_SESSION = gql`
-  mutation UpdateSlsSession($id: String!, $input: UpdateSlsSessionInput!) {
-    updateSlsSession(id: $id, input: $input) {
+  mutation UpdateSlsSession($id: String!, $name: String, $scopeFields: JSON) {
+    updateSlsSession(id: $id, name: $name, scopeFields: $scopeFields) {
       id
       name
       scopeFields
@@ -22,22 +27,38 @@ export const UPDATE_SLS_SESSION = gql`
 `;
 
 export const CREATE_QUERY = gql`
-  mutation CreateQuery($sessionId: String!, $name: String!, $queryString: String!) {
-    createQuery(sessionId: $sessionId, name: $name, queryString: $queryString) {
+  mutation CreateQuery(
+    $sessionId: String!
+    $name: String!
+    $queryString: String!
+    $dateFrom: String
+    $dateTo: String
+  ) {
+    createQuery(
+      sessionId: $sessionId
+      name: $name
+      queryString: $queryString
+      dateFrom: $dateFrom
+      dateTo: $dateTo
+    ) {
       id
       name
       queryString
       version
+      dateFrom
+      dateTo
     }
   }
 `;
 
 export const UPDATE_QUERY = gql`
-  mutation UpdateQuery($id: String!, $queryString: String!) {
-    updateQuery(id: $id, queryString: $queryString) {
+  mutation UpdateQuery($id: String!, $queryString: String!, $dateFrom: String, $dateTo: String) {
+    updateQuery(id: $id, queryString: $queryString, dateFrom: $dateFrom, dateTo: $dateTo) {
       id
       queryString
       version
+      dateFrom
+      dateTo
     }
   }
 `;
@@ -60,14 +81,15 @@ export const DELETE_QUERY = gql`
 `;
 
 export const EXECUTE_QUERY = gql`
-  mutation ExecuteQuery($queryId: String!, $databases: [String!]!) {
-    executeQuery(queryId: $queryId, databases: $databases) {
-      id
-      status
+  mutation ExecuteQuery($queryId: String!, $databases: [String!]!, $sessionId: String!) {
+    executeQuery(queryId: $queryId, databases: $databases, sessionId: $sessionId) {
+      taskId
+      executionIds
     }
   }
 `;
 
+// TODO: Backend resolver for cancelExecution does not exist yet — will fail at runtime
 export const CANCEL_EXECUTION = gql`
   mutation CancelExecution($executionId: String!) {
     cancelExecution(executionId: $executionId)
@@ -75,8 +97,18 @@ export const CANCEL_EXECUTION = gql`
 `;
 
 export const IMPORT_ARTICLES = gql`
-  mutation ImportArticles($sessionId: String!, $queryId: String!, $executionId: String!) {
-    importArticles(sessionId: $sessionId, queryId: $queryId, executionId: $executionId) {
+  mutation ImportArticles(
+    $sessionId: String!
+    $queryId: String!
+    $executionId: String!
+    $articles: [JSON]!
+  ) {
+    importArticles(
+      sessionId: $sessionId
+      queryId: $queryId
+      executionId: $executionId
+      articles: $articles
+    ) {
       importedCount
       duplicateCount
       stats {
@@ -114,8 +146,20 @@ export const CANCEL_AI_SCORING = gql`
 `;
 
 export const ADD_EXCLUSION_CODE = gql`
-  mutation AddExclusionCode($sessionId: String!, $code: String!, $label: String!, $shortCode: String!, $description: String) {
-    addExclusionCode(sessionId: $sessionId, code: $code, label: $label, shortCode: $shortCode, description: $description) {
+  mutation AddExclusionCode(
+    $sessionId: String!
+    $code: String!
+    $label: String!
+    $shortCode: String!
+    $description: String
+  ) {
+    addExclusionCode(
+      sessionId: $sessionId
+      code: $code
+      label: $label
+      shortCode: $shortCode
+      description: $description
+    ) {
       id
       code
       label
@@ -150,8 +194,16 @@ export const REORDER_EXCLUSION_CODES = gql`
 `;
 
 export const CONFIGURE_RELEVANCE_THRESHOLDS = gql`
-  mutation ConfigureRelevanceThresholds($sessionId: String!, $likelyRelevantThreshold: Int!, $uncertainLowerThreshold: Int!) {
-    configureRelevanceThresholds(sessionId: $sessionId, likelyRelevantThreshold: $likelyRelevantThreshold, uncertainLowerThreshold: $uncertainLowerThreshold) {
+  mutation ConfigureRelevanceThresholds(
+    $sessionId: String!
+    $likelyRelevantThreshold: Int!
+    $uncertainLowerThreshold: Int!
+  ) {
+    configureRelevanceThresholds(
+      sessionId: $sessionId
+      likelyRelevantThreshold: $likelyRelevantThreshold
+      uncertainLowerThreshold: $uncertainLowerThreshold
+    ) {
       likelyRelevantThreshold
       uncertainLowerThreshold
     }
@@ -169,7 +221,12 @@ export const CREATE_CUSTOM_AI_FILTER = gql`
 `;
 
 export const UPDATE_CUSTOM_AI_FILTER = gql`
-  mutation UpdateCustomAiFilter($id: String!, $name: String, $criterion: String, $isActive: Boolean) {
+  mutation UpdateCustomAiFilter(
+    $id: String!
+    $name: String
+    $criterion: String
+    $isActive: Boolean
+  ) {
     updateCustomAiFilter(id: $id, name: $name, criterion: $criterion, isActive: $isActive) {
       id
       name
@@ -194,8 +251,18 @@ export const LAUNCH_CUSTOM_FILTER_SCORING = gql`
 `;
 
 export const SCREEN_ARTICLE = gql`
-  mutation ScreenArticle($articleId: String!, $decision: String!, $exclusionCodeId: String, $reason: String!) {
-    screenArticle(articleId: $articleId, decision: $decision, exclusionCodeId: $exclusionCodeId, reason: $reason) {
+  mutation ScreenArticle(
+    $articleId: String!
+    $decision: String!
+    $exclusionCodeId: String
+    $reason: String!
+  ) {
+    screenArticle(
+      articleId: $articleId
+      decision: $decision
+      exclusionCodeId: $exclusionCodeId
+      reason: $reason
+    ) {
       id
       status
       relevanceScore
@@ -206,8 +273,20 @@ export const SCREEN_ARTICLE = gql`
 `;
 
 export const BULK_SCREEN_ARTICLES = gql`
-  mutation BulkScreenArticles($sessionId: String!, $articleIds: [String!]!, $decision: String!, $exclusionCodeId: String, $reason: String!) {
-    bulkScreenArticles(sessionId: $sessionId, articleIds: $articleIds, decision: $decision, exclusionCodeId: $exclusionCodeId, reason: $reason) {
+  mutation BulkScreenArticles(
+    $sessionId: String!
+    $articleIds: [String!]!
+    $decision: String!
+    $exclusionCodeId: String
+    $reason: String!
+  ) {
+    bulkScreenArticles(
+      sessionId: $sessionId
+      articleIds: $articleIds
+      decision: $decision
+      exclusionCodeId: $exclusionCodeId
+      reason: $reason
+    ) {
       successCount
       totalRequested
     }
@@ -215,8 +294,20 @@ export const BULK_SCREEN_ARTICLES = gql`
 `;
 
 export const SPOT_CHECK_ARTICLE = gql`
-  mutation SpotCheckArticle($articleId: String!, $agrees: Boolean!, $correctedDecision: String, $exclusionCodeId: String, $reason: String!) {
-    spotCheckArticle(articleId: $articleId, agrees: $agrees, correctedDecision: $correctedDecision, exclusionCodeId: $exclusionCodeId, reason: $reason) {
+  mutation SpotCheckArticle(
+    $articleId: String!
+    $agrees: Boolean!
+    $correctedDecision: String
+    $exclusionCodeId: String
+    $reason: String!
+  ) {
+    spotCheckArticle(
+      articleId: $articleId
+      agrees: $agrees
+      correctedDecision: $correctedDecision
+      exclusionCodeId: $exclusionCodeId
+      reason: $reason
+    ) {
       action
       articleId
       newStatus
@@ -256,8 +347,26 @@ export const RESOLVE_PDF_MISMATCH = gql`
 `;
 
 export const ADD_MANUAL_ARTICLE = gql`
-  mutation AddManualArticle($sessionId: String!, $title: String!, $authors: JSON!, $year: Int, $journal: String, $doi: String, $pmid: String, $pdfStorageKey: String!) {
-    addManualArticle(sessionId: $sessionId, title: $title, authors: $authors, year: $year, journal: $journal, doi: $doi, pmid: $pmid, pdfStorageKey: $pdfStorageKey) {
+  mutation AddManualArticle(
+    $sessionId: String!
+    $title: String!
+    $authors: JSON!
+    $year: Int
+    $journal: String
+    $doi: String
+    $pmid: String
+    $pdfStorageKey: String!
+  ) {
+    addManualArticle(
+      sessionId: $sessionId
+      title: $title
+      authors: $authors
+      year: $year
+      journal: $journal
+      doi: $doi
+      pmid: $pmid
+      pdfStorageKey: $pdfStorageKey
+    ) {
       articleId
       title
       status
@@ -299,5 +408,21 @@ export const BULK_APPROVE_MINED_REFERENCES = gql`
       approvedCount
       totalRequested
     }
+  }
+`;
+
+export const GENERATE_QUERY_FROM_TEXT = gql`
+  mutation GenerateQueryFromText($sessionId: String!, $description: String!) {
+    generateQueryFromText(sessionId: $sessionId, description: $description) {
+      queryString
+      suggestedDateFrom
+      suggestedDateTo
+    }
+  }
+`;
+
+export const DELETE_SLS_SESSION = gql`
+  mutation DeleteSlsSession($sessionId: String!) {
+    deleteSlsSession(sessionId: $sessionId)
   }
 `;

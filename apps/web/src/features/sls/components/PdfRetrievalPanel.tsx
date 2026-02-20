@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { gql } from '@apollo/client';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, Loader2, FileText, FileX, AlertTriangle } from 'lucide-react';
+import { cn } from '../../../shared/utils/cn';
 
 export const LAUNCH_PDF_RETRIEVAL = gql`
   mutation LaunchPdfRetrieval($sessionId: String!) {
@@ -15,10 +16,11 @@ export const LAUNCH_PDF_RETRIEVAL = gql`
 export const GET_PDF_RETRIEVAL_STATS = gql`
   query GetPdfRetrievalStats($sessionId: String!) {
     pdfRetrievalStats(sessionId: $sessionId) {
-      total
-      found
-      notFound
+      totalIncluded
+      pdfFound
+      pdfNotFound
       mismatches
+      verified
       retrieving
     }
   }
@@ -26,10 +28,12 @@ export const GET_PDF_RETRIEVAL_STATS = gql`
 
 interface PdfRetrievalPanelProps {
   sessionId: string;
+  onFilterByPdfStatus?: (pdfStatus: string | undefined) => void;
 }
 
-export function PdfRetrievalPanel({ sessionId }: PdfRetrievalPanelProps) {
+export function PdfRetrievalPanel({ sessionId, onFilterByPdfStatus }: PdfRetrievalPanelProps) {
   const [taskId, setTaskId] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string | undefined>(undefined);
 
   const { data: statsData } = useQuery<any>(GET_PDF_RETRIEVAL_STATS, {
     variables: { sessionId },
@@ -39,13 +43,20 @@ export function PdfRetrievalPanel({ sessionId }: PdfRetrievalPanelProps) {
 
   const stats = statsData?.pdfRetrievalStats;
   const isRetrieving = stats?.retrieving > 0 || !!taskId;
-  const percentFound = stats?.total > 0 ? Math.round((stats.found / stats.total) * 100) : 0;
+  const percentFound =
+    stats?.totalIncluded > 0 ? Math.round((stats.pdfFound / stats.totalIncluded) * 100) : 0;
 
   const handleLaunch = async () => {
     const result = await launchRetrieval({ variables: { sessionId } });
     if (result.data?.launchPdfRetrieval?.taskId) {
       setTaskId(result.data.launchPdfRetrieval.taskId);
     }
+  };
+
+  const handleFilter = (pdfStatus: string) => {
+    const newFilter = activeFilter === pdfStatus ? undefined : pdfStatus;
+    setActiveFilter(newFilter);
+    onFilterByPdfStatus?.(newFilter);
   };
 
   return (
@@ -78,42 +89,94 @@ export function PdfRetrievalPanel({ sessionId }: PdfRetrievalPanelProps) {
             />
           </div>
 
-          {/* Metrics */}
-          <div className="grid grid-cols-4 gap-3">
+          {/* Clickable stat cards */}
+          <div className="grid grid-cols-5 gap-3">
             <div
               className="rounded border border-[var(--cortex-border)] p-3 text-center"
               data-testid="stat-total"
             >
               <div className="text-xl font-bold text-[var(--cortex-text-primary)]">
-                {stats.total}
+                {stats.totalIncluded}
               </div>
               <div className="text-xs text-[var(--cortex-text-muted)]">Total</div>
             </div>
-            <div
-              className="rounded border border-emerald-200 bg-emerald-50 p-3 text-center"
+            <button
+              type="button"
+              onClick={() => handleFilter('FOUND')}
+              className={cn(
+                'rounded border p-3 text-center transition-all hover:shadow-md',
+                activeFilter === 'FOUND'
+                  ? 'border-emerald-500 bg-emerald-100 ring-2 ring-emerald-300'
+                  : 'border-emerald-200 bg-emerald-50',
+              )}
               data-testid="stat-found"
             >
-              <div className="text-xl font-bold text-emerald-600">{stats.found}</div>
+              <div className="flex items-center justify-center gap-1">
+                <FileText size={14} className="text-emerald-600" />
+                <span className="text-xl font-bold text-emerald-600">{stats.pdfFound}</span>
+              </div>
               <div className="text-xs text-emerald-600">Found</div>
-            </div>
-            <div
-              className="rounded border border-gray-200 bg-gray-50 p-3 text-center"
+            </button>
+            <button
+              type="button"
+              onClick={() => handleFilter('NOT_FOUND')}
+              className={cn(
+                'rounded border p-3 text-center transition-all hover:shadow-md',
+                activeFilter === 'NOT_FOUND'
+                  ? 'border-red-500 bg-red-100 ring-2 ring-red-300'
+                  : 'border-gray-200 bg-gray-50',
+              )}
               data-testid="stat-not-found"
             >
-              <div className="text-xl font-bold text-gray-500">{stats.notFound}</div>
-              <div className="text-xs text-gray-500">Not Found</div>
-            </div>
-            <div
-              className="rounded border border-orange-200 bg-orange-50 p-3 text-center"
+              <div className="flex items-center justify-center gap-1">
+                <FileX size={14} className="text-red-500" />
+                <span className="text-xl font-bold text-red-500">{stats.pdfNotFound}</span>
+              </div>
+              <div className="text-xs text-red-500">Not Found</div>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleFilter('MISMATCH')}
+              className={cn(
+                'rounded border p-3 text-center transition-all hover:shadow-md',
+                activeFilter === 'MISMATCH'
+                  ? 'border-orange-500 bg-orange-100 ring-2 ring-orange-300'
+                  : 'border-orange-200 bg-orange-50',
+              )}
               data-testid="stat-mismatches"
             >
-              <div className="text-xl font-bold text-orange-600">{stats.mismatches}</div>
+              <div className="flex items-center justify-center gap-1">
+                <AlertTriangle size={14} className="text-orange-600" />
+                <span className="text-xl font-bold text-orange-600">{stats.mismatches}</span>
+              </div>
               <div className="text-xs text-orange-600">Mismatches</div>
+            </button>
+            <div
+              className="rounded border border-blue-200 bg-blue-50 p-3 text-center"
+              data-testid="stat-verified"
+            >
+              <div className="text-xl font-bold text-blue-600">{stats.verified}</div>
+              <div className="text-xs text-blue-600">Verified</div>
             </div>
           </div>
 
-          <div className="text-sm text-[var(--cortex-text-muted)]" data-testid="pdf-percent">
-            {percentFound}% PDFs retrieved
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[var(--cortex-text-muted)]" data-testid="pdf-percent">
+              {percentFound}% PDFs retrieved
+            </span>
+            {activeFilter && (
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveFilter(undefined);
+                  onFilterByPdfStatus?.(undefined);
+                }}
+                className="text-xs text-blue-600 underline"
+                data-testid="clear-pdf-filter"
+              >
+                Clear filter
+              </button>
+            )}
           </div>
         </div>
       )}

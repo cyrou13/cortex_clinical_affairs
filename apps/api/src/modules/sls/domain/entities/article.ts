@@ -2,13 +2,13 @@ import type { ArticleStatusEnum } from '@cortex/shared';
 
 /**
  * Valid article lifecycle state transitions:
- *   PENDING -> SCORED
+ *   PENDING -> SCORED | INCLUDED | EXCLUDED | SKIPPED
  *   SCORED -> INCLUDED | EXCLUDED | SKIPPED
  *   INCLUDED -> FULL_TEXT_REVIEW
  *   FULL_TEXT_REVIEW -> FINAL_INCLUDED | FINAL_EXCLUDED
  */
 const VALID_TRANSITIONS: Record<string, string[]> = {
-  PENDING: ['SCORED'],
+  PENDING: ['SCORED', 'INCLUDED', 'EXCLUDED', 'SKIPPED'],
   SCORED: ['INCLUDED', 'EXCLUDED', 'SKIPPED'],
   INCLUDED: ['FULL_TEXT_REVIEW'],
   FULL_TEXT_REVIEW: ['FINAL_INCLUDED', 'FINAL_EXCLUDED'],
@@ -61,9 +61,7 @@ export function transitionStatus(
   _reason?: string,
 ): { status: string; updatedAt: Date } {
   if (!validateTransition(article.status as ArticleStatusEnum, newStatus)) {
-    throw new Error(
-      `Invalid status transition from ${article.status} to ${newStatus}`,
-    );
+    throw new Error(`Invalid status transition from ${article.status} to ${newStatus}`);
   }
 
   return {

@@ -1,10 +1,20 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useQuery } from '@apollo/client/react';
-import { ChevronUp, ChevronDown, Search } from 'lucide-react';
+import {
+  ChevronUp,
+  ChevronDown,
+  Search,
+  FileText,
+  FileX,
+  FileQuestion,
+  Loader2,
+} from 'lucide-react';
 import { cn } from '../../../shared/utils/cn';
 import { GET_ARTICLES } from '../graphql/queries';
 
 type ArticleStatus = 'PENDING' | 'SCORED' | 'INCLUDED' | 'EXCLUDED' | 'FULL_TEXT_REVIEW';
+
+type PdfStatus = 'FOUND' | 'NOT_FOUND' | 'RETRIEVING' | 'MISMATCH' | 'NONE' | null;
 
 interface Article {
   id: string;
@@ -16,6 +26,7 @@ interface Article {
   journal: string | null;
   sourceDatabase: string;
   status: ArticleStatus;
+  pdfStatus: PdfStatus;
   relevanceScore: number | null;
   aiCategory: string | null;
   aiExclusionCode: string | null;
@@ -33,6 +44,7 @@ interface ArticlesResponse {
 export interface ArticleFilter {
   search?: string;
   status?: string;
+  pdfStatus?: string;
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
 }
@@ -71,15 +83,17 @@ const statusLabels: Record<ArticleStatus, string> = {
 };
 
 const databaseBadgeStyles: Record<string, string> = {
-  pubmed: 'bg-blue-100 text-blue-700',
-  cochrane: 'bg-purple-100 text-purple-700',
-  embase: 'bg-teal-100 text-teal-700',
+  PUBMED: 'bg-blue-100 text-blue-700',
+  PMC: 'bg-indigo-100 text-indigo-700',
+  GOOGLE_SCHOLAR: 'bg-amber-100 text-amber-700',
+  CLINICAL_TRIALS: 'bg-teal-100 text-teal-700',
 };
 
 const databaseLabels: Record<string, string> = {
-  pubmed: 'PubMed',
-  cochrane: 'Cochrane',
-  embase: 'Embase',
+  PUBMED: 'PubMed',
+  PMC: 'PubMed Central',
+  GOOGLE_SCHOLAR: 'Google Scholar',
+  CLINICAL_TRIALS: 'ClinicalTrials.gov',
 };
 
 const scoreBadgeStyles = (score: number | null): string => {
@@ -100,6 +114,14 @@ const categoryBadgeStyles: Record<string, string> = {
   uncertain: 'bg-orange-100 text-orange-700',
   likely_irrelevant: 'bg-red-100 text-red-700',
 };
+
+const pdfStatusConfig: Record<string, { icon: typeof FileText; className: string; label: string }> =
+  {
+    FOUND: { icon: FileText, className: 'text-emerald-600', label: 'PDF' },
+    NOT_FOUND: { icon: FileX, className: 'text-red-500', label: 'Missing' },
+    RETRIEVING: { icon: Loader2, className: 'text-blue-500 animate-spin', label: 'Retrieving' },
+    MISMATCH: { icon: FileQuestion, className: 'text-orange-500', label: 'Mismatch' },
+  };
 
 type SortField = 'title' | 'authors' | 'year' | 'sourceDatabase' | 'status';
 
@@ -134,6 +156,7 @@ export function ArticleTable({
       filter: {
         search: filter.search,
         status: filter.status,
+        pdfStatus: filter.pdfStatus,
       },
       offset: 0,
       limit: PAGE_SIZE,
@@ -152,12 +175,27 @@ export function ArticleTable({
     if (scrollHeight - scrollTop - clientHeight < 200) {
       fetchMore({
         variables: {
+          sessionId,
+          filter: {
+            search: filter.search,
+            status: filter.status,
+            pdfStatus: filter.pdfStatus,
+          },
           offset: articles.length,
           limit: PAGE_SIZE,
         },
+        updateQuery: (prev, { fetchMoreResult }) => {
+          if (!fetchMoreResult) return prev;
+          return {
+            articles: {
+              ...fetchMoreResult.articles,
+              items: [...prev.articles.items, ...fetchMoreResult.articles.items],
+            },
+          };
+        },
       });
     }
-  }, [loading, hasMore, articles.length, fetchMore]);
+  }, [loading, hasMore, articles.length, fetchMore, sessionId, filter]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -167,8 +205,7 @@ export function ArticleTable({
   }, [handleScroll]);
 
   function handleSort(field: SortField) {
-    const newOrder =
-      filter.sortBy === field && filter.sortOrder === 'ASC' ? 'DESC' : 'ASC';
+    const newOrder = filter.sortBy === field && filter.sortOrder === 'ASC' ? 'DESC' : 'ASC';
     onFilterChange({ ...filter, sortBy: field, sortOrder: newOrder });
   }
 
@@ -251,7 +288,10 @@ export function ArticleTable({
 
       {/* Selection count */}
       {selectedIds.size > 0 && (
-        <div className="mb-2 text-sm text-[var(--cortex-text-secondary)]" data-testid="selection-count">
+        <div
+          className="mb-2 text-sm text-[var(--cortex-text-secondary)]"
+          data-testid="selection-count"
+        >
           {selectedIds.size} article{selectedIds.size !== 1 ? 's' : ''} selected
         </div>
       )}
@@ -288,6 +328,12 @@ export function ArticleTable({
                   </div>
                 </th>
               ))}
+              <th
+                className="px-3 py-3 text-xs font-medium uppercase tracking-wider text-[var(--cortex-text-muted)]"
+                data-testid="column-header-pdf"
+              >
+                PDF
+              </th>
               {hasAiScores && (
                 <>
                   <th
@@ -315,7 +361,10 @@ export function ArticleTable({
           <tbody className="divide-y divide-gray-100 bg-white">
             {loading && articles.length === 0 && (
               <tr>
-                <td colSpan={hasAiScores ? 9 : 6} className="px-3 py-8 text-center text-sm text-[var(--cortex-text-muted)]">
+                <td
+                  colSpan={hasAiScores ? 10 : 7}
+                  className="px-3 py-8 text-center text-sm text-[var(--cortex-text-muted)]"
+                >
                   Loading articles...
                 </td>
               </tr>
@@ -324,7 +373,7 @@ export function ArticleTable({
             {!loading && articles.length === 0 && (
               <tr>
                 <td
-                  colSpan={hasAiScores ? 9 : 6}
+                  colSpan={hasAiScores ? 10 : 7}
                   className="px-3 py-8 text-center text-sm text-[var(--cortex-text-muted)]"
                   data-testid="empty-articles"
                 >
@@ -337,7 +386,8 @@ export function ArticleTable({
               const accentColor = statusAccentColors[article.status] ?? 'bg-gray-400';
               const badgeStyle = statusBadgeStyles[article.status] ?? 'bg-gray-100 text-gray-600';
               const label = statusLabels[article.status] ?? article.status;
-              const dbStyle = databaseBadgeStyles[article.sourceDatabase] ?? 'bg-gray-100 text-gray-600';
+              const dbStyle =
+                databaseBadgeStyles[article.sourceDatabase] ?? 'bg-gray-100 text-gray-600';
               const dbLabel = databaseLabels[article.sourceDatabase] ?? article.sourceDatabase;
 
               return (
@@ -402,6 +452,23 @@ export function ArticleTable({
                       {label}
                     </span>
                   </td>
+                  <td className="px-3 py-3">
+                    {(() => {
+                      const cfg = pdfStatusConfig[article.pdfStatus ?? ''];
+                      if (!cfg) return <span className="text-xs text-gray-400">—</span>;
+                      const Icon = cfg.icon;
+                      return (
+                        <span
+                          className={cn('inline-flex items-center gap-1 text-xs', cfg.className)}
+                          title={cfg.label}
+                          data-testid={`pdf-status-${article.id}`}
+                        >
+                          <Icon size={14} />
+                          {cfg.label}
+                        </span>
+                      );
+                    })()}
+                  </td>
                   {hasAiScores && (
                     <>
                       <td className="px-3 py-3">
@@ -422,7 +489,8 @@ export function ArticleTable({
                           <span
                             className={cn(
                               'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
-                              categoryBadgeStyles[article.aiCategory] ?? 'bg-gray-100 text-gray-600',
+                              categoryBadgeStyles[article.aiCategory] ??
+                                'bg-gray-100 text-gray-600',
                             )}
                             data-testid={`ai-category-badge-${article.id}`}
                           >
@@ -430,7 +498,10 @@ export function ArticleTable({
                           </span>
                         )}
                       </td>
-                      <td className="px-3 py-3 text-xs text-[var(--cortex-text-secondary)]" data-testid={`ai-exclusion-code-${article.id}`}>
+                      <td
+                        className="px-3 py-3 text-xs text-[var(--cortex-text-secondary)]"
+                        data-testid={`ai-exclusion-code-${article.id}`}
+                      >
                         {article.aiExclusionCode ?? ''}
                       </td>
                     </>
@@ -441,7 +512,11 @@ export function ArticleTable({
 
             {loading && articles.length > 0 && (
               <tr>
-                <td colSpan={hasAiScores ? 9 : 6} className="px-3 py-4 text-center text-sm text-[var(--cortex-text-muted)]" data-testid="loading-more">
+                <td
+                  colSpan={hasAiScores ? 10 : 7}
+                  className="px-3 py-4 text-center text-sm text-[var(--cortex-text-muted)]"
+                  data-testid="loading-more"
+                >
                   Loading more articles...
                 </td>
               </tr>
@@ -451,7 +526,10 @@ export function ArticleTable({
       </div>
 
       {/* Footer */}
-      <div className="mt-2 flex items-center justify-between text-xs text-[var(--cortex-text-muted)]" data-testid="table-footer">
+      <div
+        className="mt-2 flex items-center justify-between text-xs text-[var(--cortex-text-muted)]"
+        data-testid="table-footer"
+      >
         <span>
           Showing {articles.length} of {total} articles
         </span>

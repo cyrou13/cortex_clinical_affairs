@@ -8,20 +8,24 @@ function makePrisma(overrides?: {
 }) {
   return {
     cerVersion: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.cerVersion !== undefined
-          ? overrides.cerVersion
-          : { id: 'cer-1', status: 'DRAFT' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.cerVersion !== undefined
+            ? overrides.cerVersion
+            : { id: 'cer-1', status: 'DRAFT' },
+        ),
     },
     cerUpstreamLink: {
-      findMany: vi.fn().mockResolvedValue(
-        overrides?.upstreamLinks ?? [
-          { moduleType: 'SLS' },
-          { moduleType: 'SOA' },
-          { moduleType: 'VALIDATION' },
-        ],
-      ),
+      findMany: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.upstreamLinks ?? [
+            { moduleType: 'SLS' },
+            { moduleType: 'SOA' },
+            { moduleType: 'VALIDATION' },
+          ],
+        ),
     },
     cerSection: {
       count: vi.fn().mockResolvedValue(overrides?.existingSections ?? 0),
@@ -67,9 +71,9 @@ describe('AssembleSectionsUseCase', () => {
     await useCase.execute({ cerVersionId: 'cer-1', userId: 'user-1' });
 
     expect(enqueuer.enqueue).toHaveBeenCalledWith(
-      'cer:draft-section',
+      'cer.draft-section',
       expect.objectContaining({
-        type: 'cer:draft-section',
+        type: 'cer.draft-section',
         metadata: expect.objectContaining({
           cerVersionId: 'cer-1',
           sectionNumber: '1',
@@ -83,9 +87,9 @@ describe('AssembleSectionsUseCase', () => {
     const enqueuer = makeJobEnqueuer();
     const useCase = new AssembleSectionsUseCase(prisma, enqueuer);
 
-    await expect(
-      useCase.execute({ cerVersionId: 'missing', userId: 'user-1' }),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute({ cerVersionId: 'missing', userId: 'user-1' })).rejects.toThrow(
+      'not found',
+    );
   });
 
   it('throws when CER version is locked', async () => {
@@ -93,9 +97,9 @@ describe('AssembleSectionsUseCase', () => {
     const enqueuer = makeJobEnqueuer();
     const useCase = new AssembleSectionsUseCase(prisma, enqueuer);
 
-    await expect(
-      useCase.execute({ cerVersionId: 'cer-1', userId: 'user-1' }),
-    ).rejects.toThrow('locked');
+    await expect(useCase.execute({ cerVersionId: 'cer-1', userId: 'user-1' })).rejects.toThrow(
+      'locked',
+    );
   });
 
   it('throws when no upstream modules are linked', async () => {
@@ -103,9 +107,9 @@ describe('AssembleSectionsUseCase', () => {
     const enqueuer = makeJobEnqueuer();
     const useCase = new AssembleSectionsUseCase(prisma, enqueuer);
 
-    await expect(
-      useCase.execute({ cerVersionId: 'cer-1', userId: 'user-1' }),
-    ).rejects.toThrow('upstream modules');
+    await expect(useCase.execute({ cerVersionId: 'cer-1', userId: 'user-1' })).rejects.toThrow(
+      'upstream modules',
+    );
   });
 
   it('throws when sections already exist', async () => {
@@ -113,9 +117,9 @@ describe('AssembleSectionsUseCase', () => {
     const enqueuer = makeJobEnqueuer();
     const useCase = new AssembleSectionsUseCase(prisma, enqueuer);
 
-    await expect(
-      useCase.execute({ cerVersionId: 'cer-1', userId: 'user-1' }),
-    ).rejects.toThrow('already been assembled');
+    await expect(useCase.execute({ cerVersionId: 'cer-1', userId: 'user-1' })).rejects.toThrow(
+      'already been assembled',
+    );
   });
 
   it('creates sections with correct order indices', async () => {

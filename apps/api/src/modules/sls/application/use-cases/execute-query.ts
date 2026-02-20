@@ -1,4 +1,4 @@
-import type { PrismaClient, Prisma } from '@prisma/client';
+import type { PrismaClient } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import { ExecuteQueryInput, generateId } from '@cortex/shared';
 import { NotFoundError, ValidationError } from '../../../../shared/errors/index.js';
@@ -67,13 +67,15 @@ export class ExecuteQueryUseCase {
 
     // Enqueue BullMQ job via TaskService
     const task = await this.taskService.enqueueTask(
-      'sls:execute-query',
+      'sls.execute-query',
       {
         queryId,
         databases,
         sessionId,
         executionIds,
         queryString: query.queryString,
+        dateFrom: query.dateFrom?.toISOString() ?? null,
+        dateTo: query.dateTo?.toISOString() ?? null,
       },
       userId,
     );

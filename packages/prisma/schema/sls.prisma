@@ -51,16 +51,18 @@ model SlsSession {
 }
 
 model SlsQuery {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   sessionId     String
   name          String
   queryString   String
-  version       Int      @default(1)
-  isActive      Boolean  @default(true)
+  version       Int       @default(1)
+  isActive      Boolean   @default(true)
   parentQueryId String?
+  dateFrom      DateTime?
+  dateTo        DateTime?
   createdById   String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   session      SlsSession         @relation(fields: [sessionId], references: [id])
   executions   QueryExecution[]

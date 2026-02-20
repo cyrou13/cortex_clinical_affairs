@@ -1,16 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-
-vi.mock('@apollo/client', () => ({
-  gql: (str: TemplateStringsArray) => str[0],
-}));
-
-const mockUseQuery = vi.fn();
-
-vi.mock('@apollo/client/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-}));
-
+import { screen, fireEvent } from '@testing-library/react';
+import { renderWithApollo, type MockedResponse } from '../../../test-utils/apollo-wrapper';
+import { GET_EXCLUSION_CODES } from '../graphql/queries';
 import { ExclusionCodeSelector } from './ExclusionCodeSelector';
 
 const mockCodes = [
@@ -43,6 +34,20 @@ const mockCodes = [
   },
 ];
 
+function buildMocks(sessionId = 'sess-1'): MockedResponse[] {
+  return [
+    {
+      request: {
+        query: GET_EXCLUSION_CODES,
+        variables: { sessionId },
+      },
+      result: {
+        data: { exclusionCodes: mockCodes },
+      },
+    },
+  ];
+}
+
 describe('ExclusionCodeSelector', () => {
   const defaultProps = {
     sessionId: 'sess-1',
@@ -52,39 +57,37 @@ describe('ExclusionCodeSelector', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseQuery.mockReturnValue({
-      data: { exclusionCodes: mockCodes },
-      loading: false,
-    });
   });
 
-  it('renders the selector', () => {
-    render(<ExclusionCodeSelector {...defaultProps} />);
+  it('renders the selector', async () => {
+    renderWithApollo(<ExclusionCodeSelector {...defaultProps} />, buildMocks());
     expect(screen.getByTestId('exclusion-code-selector')).toBeInTheDocument();
     expect(screen.getByTestId('exclusion-code-select')).toBeInTheDocument();
   });
 
-  it('shows the default empty option', () => {
-    render(<ExclusionCodeSelector {...defaultProps} />);
-    expect(screen.getByText('-- No exclusion code --')).toBeInTheDocument();
+  it('shows the default empty option', async () => {
+    renderWithApollo(<ExclusionCodeSelector {...defaultProps} />, buildMocks());
+    await screen.findByText('-- No exclusion code --');
   });
 
-  it('only shows visible (non-hidden) codes', () => {
-    render(<ExclusionCodeSelector {...defaultProps} />);
+  it('only shows visible (non-hidden) codes', async () => {
+    renderWithApollo(<ExclusionCodeSelector {...defaultProps} />, buildMocks());
     // ec-1 and ec-2 are visible, ec-3 is hidden
-    expect(screen.getByTestId('option-ec-1')).toBeInTheDocument();
+    await screen.findByTestId('option-ec-1');
     expect(screen.getByTestId('option-ec-2')).toBeInTheDocument();
     expect(screen.queryByTestId('option-ec-3')).not.toBeInTheDocument();
   });
 
-  it('shows shortCode + label format', () => {
-    render(<ExclusionCodeSelector {...defaultProps} />);
+  it('shows shortCode + label format', async () => {
+    renderWithApollo(<ExclusionCodeSelector {...defaultProps} />, buildMocks());
+    await screen.findByTestId('option-ec-1');
     expect(screen.getByTestId('option-ec-1')).toHaveTextContent('E1 - Wrong population');
     expect(screen.getByTestId('option-ec-2')).toHaveTextContent('E2 - Wrong intervention');
   });
 
-  it('sorts options by displayOrder', () => {
-    render(<ExclusionCodeSelector {...defaultProps} />);
+  it('sorts options by displayOrder', async () => {
+    renderWithApollo(<ExclusionCodeSelector {...defaultProps} />, buildMocks());
+    await screen.findByTestId('option-ec-1');
     const select = screen.getByTestId('exclusion-code-select');
     const options = select.querySelectorAll('option');
     // First option is the empty one, then sorted by displayOrder
@@ -93,9 +96,10 @@ describe('ExclusionCodeSelector', () => {
     expect(options[2]).toHaveTextContent('E1 - Wrong population');
   });
 
-  it('calls onChange with code id when selected', () => {
+  it('calls onChange with code id when selected', async () => {
     const onChange = vi.fn();
-    render(<ExclusionCodeSelector {...defaultProps} onChange={onChange} />);
+    renderWithApollo(<ExclusionCodeSelector {...defaultProps} onChange={onChange} />, buildMocks());
+    await screen.findByTestId('option-ec-1');
 
     fireEvent.change(screen.getByTestId('exclusion-code-select'), {
       target: { value: 'ec-1' },
@@ -104,9 +108,13 @@ describe('ExclusionCodeSelector', () => {
     expect(onChange).toHaveBeenCalledWith('ec-1');
   });
 
-  it('calls onChange with null when empty option is selected', () => {
+  it('calls onChange with null when empty option is selected', async () => {
     const onChange = vi.fn();
-    render(<ExclusionCodeSelector {...defaultProps} value="ec-1" onChange={onChange} />);
+    renderWithApollo(
+      <ExclusionCodeSelector {...defaultProps} value="ec-1" onChange={onChange} />,
+      buildMocks(),
+    );
+    await screen.findByTestId('option-ec-1');
 
     fireEvent.change(screen.getByTestId('exclusion-code-select'), {
       target: { value: '' },
@@ -116,29 +124,39 @@ describe('ExclusionCodeSelector', () => {
   });
 
   it('shows loading state with disabled select', () => {
-    mockUseQuery.mockReturnValue({ data: null, loading: true });
-    render(<ExclusionCodeSelector {...defaultProps} />);
+    // No mocks = query never resolves = loading state
+    renderWithApollo(<ExclusionCodeSelector {...defaultProps} />, []);
     expect(screen.getByTestId('exclusion-code-select')).toBeDisabled();
   });
 
-  it('reflects the current value', () => {
-    render(<ExclusionCodeSelector {...defaultProps} value="ec-1" />);
+  it('reflects the current value', async () => {
+    renderWithApollo(<ExclusionCodeSelector {...defaultProps} value="ec-1" />, buildMocks());
+    await screen.findByTestId('option-ec-1');
     expect(screen.getByTestId('exclusion-code-select')).toHaveValue('ec-1');
   });
 
   it('has an accessible aria-label', () => {
-    render(<ExclusionCodeSelector {...defaultProps} />);
+    renderWithApollo(<ExclusionCodeSelector {...defaultProps} />, buildMocks());
     expect(screen.getByTestId('exclusion-code-select')).toHaveAttribute(
       'aria-label',
       'Select exclusion code',
     );
   });
 
-  it('passes sessionId to useQuery', () => {
-    render(<ExclusionCodeSelector {...defaultProps} sessionId="sess-42" />);
-    expect(mockUseQuery).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ variables: { sessionId: 'sess-42' } }),
-    );
+  it('fetches exclusion codes for the given sessionId', async () => {
+    const mocks: MockedResponse[] = [
+      {
+        request: {
+          query: GET_EXCLUSION_CODES,
+          variables: { sessionId: 'sess-42' },
+        },
+        result: {
+          data: { exclusionCodes: mockCodes },
+        },
+      },
+    ];
+    renderWithApollo(<ExclusionCodeSelector {...defaultProps} sessionId="sess-42" />, mocks);
+    // If the query variables are wrong, MockedProvider won't resolve data
+    await screen.findByTestId('option-ec-1');
   });
 });

@@ -104,7 +104,7 @@ describe('DraftNarrativeUseCase', () => {
     });
 
     expect(mockEnqueue).toHaveBeenCalledWith(
-      'soa:draft-narrative',
+      'soa.draft-narrative',
       expect.objectContaining({
         taskId: 'task-1',
         sectionId: SECTION_ID,

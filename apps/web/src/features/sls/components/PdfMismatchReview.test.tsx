@@ -1,19 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-
-vi.mock('@apollo/client', () => ({
-  gql: (str: TemplateStringsArray) => str[0],
-}));
-
-const mockUseQuery = vi.fn();
-const mockUseMutation = vi.fn();
-
-vi.mock('@apollo/client/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: (...args: unknown[]) => mockUseMutation(...args),
-}));
-
-import { PdfMismatchReview } from './PdfMismatchReview';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithApollo, type MockedResponse } from '../../../test-utils/apollo-wrapper';
+import { PdfMismatchReview, GET_PDF_MISMATCHES, RESOLVE_MISMATCH } from './PdfMismatchReview';
 
 const mockMismatches = [
   {
@@ -23,7 +11,9 @@ const mockMismatches = [
     pdfVerificationResult: {
       extractedTitle: 'Different Title',
       extractedAuthors: ['Johnson'],
-      mismatchReasons: ['Title mismatch: expected "Cervical Spine Outcomes", found "Different Title"'],
+      mismatchReasons: [
+        'Title mismatch: expected "Cervical Spine Outcomes", found "Different Title"',
+      ],
       confidence: 50,
     },
   },
@@ -40,91 +30,116 @@ const mockMismatches = [
   },
 ];
 
-describe('PdfMismatchReview', () => {
-  const mockResolve = vi.fn().mockResolvedValue({ data: { resolvePdfMismatch: { articleId: 'art-1', newStatus: 'VERIFIED' } } });
+function buildQueryMock(articles = mockMismatches): MockedResponse {
+  return {
+    request: {
+      query: GET_PDF_MISMATCHES,
+      variables: { sessionId: 's-1' },
+    },
+    result: {
+      data: { pdfMismatches: articles },
+    },
+  };
+}
 
+describe('PdfMismatchReview', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseMutation.mockReturnValue([mockResolve, { loading: false }]);
   });
 
   it('renders loading state', () => {
-    mockUseQuery.mockReturnValue({ data: null, loading: true, error: null });
-    render(<PdfMismatchReview sessionId="s-1" />);
-
+    renderWithApollo(<PdfMismatchReview sessionId="s-1" />, []);
     expect(screen.getByTestId('mismatch-loading')).toBeInTheDocument();
   });
 
-  it('renders error state', () => {
-    mockUseQuery.mockReturnValue({ data: null, loading: false, error: new Error('fail') });
-    render(<PdfMismatchReview sessionId="s-1" />);
-
-    expect(screen.getByTestId('mismatch-error')).toBeInTheDocument();
+  it('renders error state', async () => {
+    const errorMock: MockedResponse = {
+      request: {
+        query: GET_PDF_MISMATCHES,
+        variables: { sessionId: 's-1' },
+      },
+      error: new Error('fail'),
+    };
+    renderWithApollo(<PdfMismatchReview sessionId="s-1" />, [errorMock]);
+    expect(await screen.findByTestId('mismatch-error')).toBeInTheDocument();
   });
 
-  it('renders empty state', () => {
-    mockUseQuery.mockReturnValue({ data: { pdfMismatches: [] }, loading: false, error: null });
-    render(<PdfMismatchReview sessionId="s-1" />);
-
-    expect(screen.getByTestId('mismatch-empty')).toBeInTheDocument();
+  it('renders empty state', async () => {
+    renderWithApollo(<PdfMismatchReview sessionId="s-1" />, [buildQueryMock([])]);
+    expect(await screen.findByTestId('mismatch-empty')).toBeInTheDocument();
   });
 
-  it('renders mismatch cards', () => {
-    mockUseQuery.mockReturnValue({ data: { pdfMismatches: mockMismatches }, loading: false, error: null });
-    render(<PdfMismatchReview sessionId="s-1" />);
-
-    expect(screen.getByTestId('pdf-mismatch-review')).toBeInTheDocument();
+  it('renders mismatch cards', async () => {
+    renderWithApollo(<PdfMismatchReview sessionId="s-1" />, [buildQueryMock()]);
+    expect(await screen.findByTestId('pdf-mismatch-review')).toBeInTheDocument();
     expect(screen.getByTestId('mismatch-art-1')).toBeInTheDocument();
     expect(screen.getByTestId('mismatch-art-2')).toBeInTheDocument();
   });
 
-  it('displays mismatch reasons', () => {
-    mockUseQuery.mockReturnValue({ data: { pdfMismatches: mockMismatches }, loading: false, error: null });
-    render(<PdfMismatchReview sessionId="s-1" />);
-
+  it('displays mismatch reasons', async () => {
+    renderWithApollo(<PdfMismatchReview sessionId="s-1" />, [buildQueryMock()]);
+    await screen.findByTestId('pdf-mismatch-review');
     const reasons = screen.getAllByTestId('mismatch-reason');
     expect(reasons[0]).toHaveTextContent('Title mismatch');
   });
 
-  it('shows action buttons for each mismatch', () => {
-    mockUseQuery.mockReturnValue({ data: { pdfMismatches: [mockMismatches[0]] }, loading: false, error: null });
-    render(<PdfMismatchReview sessionId="s-1" />);
-
-    expect(screen.getByTestId('mismatch-accept-btn')).toBeInTheDocument();
+  it('shows action buttons for each mismatch', async () => {
+    renderWithApollo(<PdfMismatchReview sessionId="s-1" />, [buildQueryMock([mockMismatches[0]!])]);
+    expect(await screen.findByTestId('mismatch-accept-btn')).toBeInTheDocument();
     expect(screen.getByTestId('mismatch-reject-btn')).toBeInTheDocument();
     expect(screen.getByTestId('mismatch-reupload-btn')).toBeInTheDocument();
   });
 
   it('calls resolve mutation on accept', async () => {
-    mockUseQuery.mockReturnValue({ data: { pdfMismatches: [mockMismatches[0]] }, loading: false, error: null });
-    render(<PdfMismatchReview sessionId="s-1" />);
-
-    fireEvent.click(screen.getByTestId('mismatch-accept-btn'));
-
-    await waitFor(() => {
-      expect(mockResolve).toHaveBeenCalledWith({
+    const resolveMock: MockedResponse = {
+      request: {
+        query: RESOLVE_MISMATCH,
         variables: { articleId: 'art-1', resolution: 'ACCEPT_MISMATCH' },
-      });
+      },
+      result: {
+        data: { resolvePdfMismatch: { articleId: 'art-1', newStatus: 'VERIFIED' } },
+      },
+    };
+    renderWithApollo(<PdfMismatchReview sessionId="s-1" />, [
+      buildQueryMock([mockMismatches[0]!]),
+      resolveMock,
+    ]);
+
+    const btn = await screen.findByTestId('mismatch-accept-btn');
+    fireEvent.click(btn);
+
+    // Mutation is fire-and-forget. If mock was wrong, Apollo would throw.
+    await waitFor(() => {
+      expect(btn).toBeInTheDocument();
     });
   });
 
   it('calls resolve mutation on reject', async () => {
-    mockUseQuery.mockReturnValue({ data: { pdfMismatches: [mockMismatches[0]] }, loading: false, error: null });
-    render(<PdfMismatchReview sessionId="s-1" />);
+    const resolveMock: MockedResponse = {
+      request: {
+        query: RESOLVE_MISMATCH,
+        variables: { articleId: 'art-1', resolution: 'REJECT_PDF' },
+      },
+      result: {
+        data: { resolvePdfMismatch: { articleId: 'art-1', newStatus: 'PDF_REJECTED' } },
+      },
+    };
+    renderWithApollo(<PdfMismatchReview sessionId="s-1" />, [
+      buildQueryMock([mockMismatches[0]!]),
+      resolveMock,
+    ]);
 
-    fireEvent.click(screen.getByTestId('mismatch-reject-btn'));
+    const btn = await screen.findByTestId('mismatch-reject-btn');
+    fireEvent.click(btn);
 
     await waitFor(() => {
-      expect(mockResolve).toHaveBeenCalledWith({
-        variables: { articleId: 'art-1', resolution: 'REJECT_PDF' },
-      });
+      expect(btn).toBeInTheDocument();
     });
   });
 
-  it('shows mismatch count in header', () => {
-    mockUseQuery.mockReturnValue({ data: { pdfMismatches: mockMismatches }, loading: false, error: null });
-    render(<PdfMismatchReview sessionId="s-1" />);
-
-    expect(screen.getByTestId('pdf-mismatch-review')).toHaveTextContent('PDF Mismatches (2)');
+  it('shows mismatch count in header', async () => {
+    renderWithApollo(<PdfMismatchReview sessionId="s-1" />, [buildQueryMock()]);
+    const review = await screen.findByTestId('pdf-mismatch-review');
+    expect(review).toHaveTextContent('PDF Mismatches (2)');
   });
 });

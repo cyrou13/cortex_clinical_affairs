@@ -1,17 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-
-vi.mock('@apollo/client', () => ({
-  gql: (str: TemplateStringsArray) => str[0],
-}));
-
-const mockUseQuery = vi.fn();
-
-vi.mock('@apollo/client/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-}));
-
-import { ScreeningAuditPanel } from './ScreeningAuditPanel';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithApollo, type MockedResponse } from '../../../test-utils/apollo-wrapper';
+import { ScreeningAuditPanel, GET_SCREENING_AUDIT_LOG } from './ScreeningAuditPanel';
 
 const mockEntries = [
   {
@@ -42,93 +32,76 @@ const mockEntries = [
   },
 ];
 
+function buildQueryMock(entries = mockEntries, filter?: { decision: string }): MockedResponse {
+  return {
+    request: {
+      query: GET_SCREENING_AUDIT_LOG,
+      variables: { sessionId: 's-1', filter },
+    },
+    result: {
+      data: {
+        screeningAuditLog: { entries, hasMore: false, cursor: null },
+      },
+    },
+  };
+}
+
 describe('ScreeningAuditPanel', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('renders loading state', () => {
-    mockUseQuery.mockReturnValue({ data: null, loading: true, error: null });
-    render(<ScreeningAuditPanel sessionId="s-1" />);
-
+    renderWithApollo(<ScreeningAuditPanel sessionId="s-1" />, []);
     expect(screen.getByTestId('audit-loading')).toBeInTheDocument();
   });
 
-  it('renders error state', () => {
-    mockUseQuery.mockReturnValue({ data: null, loading: false, error: new Error('fail') });
-    render(<ScreeningAuditPanel sessionId="s-1" />);
-
-    expect(screen.getByTestId('audit-error')).toBeInTheDocument();
+  it('renders error state', async () => {
+    const errorMock: MockedResponse = {
+      request: {
+        query: GET_SCREENING_AUDIT_LOG,
+        variables: { sessionId: 's-1', filter: undefined },
+      },
+      error: new Error('fail'),
+    };
+    renderWithApollo(<ScreeningAuditPanel sessionId="s-1" />, [errorMock]);
+    expect(await screen.findByTestId('audit-error')).toBeInTheDocument();
   });
 
-  it('renders empty state when no entries', () => {
-    mockUseQuery.mockReturnValue({
-      data: { screeningAuditLog: { entries: [], hasMore: false, cursor: null } },
-      loading: false,
-      error: null,
-    });
-    render(<ScreeningAuditPanel sessionId="s-1" />);
-
-    expect(screen.getByTestId('audit-empty')).toBeInTheDocument();
+  it('renders empty state when no entries', async () => {
+    renderWithApollo(<ScreeningAuditPanel sessionId="s-1" />, [buildQueryMock([])]);
+    expect(await screen.findByTestId('audit-empty')).toBeInTheDocument();
   });
 
-  it('renders audit table with entries', () => {
-    mockUseQuery.mockReturnValue({
-      data: { screeningAuditLog: { entries: mockEntries, hasMore: false, cursor: null } },
-      loading: false,
-      error: null,
-    });
-    render(<ScreeningAuditPanel sessionId="s-1" />);
-
-    expect(screen.getByTestId('screening-audit-panel')).toBeInTheDocument();
+  it('renders audit table with entries', async () => {
+    renderWithApollo(<ScreeningAuditPanel sessionId="s-1" />, [buildQueryMock()]);
+    expect(await screen.findByTestId('screening-audit-panel')).toBeInTheDocument();
     expect(screen.getByTestId('audit-table')).toBeInTheDocument();
     expect(screen.getByTestId('audit-row-entry-1')).toBeInTheDocument();
     expect(screen.getByTestId('audit-row-entry-2')).toBeInTheDocument();
   });
 
-  it('displays decision badges', () => {
-    mockUseQuery.mockReturnValue({
-      data: { screeningAuditLog: { entries: mockEntries, hasMore: false, cursor: null } },
-      loading: false,
-      error: null,
-    });
-    render(<ScreeningAuditPanel sessionId="s-1" />);
-
+  it('displays decision badges', async () => {
+    renderWithApollo(<ScreeningAuditPanel sessionId="s-1" />, [buildQueryMock()]);
+    await screen.findByTestId('audit-table');
     const badges = screen.getAllByTestId('decision-badge');
     expect(badges[0]).toHaveTextContent('INCLUDED');
     expect(badges[1]).toHaveTextContent('EXCLUDED');
   });
 
-  it('shows spot-check indicator', () => {
-    mockUseQuery.mockReturnValue({
-      data: { screeningAuditLog: { entries: mockEntries, hasMore: false, cursor: null } },
-      loading: false,
-      error: null,
-    });
-    render(<ScreeningAuditPanel sessionId="s-1" />);
-
-    expect(screen.getByTestId('indicator-spot-check')).toBeInTheDocument();
+  it('shows spot-check indicator', async () => {
+    renderWithApollo(<ScreeningAuditPanel sessionId="s-1" />, [buildQueryMock()]);
+    expect(await screen.findByTestId('indicator-spot-check')).toBeInTheDocument();
   });
 
-  it('shows AI override indicator', () => {
-    mockUseQuery.mockReturnValue({
-      data: { screeningAuditLog: { entries: mockEntries, hasMore: false, cursor: null } },
-      loading: false,
-      error: null,
-    });
-    render(<ScreeningAuditPanel sessionId="s-1" />);
-
-    expect(screen.getByTestId('indicator-ai-override')).toBeInTheDocument();
+  it('shows AI override indicator', async () => {
+    renderWithApollo(<ScreeningAuditPanel sessionId="s-1" />, [buildQueryMock()]);
+    expect(await screen.findByTestId('indicator-ai-override')).toBeInTheDocument();
   });
 
-  it('renders filter buttons', () => {
-    mockUseQuery.mockReturnValue({
-      data: { screeningAuditLog: { entries: mockEntries, hasMore: false, cursor: null } },
-      loading: false,
-      error: null,
-    });
-    render(<ScreeningAuditPanel sessionId="s-1" />);
-
+  it('renders filter buttons', async () => {
+    renderWithApollo(<ScreeningAuditPanel sessionId="s-1" />, [buildQueryMock()]);
+    await screen.findByTestId('screening-audit-panel');
     expect(screen.getByTestId('audit-filters')).toBeInTheDocument();
     expect(screen.getByTestId('audit-filter-all')).toBeInTheDocument();
     expect(screen.getByTestId('audit-filter-included')).toBeInTheDocument();
@@ -136,46 +109,35 @@ describe('ScreeningAuditPanel', () => {
     expect(screen.getByTestId('audit-filter-skipped')).toBeInTheDocument();
   });
 
-  it('clicking filter updates query variables', () => {
-    mockUseQuery.mockReturnValue({
-      data: { screeningAuditLog: { entries: mockEntries, hasMore: false, cursor: null } },
-      loading: false,
-      error: null,
-    });
-    render(<ScreeningAuditPanel sessionId="s-1" />);
+  it('clicking filter updates query and shows filtered results', async () => {
+    // Provide both the initial (no filter) and the filtered mock
+    const excludedEntries = [mockEntries[1]!];
+    const filteredMock = buildQueryMock(excludedEntries, { decision: 'EXCLUDED' });
+    renderWithApollo(<ScreeningAuditPanel sessionId="s-1" />, [buildQueryMock(), filteredMock]);
 
+    await screen.findByTestId('audit-table');
     fireEvent.click(screen.getByTestId('audit-filter-excluded'));
 
-    // After re-render, useQuery should be called with the filter
-    expect(mockUseQuery).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({
-        variables: { sessionId: 's-1', filter: { decision: 'EXCLUDED' } },
-      }),
-    );
+    // After clicking the filter, the query re-fires with the new variables and shows filtered results
+    await waitFor(() => {
+      expect(screen.getByTestId('audit-row-entry-2')).toBeInTheDocument();
+      expect(screen.queryByTestId('audit-row-entry-1')).not.toBeInTheDocument();
+    });
   });
 
-  it('renders export button', () => {
-    mockUseQuery.mockReturnValue({
-      data: { screeningAuditLog: { entries: mockEntries, hasMore: false, cursor: null } },
-      loading: false,
-      error: null,
-    });
-    render(<ScreeningAuditPanel sessionId="s-1" />);
-
+  it('renders export button', async () => {
+    renderWithApollo(<ScreeningAuditPanel sessionId="s-1" />, [buildQueryMock()]);
+    await screen.findByTestId('screening-audit-panel');
     expect(screen.getByTestId('audit-export-btn')).toBeInTheDocument();
     expect(screen.getByTestId('audit-export-btn')).toHaveTextContent('Export CSV');
   });
 
-  it('displays user name and article title in rows', () => {
-    mockUseQuery.mockReturnValue({
-      data: { screeningAuditLog: { entries: mockEntries, hasMore: false, cursor: null } },
-      loading: false,
-      error: null,
-    });
-    render(<ScreeningAuditPanel sessionId="s-1" />);
-
+  it('displays user name and article title in rows', async () => {
+    renderWithApollo(<ScreeningAuditPanel sessionId="s-1" />, [buildQueryMock()]);
+    await screen.findByTestId('audit-table');
     expect(screen.getByTestId('audit-row-entry-1')).toHaveTextContent('Dr. Smith');
-    expect(screen.getByTestId('audit-row-entry-1')).toHaveTextContent('Cervical spine surgery outcomes');
+    expect(screen.getByTestId('audit-row-entry-1')).toHaveTextContent(
+      'Cervical spine surgery outcomes',
+    );
   });
 });

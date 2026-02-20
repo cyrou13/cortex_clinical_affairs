@@ -19,8 +19,20 @@ export const GET_SPOT_CHECK_SAMPLE = gql`
 `;
 
 export const SPOT_CHECK_ARTICLE = gql`
-  mutation SpotCheckArticle($input: SpotCheckArticleInput!) {
-    spotCheckArticle(input: $input) {
+  mutation SpotCheckArticle(
+    $articleId: String!
+    $agrees: Boolean!
+    $correctedDecision: String
+    $exclusionCodeId: String
+    $reason: String!
+  ) {
+    spotCheckArticle(
+      articleId: $articleId
+      agrees: $agrees
+      correctedDecision: $correctedDecision
+      exclusionCodeId: $exclusionCodeId
+      reason: $reason
+    ) {
       action
       articleId
     }
@@ -66,11 +78,9 @@ export function SpotCheckView({ sessionId, category, sampleSize }: SpotCheckView
     if (!currentArticle) return;
     await spotCheck({
       variables: {
-        input: {
-          articleId: currentArticle.id,
-          agrees: true,
-          reason: 'Agrees with AI decision',
-        },
+        articleId: currentArticle.id,
+        agrees: true,
+        reason: 'Agrees with AI decision',
       },
     });
     setResults((prev) => [...prev, { articleId: currentArticle.id, agreed: true }]);
@@ -81,12 +91,10 @@ export function SpotCheckView({ sessionId, category, sampleSize }: SpotCheckView
     if (!currentArticle) return;
     await spotCheck({
       variables: {
-        input: {
-          articleId: currentArticle.id,
-          agrees: false,
-          correctedDecision: 'EXCLUDED',
-          reason: 'Override: incorrect AI classification',
-        },
+        articleId: currentArticle.id,
+        agrees: false,
+        correctedDecision: 'EXCLUDED',
+        reason: 'Override: incorrect AI classification',
       },
     });
     setResults((prev) => [...prev, { articleId: currentArticle.id, agreed: false }]);
@@ -192,7 +200,7 @@ export function SpotCheckView({ sessionId, category, sampleSize }: SpotCheckView
             </p>
             {currentArticle.relevanceScore !== null && (
               <div className="mt-1 text-xs text-[var(--cortex-text-muted)]">
-                Score: {Math.round(currentArticle.relevanceScore)} — {currentArticle.aiCategory}
+                Score: {Math.round(currentArticle.relevanceScore)}% — {currentArticle.aiCategory}
               </div>
             )}
           </div>

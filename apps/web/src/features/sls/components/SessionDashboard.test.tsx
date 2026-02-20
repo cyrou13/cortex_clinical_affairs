@@ -1,15 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-
-vi.mock('@apollo/client', () => ({
-  gql: (str: TemplateStringsArray) => str[0],
-}));
-
-const mockUseQuery = vi.fn();
-
-vi.mock('@apollo/client/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-}));
+import { screen } from '@testing-library/react';
+import { renderWithApollo, type MockedResponse } from '../../../test-utils/apollo-wrapper';
+import { GET_SLS_SESSION, GET_SLS_QUERIES, GET_ARTICLE_COUNT_BY_STATUS } from '../graphql/queries';
 
 import { SessionDashboard } from './SessionDashboard';
 
@@ -30,46 +22,111 @@ const mockSession = {
   updatedAt: '2026-02-14T10:00:00Z',
 };
 
+function makeSessionMock(session: typeof mockSession): MockedResponse {
+  return {
+    request: {
+      query: GET_SLS_SESSION,
+      variables: { id: session.id },
+    },
+    result: {
+      data: { slsSession: session },
+    },
+  };
+}
+
+function makeSessionLoadingMock(): MockedResponse {
+  return {
+    request: {
+      query: GET_SLS_SESSION,
+      variables: { id: 'sess-1' },
+    },
+    result: {
+      data: { slsSession: mockSession },
+    },
+    delay: 100000,
+  };
+}
+
+function makeSessionErrorMock(): MockedResponse {
+  return {
+    request: {
+      query: GET_SLS_SESSION,
+      variables: { id: 'sess-1' },
+    },
+    error: new Error('Network error'),
+  };
+}
+
+function makeArticleCountMock(sessionId: string): MockedResponse {
+  return {
+    request: {
+      query: GET_ARTICLE_COUNT_BY_STATUS,
+      variables: { sessionId },
+    },
+    result: {
+      data: { articleCountByStatus: [] },
+    },
+  };
+}
+
+function makeQueriesMock(sessionId: string): MockedResponse {
+  return {
+    request: {
+      query: GET_SLS_QUERIES,
+      variables: { sessionId },
+    },
+    result: {
+      data: { slsQueries: [] },
+    },
+  };
+}
+
+function makeDefaultMocks(session: typeof mockSession = mockSession): MockedResponse[] {
+  return [
+    makeSessionMock(session),
+    makeArticleCountMock(session.id),
+    makeQueriesMock(session.id),
+    // The QueriesTab (rendered by default) also queries GET_SLS_QUERIES with sessionId
+    // Provide a second one for the child component
+    makeQueriesMock(session.id),
+  ];
+}
+
 describe('SessionDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('shows session name and type', () => {
-    mockUseQuery.mockReturnValue({
-      data: { slsSession: mockSession },
-      loading: false,
-      error: null,
-    });
+  it('shows session name and type', async () => {
+    renderWithApollo(
+      <SessionDashboard sessionId="sess-1" projectId="proj-1" />,
+      makeDefaultMocks(),
+    );
 
-    render(<SessionDashboard sessionId="sess-1" />);
-
-    expect(screen.getByText('CSpine Clinical Review')).toBeInTheDocument();
+    expect(await screen.findByText('CSpine Clinical Review')).toBeInTheDocument();
     expect(screen.getByText(/SOA Clinical/)).toBeInTheDocument();
   });
 
-  it('shows status badge', () => {
-    mockUseQuery.mockReturnValue({
-      data: { slsSession: mockSession },
-      loading: false,
-      error: null,
-    });
+  it('shows status badge', async () => {
+    renderWithApollo(
+      <SessionDashboard sessionId="sess-1" projectId="proj-1" />,
+      makeDefaultMocks(),
+    );
 
-    render(<SessionDashboard sessionId="sess-1" />);
+    await screen.findByText('CSpine Clinical Review');
 
     const badge = screen.getByRole('status');
     expect(badge).toBeInTheDocument();
     expect(badge).toHaveAttribute('data-variant', 'draft');
   });
 
-  it('shows metrics cards', () => {
-    mockUseQuery.mockReturnValue({
-      data: { slsSession: mockSession },
-      loading: false,
-      error: null,
-    });
+  it('shows metrics cards', async () => {
+    renderWithApollo(
+      <SessionDashboard sessionId="sess-1" projectId="proj-1" />,
+      makeDefaultMocks(),
+    );
 
-    render(<SessionDashboard sessionId="sess-1" />);
+    await screen.findByText('CSpine Clinical Review');
 
     expect(screen.getByTestId('metrics-grid')).toBeInTheDocument();
     expect(screen.getByTestId('metric-articles')).toBeInTheDocument();
@@ -77,14 +134,13 @@ describe('SessionDashboard', () => {
     expect(screen.getByTestId('metric-queries')).toBeInTheDocument();
   });
 
-  it('shows scope fields', () => {
-    mockUseQuery.mockReturnValue({
-      data: { slsSession: mockSession },
-      loading: false,
-      error: null,
-    });
+  it('shows scope fields', async () => {
+    renderWithApollo(
+      <SessionDashboard sessionId="sess-1" projectId="proj-1" />,
+      makeDefaultMocks(),
+    );
 
-    render(<SessionDashboard sessionId="sess-1" />);
+    await screen.findByText('CSpine Clinical Review');
 
     expect(screen.getByTestId('scope-fields-card')).toBeInTheDocument();
     expect(screen.getByText('Indication')).toBeInTheDocument();
@@ -96,51 +152,45 @@ describe('SessionDashboard', () => {
   });
 
   it('shows loading state', () => {
-    mockUseQuery.mockReturnValue({
-      data: null,
-      loading: true,
-      error: null,
-    });
-
-    render(<SessionDashboard sessionId="sess-1" />);
+    renderWithApollo(<SessionDashboard sessionId="sess-1" projectId="proj-1" />, [
+      makeSessionLoadingMock(),
+      makeArticleCountMock('sess-1'),
+      makeQueriesMock('sess-1'),
+    ]);
 
     expect(screen.getByText(/loading session/i)).toBeInTheDocument();
   });
 
-  it('shows error state', () => {
-    mockUseQuery.mockReturnValue({
-      data: null,
-      loading: false,
-      error: new Error('Network error'),
-    });
+  it('shows error state', async () => {
+    renderWithApollo(<SessionDashboard sessionId="sess-1" projectId="proj-1" />, [
+      makeSessionErrorMock(),
+      makeArticleCountMock('sess-1'),
+      makeQueriesMock('sess-1'),
+    ]);
 
-    render(<SessionDashboard sessionId="sess-1" />);
-
-    expect(screen.getByText(/failed to load session/i)).toBeInTheDocument();
+    expect(await screen.findByText(/failed to load session/i)).toBeInTheDocument();
   });
 
-  it('does not show scope fields card when scopeFields is null', () => {
-    mockUseQuery.mockReturnValue({
-      data: {
-        slsSession: { ...mockSession, scopeFields: null },
-      },
-      loading: false,
-      error: null,
-    });
+  it('does not show scope fields card when scopeFields is null', async () => {
+    const sessionNoScope = { ...mockSession, scopeFields: null };
 
-    render(<SessionDashboard sessionId="sess-1" />);
+    renderWithApollo(
+      <SessionDashboard sessionId="sess-1" projectId="proj-1" />,
+      makeDefaultMocks(sessionNoScope),
+    );
+
+    await screen.findByText('CSpine Clinical Review');
 
     expect(screen.queryByTestId('scope-fields-card')).not.toBeInTheDocument();
   });
 
-  it('shows creation date', () => {
-    mockUseQuery.mockReturnValue({
-      data: { slsSession: mockSession },
-      loading: false,
-      error: null,
-    });
+  it('shows creation date', async () => {
+    renderWithApollo(
+      <SessionDashboard sessionId="sess-1" projectId="proj-1" />,
+      makeDefaultMocks(),
+    );
 
-    render(<SessionDashboard sessionId="sess-1" />);
+    await screen.findByText('CSpine Clinical Review');
 
     expect(screen.getByText(/created/i)).toBeInTheDocument();
   });

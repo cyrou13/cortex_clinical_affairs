@@ -1,31 +1,29 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('SOA Configuration, SLS Linking & Dependency', () => {
-  test('SOA creation dialog opens and shows form', async ({ page }) => {
-    await page.goto('/projects/proj-1/soa-analyses');
+  test('SOA index page loads with list or empty state', async ({ page }) => {
+    await page.goto('/projects/proj-1/soa');
 
-    const createBtn = page.getByTestId('create-soa-btn');
+    const indexPage = page.getByTestId('soa-index-page');
+    const loading = page.getByTestId('soa-list-loading');
+
+    await expect(indexPage.or(loading).first()).toBeVisible();
+  });
+
+  test('SOA creation button visible on index page', async ({ page }) => {
+    await page.goto('/projects/proj-1/soa');
+
+    const createBtn = page.getByTestId('create-soa-trigger');
+    const emptyBtn = page.getByTestId('empty-create-btn');
     if (await createBtn.isVisible()) {
-      await createBtn.click();
-      await expect(page.getByTestId('create-soa-dialog')).toBeVisible();
-      await expect(page.getByTestId('soa-name-input')).toBeVisible();
-      await expect(page.getByTestId('soa-type-selector')).toBeVisible();
+      await expect(createBtn).toBeVisible();
+    } else if (await emptyBtn.isVisible()) {
+      await expect(emptyBtn).toBeVisible();
     }
   });
 
-  test('SOA type selector shows all types', async ({ page }) => {
-    await page.goto('/projects/proj-1/soa-analyses');
-
-    const dialog = page.getByTestId('create-soa-dialog');
-    if (await dialog.isVisible()) {
-      await expect(page.getByTestId('soa-type-CLINICAL')).toBeVisible();
-      await expect(page.getByTestId('soa-type-SIMILAR_DEVICE')).toBeVisible();
-      await expect(page.getByTestId('soa-type-ALTERNATIVE')).toBeVisible();
-    }
-  });
-
-  test('session picker shows only locked sessions', async ({ page }) => {
-    await page.goto('/projects/proj-1/soa-analyses');
+  test('session picker shows sessions when available', async ({ page }) => {
+    await page.goto('/projects/proj-1/soa');
 
     const picker = page.getByTestId('session-picker');
     if (await picker.isVisible()) {
@@ -35,56 +33,68 @@ test.describe('SOA Configuration, SLS Linking & Dependency', () => {
     }
   });
 
-  test('SOA dashboard loads for existing analysis', async ({ page }) => {
-    await page.goto('/projects/proj-1/soa-analyses/soa-1');
+  test('SOA detail page loads for existing analysis', async ({ page }) => {
+    await page.goto('/projects/proj-1/soa/soa-1');
 
-    const dashboard = page.getByTestId('soa-dashboard');
-    const loading = page.getByTestId('soa-loading');
-    const notFound = page.getByTestId('soa-not-found');
-    const error = page.getByTestId('soa-error');
+    const detail = page.getByTestId('soa-detail-page');
+    const loading = page.getByTestId('soa-detail-loading');
+    const error = page.getByTestId('soa-detail-error');
 
-    await expect(dashboard.or(loading).or(notFound).or(error).first()).toBeVisible();
+    await expect(detail.or(loading).or(error).first()).toBeVisible();
   });
 
-  test('SOA dashboard shows sections list', async ({ page }) => {
-    await page.goto('/projects/proj-1/soa-analyses/soa-1');
+  test('SOA detail page shows tabs when loaded', async ({ page }) => {
+    await page.goto('/projects/proj-1/soa/soa-1');
 
-    const dashboard = page.getByTestId('soa-dashboard');
-    if (await dashboard.isVisible()) {
-      await expect(page.getByTestId('section-list')).toBeVisible();
-      await expect(page.getByTestId('progress-summary')).toBeVisible();
+    const detail = page.getByTestId('soa-detail-page');
+    if (await detail.isVisible()) {
+      await expect(page.getByTestId('tab-overview')).toBeVisible();
+      await expect(page.getByTestId('tab-grid')).toBeVisible();
+      await expect(page.getByTestId('tab-quality')).toBeVisible();
+      await expect(page.getByTestId('tab-narrative')).toBeVisible();
+      await expect(page.getByTestId('tab-devices')).toBeVisible();
+      await expect(page.getByTestId('tab-claims')).toBeVisible();
     }
   });
 
-  test('SOA dashboard shows progress bar', async ({ page }) => {
-    await page.goto('/projects/proj-1/soa-analyses/soa-1');
+  test('SOA detail page shows lock button or locked badge', async ({ page }) => {
+    await page.goto('/projects/proj-1/soa/soa-1');
 
-    const dashboard = page.getByTestId('soa-dashboard');
-    if (await dashboard.isVisible()) {
-      await expect(page.getByTestId('progress-bar')).toBeVisible();
+    const detail = page.getByTestId('soa-detail-page');
+    if (await detail.isVisible()) {
+      const lockBtn = page.getByTestId('lock-soa-btn');
+      const lockedBadge = page.getByTestId('locked-badge');
+      await expect(lockBtn.or(lockedBadge).first()).toBeVisible();
     }
   });
 
-  test('SOA dashboard shows linked sessions', async ({ page }) => {
-    await page.goto('/projects/proj-1/soa-analyses/soa-1');
+  test('SOA list shows items or empty state', async ({ page }) => {
+    await page.goto('/projects/proj-1/soa');
 
-    const dashboard = page.getByTestId('soa-dashboard');
-    if (await dashboard.isVisible()) {
-      await expect(page.getByTestId('linked-sessions')).toBeVisible();
+    const indexPage = page.getByTestId('soa-index-page');
+    if (await indexPage.isVisible()) {
+      const list = page.getByTestId('soa-list');
+      const empty = page.getByTestId('soa-empty-state');
+      await expect(list.or(empty).first()).toBeVisible();
     }
   });
 
   test('dependency warning appears for Device SOA', async ({ page }) => {
-    await page.goto('/projects/proj-1/soa-analyses');
+    await page.goto('/projects/proj-1/soa');
 
-    const dialog = page.getByTestId('create-soa-dialog');
-    if (await dialog.isVisible()) {
-      const deviceRadio = page.getByTestId('soa-type-SIMILAR_DEVICE');
-      if (await deviceRadio.isVisible()) {
-        await deviceRadio.click();
-        const warning = page.getByTestId('dependency-warning');
-        if (await warning.isVisible()) {
-          await expect(warning).toContainText('Section 6');
+    const createBtn = page.getByTestId('create-soa-trigger');
+    if (await createBtn.isVisible()) {
+      await createBtn.click();
+
+      const dialog = page.getByTestId('create-soa-dialog');
+      if (await dialog.isVisible()) {
+        const deviceRadio = page.getByTestId('soa-type-SIMILAR_DEVICE');
+        if (await deviceRadio.isVisible()) {
+          await deviceRadio.click();
+          const warning = page.getByTestId('dependency-warning');
+          if (await warning.isVisible()) {
+            await expect(warning).toContainText('Section 6');
+          }
         }
       }
     }

@@ -12,10 +12,7 @@ interface DatabaseExecution {
   articlesFound: number | null;
 }
 
-const statusConfig: Record<
-  ExecutionStatus,
-  { label: string; className: string }
-> = {
+const statusConfig: Record<ExecutionStatus, { label: string; className: string }> = {
   PENDING: {
     label: 'Pending',
     className: 'bg-gray-100 text-gray-600',
@@ -39,9 +36,10 @@ const statusConfig: Record<
 };
 
 const databaseLabels: Record<string, string> = {
-  pubmed: 'PubMed',
-  cochrane: 'Cochrane',
-  embase: 'Embase',
+  PUBMED: 'PubMed',
+  PMC: 'PubMed Central',
+  GOOGLE_SCHOLAR: 'Google Scholar',
+  CLINICAL_TRIALS: 'ClinicalTrials.gov',
 };
 
 interface QueryExecutionProgressProps {
@@ -49,15 +47,11 @@ interface QueryExecutionProgressProps {
   onComplete: () => void;
 }
 
-export function QueryExecutionProgress({
-  executionId,
-  onComplete,
-}: QueryExecutionProgressProps) {
+export function QueryExecutionProgress({ executionId, onComplete }: QueryExecutionProgressProps) {
   const tasks = useTaskPanelStore((s) => s.tasks);
   const history = useTaskPanelStore((s) => s.history);
 
-  const [cancelExecution, { loading: cancelling }] =
-    useMutation(CANCEL_EXECUTION);
+  const [cancelExecution, { loading: cancelling }] = useMutation(CANCEL_EXECUTION);
 
   // Find the task in active tasks or history
   const activeTask = tasks.find((t) => t.taskId === executionId);
@@ -67,8 +61,7 @@ export function QueryExecutionProgress({
   // Parse database statuses from task message if available
   const databaseExecutions = parseDatabaseStatuses(task?.message);
   const isActive =
-    !!activeTask &&
-    (activeTask.status === 'RUNNING' || activeTask.status === 'PENDING');
+    !!activeTask && (activeTask.status === 'RUNNING' || activeTask.status === 'PENDING');
 
   // Call onComplete when the task finishes
   if (completedTask && !activeTask) {
@@ -88,10 +81,7 @@ export function QueryExecutionProgress({
 
   if (!task) {
     return (
-      <div
-        className="rounded-lg bg-white p-4 shadow-sm"
-        data-testid="execution-progress"
-      >
+      <div className="rounded-lg bg-white p-4 shadow-sm" data-testid="execution-progress">
         <div className="flex items-center gap-2 text-sm text-[var(--cortex-text-muted)]">
           <Loader2 size={16} className="animate-spin" aria-hidden="true" />
           Waiting for execution to start...
@@ -101,14 +91,9 @@ export function QueryExecutionProgress({
   }
 
   return (
-    <div
-      className="rounded-lg bg-white p-4 shadow-sm"
-      data-testid="execution-progress"
-    >
+    <div className="rounded-lg bg-white p-4 shadow-sm" data-testid="execution-progress">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-medium text-[var(--cortex-text-primary)]">
-          Query Execution
-        </h3>
+        <h3 className="text-sm font-medium text-[var(--cortex-text-primary)]">Query Execution</h3>
         {isActive && (
           <button
             type="button"
@@ -166,9 +151,7 @@ export function QueryExecutionProgress({
                   >
                     {config.label}
                   </span>
-                  <span className="text-sm text-[var(--cortex-text-primary)]">
-                    {dbLabel}
-                  </span>
+                  <span className="text-sm text-[var(--cortex-text-primary)]">{dbLabel}</span>
                 </div>
                 {dbExec.articlesFound !== null && (
                   <span
@@ -183,9 +166,7 @@ export function QueryExecutionProgress({
           })
         ) : (
           <div className="flex items-center gap-2 text-sm text-[var(--cortex-text-muted)]">
-            {isActive && (
-              <Loader2 size={14} className="animate-spin" aria-hidden="true" />
-            )}
+            {isActive && <Loader2 size={14} className="animate-spin" aria-hidden="true" />}
             {isActive ? 'Executing query...' : task.message || 'Execution complete'}
           </div>
         )}
@@ -196,7 +177,7 @@ export function QueryExecutionProgress({
 
 /**
  * Parses database statuses from the task message.
- * Expected format: "pubmed:RUNNING:3200,cochrane:SUCCESS:1500,embase:PENDING:"
+ * Expected format: "PUBMED:RUNNING:3200,PMC:SUCCESS:1500,GOOGLE_SCHOLAR:PENDING:"
  */
 function parseDatabaseStatuses(message?: string): DatabaseExecution[] {
   if (!message) return [];

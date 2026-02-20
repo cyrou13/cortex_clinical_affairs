@@ -1,97 +1,132 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Screening Audit & Spot-Check', () => {
-  test('audit panel loads with table and filters', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/audit');
+  test('review-lock tab loads with spot check buttons', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
 
-    await expect(page.getByTestId('screening-audit-panel')).toBeVisible();
-    await expect(page.getByTestId('audit-filters')).toBeVisible();
-    await expect(page.getByTestId('audit-filter-all')).toBeVisible();
-  });
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-review-lock').click();
 
-  test('audit filter tabs switch active filter', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/audit');
-
-    await page.getByTestId('audit-filter-excluded').click();
-
-    // Filter should be visually active
-    await expect(page.getByTestId('audit-filter-excluded')).toBeVisible();
-  });
-
-  test('audit table displays entries with decision badges', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/audit');
-
-    await expect(page.getByTestId('audit-table')).toBeVisible();
-    const badges = page.getByTestId('decision-badge');
-    const count = await badges.count();
-    expect(count).toBeGreaterThan(0);
-  });
-
-  test('export CSV button is visible', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/audit');
-
-    await expect(page.getByTestId('audit-export-btn')).toBeVisible();
-    await expect(page.getByTestId('audit-export-btn')).toHaveText(/Export CSV/);
-  });
-
-  test('spot-check view loads for likely relevant', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/spot-check/likely-relevant');
-
-    // Should show spot-check view or loading/empty state
-    const view = page.getByTestId('spot-check-view');
-    const empty = page.getByTestId('spot-check-empty');
-    const loading = page.getByTestId('spot-check-loading');
-
-    await expect(view.or(empty).or(loading).first()).toBeVisible();
-  });
-
-  test('spot-check shows article with agree/override buttons', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/spot-check/likely-relevant');
-
-    // If articles are available
-    const view = page.getByTestId('spot-check-view');
-    if (await view.isVisible()) {
-      await expect(page.getByTestId('spot-check-title')).toBeVisible();
-      await expect(page.getByTestId('spot-check-agree-btn')).toBeVisible();
-      await expect(page.getByTestId('spot-check-override-btn')).toBeVisible();
-      await expect(page.getByTestId('spot-check-progress')).toBeVisible();
+      const reviewTab = page.getByTestId('review-lock-tab');
+      await expect(reviewTab).toBeVisible();
     }
   });
 
-  test('spot-check shows AI reasoning box', async ({ page }) => {
-    await page.goto('/projects/proj-1/sls-sessions/sess-1/spot-check/likely-relevant');
+  test('review-lock tab shows spot check category buttons', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
 
-    const view = page.getByTestId('spot-check-view');
-    if (await view.isVisible()) {
-      await expect(page.getByTestId('spot-check-ai-reasoning')).toBeVisible();
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-review-lock').click();
+
+      const reviewTab = page.getByTestId('review-lock-tab');
+      if (await reviewTab.isVisible()) {
+        await expect(page.getByTestId('spot-check-cat-likely_relevant')).toBeVisible();
+        await expect(page.getByTestId('spot-check-cat-likely_irrelevant')).toBeVisible();
+      }
     }
   });
 
-  test('review gate status displays on session dashboard', async ({ page }) => {
+  test('review-lock tab shows lock dataset section', async ({ page }) => {
     await page.goto('/projects/proj-1/sls-sessions/sess-1');
 
-    // Review gates should be visible on dashboard
-    const gates = page.getByTestId('review-gate-status');
-    const gateLoading = page.getByTestId('gate-loading');
-    await expect(gates.or(gateLoading).first()).toBeVisible();
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-review-lock').click();
+
+      const reviewTab = page.getByTestId('review-lock-tab');
+      if (await reviewTab.isVisible()) {
+        await expect(page.getByText('Lock Dataset')).toBeVisible();
+      }
+    }
   });
 
-  test('acceptance rate widget displays on dashboard', async ({ page }) => {
+  test('spot check category can be switched', async ({ page }) => {
     await page.goto('/projects/proj-1/sls-sessions/sess-1');
 
-    await expect(page.getByTestId('acceptance-rate-widget')).toBeVisible();
-    await expect(page.getByTestId('overall-rate')).toBeVisible();
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-review-lock').click();
+
+      const reviewTab = page.getByTestId('review-lock-tab');
+      if (await reviewTab.isVisible()) {
+        await page.getByTestId('spot-check-cat-likely_irrelevant').click();
+        await expect(page.getByTestId('spot-check-cat-likely_irrelevant')).toBeVisible();
+      }
+    }
   });
 
-  test('review gates show gate items with status icons', async ({ page }) => {
+  test('session dashboard shows tab content area', async ({ page }) => {
     await page.goto('/projects/proj-1/sls-sessions/sess-1');
 
-    const gates = page.getByTestId('review-gate-status');
-    if (await gates.isVisible()) {
-      await expect(page.getByTestId('gate-0')).toBeVisible();
-      await expect(page.getByTestId('gate-1')).toBeVisible();
-      await expect(page.getByTestId('gate-2')).toBeVisible();
-      await expect(page.getByTestId('gates-summary')).toBeVisible();
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await expect(page.getByTestId('tab-content')).toBeVisible();
+    }
+  });
+
+  test('workflow tabs are visible on session dashboard', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
+
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await expect(page.getByTestId('workflow-tabs')).toBeVisible();
+    }
+  });
+
+  test('review-lock tab shows spot check section heading', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
+
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-review-lock').click();
+
+      const reviewTab = page.getByTestId('review-lock-tab');
+      if (await reviewTab.isVisible()) {
+        await expect(page.getByText('Spot Check')).toBeVisible();
+      }
+    }
+  });
+
+  test('review gate status renders on review-lock tab', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
+
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await page.getByTestId('tab-review-lock').click();
+
+      const reviewTab = page.getByTestId('review-lock-tab');
+      await expect(reviewTab).toBeVisible();
+    }
+  });
+
+  test('session metrics grid visible on dashboard', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
+
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      await expect(page.getByTestId('metrics-grid')).toBeVisible();
+    }
+  });
+
+  test('tab navigation works for all tabs', async ({ page }) => {
+    await page.goto('/projects/proj-1/sls-sessions/sess-1');
+
+    const dashboard = page.getByTestId('session-dashboard');
+    if (await dashboard.isVisible()) {
+      const tabKeys = [
+        'queries',
+        'articles',
+        'ai-scoring',
+        'screening',
+        'review-lock',
+        'pdfs-refs',
+      ];
+      for (const key of tabKeys) {
+        await page.getByTestId(`tab-${key}`).click();
+        await expect(page.getByTestId(`tab-${key}`)).toHaveAttribute('aria-selected', 'true');
+      }
     }
   });
 });

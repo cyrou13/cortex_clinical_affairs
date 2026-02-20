@@ -27,15 +27,13 @@ function makePrisma(overrides?: {
       ),
     },
     article: {
-      findMany: vi.fn().mockResolvedValue(
-        overrides?.articleResults !== undefined
-          ? overrides.articleResults
-          : [
-              { id: 'article-1' },
-              { id: 'article-2' },
-              { id: 'article-3' },
-            ],
-      ),
+      findMany: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.articleResults !== undefined
+            ? overrides.articleResults
+            : [{ id: 'article-1' }, { id: 'article-2' }, { id: 'article-3' }],
+        ),
     },
     exclusionCode: {
       findMany: vi.fn().mockResolvedValue(
@@ -50,7 +48,7 @@ function makePrisma(overrides?: {
     asyncTask: {
       create: vi.fn().mockResolvedValue({
         id: 'task-1',
-        type: 'sls:score-articles',
+        type: 'sls.score-articles',
         status: 'PENDING',
         progress: 0,
         metadata: {},
@@ -107,7 +105,7 @@ describe('ScoreArticlesUseCase', () => {
     expect(prisma.asyncTask.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          type: 'sls:score-articles',
+          type: 'sls.score-articles',
           status: 'PENDING',
           metadata: expect.objectContaining({
             sessionId: TEST_SESSION_ID,
@@ -124,9 +122,7 @@ describe('ScoreArticlesUseCase', () => {
     prisma = makePrisma({ sessionResult: null });
     useCase = new ScoreArticlesUseCase(prisma, redis);
 
-    await expect(
-      useCase.execute(TEST_SESSION_ID, 'user-1'),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute(TEST_SESSION_ID, 'user-1')).rejects.toThrow('not found');
   });
 
   it('throws ValidationError when session is LOCKED', async () => {
@@ -142,18 +138,14 @@ describe('ScoreArticlesUseCase', () => {
     });
     useCase = new ScoreArticlesUseCase(prisma, redis);
 
-    await expect(
-      useCase.execute(TEST_SESSION_ID, 'user-1'),
-    ).rejects.toThrow('session is locked');
+    await expect(useCase.execute(TEST_SESSION_ID, 'user-1')).rejects.toThrow('session is locked');
   });
 
   it('throws ValidationError when no pending articles', async () => {
     prisma = makePrisma({ articleResults: [] });
     useCase = new ScoreArticlesUseCase(prisma, redis);
 
-    await expect(
-      useCase.execute(TEST_SESSION_ID, 'user-1'),
-    ).rejects.toThrow('No pending articles');
+    await expect(useCase.execute(TEST_SESSION_ID, 'user-1')).rejects.toThrow('No pending articles');
   });
 
   it('includes scope fields in task metadata', async () => {

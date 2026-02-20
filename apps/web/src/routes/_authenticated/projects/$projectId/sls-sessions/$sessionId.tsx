@@ -40,7 +40,7 @@ export default function SlsSessionDetailPage() {
 
       {/* Main content */}
       <div className="flex-1 overflow-auto bg-[var(--cortex-bg-secondary)] p-6">
-        <SessionDashboard sessionId={sessionId} />
+        <SessionDashboard sessionId={sessionId} projectId={projectId} />
       </div>
 
       {/* Create form modal */}

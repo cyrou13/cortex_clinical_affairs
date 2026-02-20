@@ -7,7 +7,7 @@ function createMockJob(overrides?: Partial<TaskJobData>): Job<TaskJobData> {
   return {
     data: {
       taskId: 'task-001',
-      type: 'sample:echo',
+      type: 'sample.echo',
       metadata: { hello: 'world' },
       createdBy: 'user-123',
       ...overrides,
@@ -49,8 +49,7 @@ describe('EchoProcessor', () => {
 
   it('throws when task is cancelled during processing', async () => {
     // Cancel after first progress check
-    mockRedis.get
-      .mockResolvedValueOnce('1'); // First check returns cancelled
+    mockRedis.get.mockResolvedValueOnce('1'); // First check returns cancelled
 
     const job = createMockJob();
 

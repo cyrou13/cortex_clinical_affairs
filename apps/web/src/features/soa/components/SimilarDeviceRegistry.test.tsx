@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 vi.mock('@apollo/client', () => ({
   gql: (str: TemplateStringsArray) => str[0],
@@ -19,42 +19,35 @@ const mockDevicesData = {
   similarDevices: [
     {
       id: 'device-1',
-      name: 'Device Alpha',
+      deviceName: 'Device Alpha',
       manufacturer: 'Acme Corp',
-      modelNumber: 'ACM-100',
-      regulatoryClass: 'II',
-      performanceBenchmark: {
-        score: 85,
-        category: 'High Performance',
-      },
+      indication: 'Cardiac monitoring',
+      regulatoryStatus: 'CE Marked',
+      metadata: null,
+      createdAt: '2024-01-01',
     },
     {
       id: 'device-2',
-      name: 'Device Beta',
+      deviceName: 'Device Beta',
       manufacturer: 'TechMed',
-      modelNumber: 'TM-200',
-      regulatoryClass: 'III',
-      performanceBenchmark: {
-        score: 72,
-        category: 'Medium Performance',
-      },
+      indication: 'Neurostimulation',
+      regulatoryStatus: 'FDA 510(k)',
+      metadata: null,
+      createdAt: '2024-01-02',
     },
   ],
 };
 
 describe('SimilarDeviceRegistry', () => {
-  const mockRemove = vi
-    .fn()
-    .mockResolvedValue({ data: { removeSimilarDevice: { success: true } } });
-  const mockRefetch = vi.fn();
+  const mockAdd = vi.fn().mockResolvedValue({ data: { addSimilarDevice: { id: 'device-new' } } });
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseMutation.mockReturnValue([mockRemove, { loading: false }]);
+    mockUseMutation.mockReturnValue([mockAdd, { loading: false }]);
   });
 
   it('renders loading state', () => {
-    mockUseQuery.mockReturnValue({ data: null, loading: true, error: null, refetch: mockRefetch });
+    mockUseQuery.mockReturnValue({ data: null, loading: true, error: null });
     render(<SimilarDeviceRegistry soaAnalysisId="soa-1" />);
 
     expect(screen.getByTestId('registry-loading')).toBeInTheDocument();
@@ -65,7 +58,6 @@ describe('SimilarDeviceRegistry', () => {
       data: null,
       loading: false,
       error: new Error('Failed'),
-      refetch: mockRefetch,
     });
     render(<SimilarDeviceRegistry soaAnalysisId="soa-1" />);
 
@@ -77,7 +69,6 @@ describe('SimilarDeviceRegistry', () => {
       data: { similarDevices: [] },
       loading: false,
       error: null,
-      refetch: mockRefetch,
     });
     render(<SimilarDeviceRegistry soaAnalysisId="soa-1" />);
 
@@ -89,7 +80,6 @@ describe('SimilarDeviceRegistry', () => {
       data: mockDevicesData,
       loading: false,
       error: null,
-      refetch: mockRefetch,
     });
     render(<SimilarDeviceRegistry soaAnalysisId="soa-1" />);
 
@@ -105,28 +95,12 @@ describe('SimilarDeviceRegistry', () => {
       data: mockDevicesData,
       loading: false,
       error: null,
-      refetch: mockRefetch,
     });
     render(<SimilarDeviceRegistry soaAnalysisId="soa-1" />);
 
-    expect(screen.getByText(/Acme Corp/)).toBeInTheDocument();
-    expect(screen.getByText(/Model ACM-100/)).toBeInTheDocument();
-    expect(screen.getByText('Class II')).toBeInTheDocument();
-  });
-
-  it('displays performance benchmarks', () => {
-    mockUseQuery.mockReturnValue({
-      data: mockDevicesData,
-      loading: false,
-      error: null,
-      refetch: mockRefetch,
-    });
-    render(<SimilarDeviceRegistry soaAnalysisId="soa-1" />);
-
-    const badges = screen.getAllByTestId('performance-badge');
-    expect(badges.length).toBe(2);
-    expect(screen.getByText(/High Performance \(85\)/)).toBeInTheDocument();
-    expect(screen.getByText(/Medium Performance \(72\)/)).toBeInTheDocument();
+    expect(screen.getByText('Acme Corp')).toBeInTheDocument();
+    expect(screen.getByText('CE Marked')).toBeInTheDocument();
+    expect(screen.getByText(/Cardiac monitoring/)).toBeInTheDocument();
   });
 
   it('opens add device dialog', () => {
@@ -134,7 +108,6 @@ describe('SimilarDeviceRegistry', () => {
       data: mockDevicesData,
       loading: false,
       error: null,
-      refetch: mockRefetch,
     });
     render(<SimilarDeviceRegistry soaAnalysisId="soa-1" />);
 
@@ -148,7 +121,6 @@ describe('SimilarDeviceRegistry', () => {
       data: mockDevicesData,
       loading: false,
       error: null,
-      refetch: mockRefetch,
     });
     render(<SimilarDeviceRegistry soaAnalysisId="soa-1" />);
 
@@ -156,23 +128,5 @@ describe('SimilarDeviceRegistry', () => {
     fireEvent.click(screen.getByTestId('cancel-add-btn'));
 
     expect(screen.queryByTestId('add-device-dialog')).not.toBeInTheDocument();
-  });
-
-  it('calls remove mutation on device removal', async () => {
-    mockUseQuery.mockReturnValue({
-      data: mockDevicesData,
-      loading: false,
-      error: null,
-      refetch: mockRefetch,
-    });
-    render(<SimilarDeviceRegistry soaAnalysisId="soa-1" />);
-
-    fireEvent.click(screen.getByTestId('remove-device-btn-device-1'));
-
-    await waitFor(() => {
-      expect(mockRemove).toHaveBeenCalledWith({
-        variables: { soaAnalysisId: 'soa-1', deviceId: 'device-1' },
-      });
-    });
   });
 });

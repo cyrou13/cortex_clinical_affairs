@@ -1,28 +1,7 @@
 import { useState } from 'react';
 import { useMutation } from '@apollo/client/react';
-import { gql } from '@apollo/client';
 import { ClipboardCheck } from 'lucide-react';
-
-export const SUBMIT_QUALITY_ASSESSMENT = gql`
-  mutation SubmitQualityAssessment(
-    $soaAnalysisId: String!
-    $articleId: String!
-    $assessmentType: String!
-    $contributionLevel: String!
-    $notes: String
-  ) {
-    submitQualityAssessment(
-      soaAnalysisId: $soaAnalysisId
-      articleId: $articleId
-      assessmentType: $assessmentType
-      contributionLevel: $contributionLevel
-      notes: $notes
-    ) {
-      assessmentId
-      status
-    }
-  }
-`;
+import { ASSESS_QUALITY } from '../graphql/mutations';
 
 const ASSESSMENT_TYPES = [
   { value: 'QUADAS_2', label: 'QUADAS-2' },
@@ -52,7 +31,7 @@ export function QualityAssessmentForm({
   const [contributionLevel, setContributionLevel] = useState('');
   const [notes, setNotes] = useState('');
 
-  const [submitAssessment, { loading }] = useMutation<any>(SUBMIT_QUALITY_ASSESSMENT);
+  const [submitAssessment, { loading }] = useMutation<any>(ASSESS_QUALITY);
 
   const canSubmit = assessmentType !== '' && contributionLevel !== '' && !locked;
 
@@ -63,12 +42,12 @@ export function QualityAssessmentForm({
         soaAnalysisId,
         articleId,
         assessmentType,
-        contributionLevel,
-        notes: notes || null,
+        assessmentData: notes ? { notes } : {},
+        dataContributionLevel: contributionLevel,
       },
     });
-    if (result.data?.submitQualityAssessment) {
-      onSubmitted?.(result.data.submitQualityAssessment.assessmentId);
+    if (result.data?.assessQuality) {
+      onSubmitted?.(result.data.assessQuality.qualityAssessmentId);
       setAssessmentType('');
       setContributionLevel('');
       setNotes('');

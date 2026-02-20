@@ -6,6 +6,8 @@ import rateLimit from '@fastify/rate-limit';
 import { ApolloServer } from '@apollo/server';
 import fastifyApollo, { fastifyApolloDrainPlugin } from '@as-integrations/fastify';
 import { PrismaClient } from '@prisma/client';
+import { WebSocketServer } from 'ws';
+import { useServer } from 'graphql-ws/use/ws';
 import { schema } from './graphql/schema.js';
 import type { GraphQLContext } from './graphql/context.js';
 import { logger } from './shared/utils/logger.js';
@@ -55,6 +57,7 @@ export async function buildServer(options?: BuildServerOptions | PrismaClient) {
     logger: false,
     genReqId: () => randomUUID(),
     requestTimeout: 30_000,
+    bodyLimit: 100 * 1024 * 1024, // 100MB for base64-encoded file uploads via GraphQL
   });
 
   // FIX #1: CORS restricted to configured origins
@@ -76,9 +79,66 @@ export async function buildServer(options?: BuildServerOptions | PrismaClient) {
     app.addHook('onRequest', authMiddleware);
   }
 
+  // Dev-mode: auto-authenticate as admin when no token is present
+  if (config.NODE_ENV === 'development' && !opts.skipAuth) {
+    const DEV_ADMIN_ID = '00000000-0000-0000-0000-000000000001';
+
+    // Ensure dev admin user exists in DB
+    prisma.user
+      .upsert({
+        where: { id: DEV_ADMIN_ID },
+        update: {},
+        create: {
+          id: DEV_ADMIN_ID,
+          email: 'dev@cortex.local',
+          name: 'Dev Admin',
+          role: 'ADMIN',
+        },
+      })
+      .then(() => logger.info('Dev admin user ready (dev@cortex.local)'))
+      .catch((err: unknown) => logger.warn({ err }, 'Failed to upsert dev admin user'));
+
+    app.addHook('onRequest', async (request) => {
+      if (!request.currentUser) {
+        request.currentUser = { id: DEV_ADMIN_ID, role: 'ADMIN' };
+      }
+    });
+  }
+
+  // WebSocket server for GraphQL subscriptions (graphql-ws)
+  const wss = new WebSocketServer({ noServer: true });
+
+  const DEV_ADMIN_ID = '00000000-0000-0000-0000-000000000001';
+
+  const wsCleanup = useServer(
+    {
+      schema,
+      context: async (_ctx, _msg, _args): Promise<GraphQLContext> => ({
+        prisma,
+        // In dev mode, auto-authenticate subscriptions as admin
+        user: config.NODE_ENV === 'development' ? { id: DEV_ADMIN_ID, role: 'ADMIN' } : null,
+        requestId: randomUUID(),
+        reply: null as never,
+      }),
+    },
+    wss,
+  );
+
   const apollo = new ApolloServer<GraphQLContext>({
     schema,
-    plugins: [fastifyApolloDrainPlugin(app)],
+    plugins: [
+      fastifyApolloDrainPlugin(app),
+      // Drain the WebSocket server on Apollo shutdown
+      {
+        async serverWillStart() {
+          return {
+            async drainServer() {
+              await wsCleanup.dispose();
+            },
+          };
+        },
+      },
+    ],
     // FIX #7: Use validated config instead of raw process.env
     introspection: config.NODE_ENV !== 'production',
     formatError: (formattedError) => {
@@ -99,6 +159,18 @@ export async function buildServer(options?: BuildServerOptions | PrismaClient) {
       requestId: (request.id as string) ?? randomUUID(),
       reply,
     }),
+  });
+
+  // Handle WebSocket upgrade on /graphql path
+  app.server.on('upgrade', (request, socket, head) => {
+    const { pathname } = new URL(request.url ?? '', `http://${request.headers.host}`);
+    if (pathname === '/graphql') {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
+    } else {
+      socket.destroy();
+    }
   });
 
   return app;

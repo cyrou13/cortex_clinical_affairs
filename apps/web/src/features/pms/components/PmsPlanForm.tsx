@@ -1,14 +1,36 @@
 import { useState } from 'react';
-import { useMutation } from '@apollo/client/react';
+import { useQuery, useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client';
-import { Calendar, FileText, Settings } from 'lucide-react';
+import { FileText } from 'lucide-react';
+
+const GET_CER_VERSIONS_FOR_PMS = gql`
+  query GetCerVersionsForPms($projectId: String!) {
+    cerVersions(projectId: $projectId) {
+      id
+      versionNumber
+      regulatoryContext
+      status
+      lockedAt
+    }
+  }
+`;
 
 export const CREATE_PMS_PLAN = gql`
-  mutation CreatePmsPlan($input: CreatePmsPlanInput!) {
-    createPmsPlan(input: $input) {
-      id
-      name
-      frequency
+  mutation CreatePmsPlan(
+    $projectId: String!
+    $cerVersionId: String!
+    $updateFrequency: String!
+    $dataCollectionMethods: [String!]!
+  ) {
+    createPmsPlan(
+      projectId: $projectId
+      cerVersionId: $cerVersionId
+      updateFrequency: $updateFrequency
+      dataCollectionMethods: $dataCollectionMethods
+    ) {
+      pmsPlanId
+      projectId
+      cerVersionId
       status
     }
   }
@@ -21,87 +43,104 @@ const FREQUENCY_OPTIONS = [
   { value: 'MONTHLY', label: 'Monthly' },
 ];
 
+const DATA_COLLECTION_METHODS = [
+  { value: 'VIGILANCE_DATABASE', label: 'Vigilance Database Monitoring' },
+  { value: 'LITERATURE_REVIEW', label: 'Literature Review' },
+  { value: 'COMPLAINT_ANALYSIS', label: 'Complaint Analysis' },
+  { value: 'CLINICAL_FOLLOW_UP', label: 'Clinical Follow-Up (PMCF)' },
+  { value: 'REGISTRY_DATA', label: 'Registry Data' },
+  { value: 'TREND_ANALYSIS', label: 'Trend Analysis' },
+];
+
 interface PmsPlanFormProps {
-  deviceId?: string;
+  projectId: string;
   onSuccess?: (planId: string) => void;
   onCancel?: () => void;
 }
 
-export function PmsPlanForm({ deviceId, onSuccess, onCancel }: PmsPlanFormProps) {
-  const [name, setName] = useState('');
-  const [selectedDeviceId, setSelectedDeviceId] = useState(deviceId ?? '');
+export function PmsPlanForm({ projectId, onSuccess, onCancel }: PmsPlanFormProps) {
+  const [cerVersionId, setCerVersionId] = useState('');
   const [frequency, setFrequency] = useState('ANNUAL');
-  const [startDate, setStartDate] = useState('');
-  const [enableGapRegistry, setEnableGapRegistry] = useState(true);
-  const [gapThreshold, setGapThreshold] = useState('10');
+  const [selectedMethods, setSelectedMethods] = useState<string[]>([
+    'VIGILANCE_DATABASE',
+    'LITERATURE_REVIEW',
+  ]);
+  const [createError, setCreateError] = useState<string | null>(null);
 
-  const [createPlan, { loading }] = useMutation<any>(CREATE_PMS_PLAN);
+  const { data: cerData } = useQuery<any>(GET_CER_VERSIONS_FOR_PMS, {
+    variables: { projectId },
+    skip: !projectId,
+  });
+
+  const cerVersions: Array<{
+    id: string;
+    versionNumber: number;
+    regulatoryContext: string;
+    status: string;
+  }> = cerData?.cerVersions ?? [];
+
+  const [createPlan, { loading }] = useMutation<any>(CREATE_PMS_PLAN, {
+    errorPolicy: 'none',
+  });
+
+  const toggleMethod = (method: string) => {
+    setSelectedMethods((prev) =>
+      prev.includes(method) ? prev.filter((m) => m !== method) : [...prev, method],
+    );
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setCreateError(null);
 
-    const result = await createPlan({
-      variables: {
-        input: {
-          name,
-          deviceId: selectedDeviceId,
-          frequency,
-          startDate,
-          gapRegistryConfig: enableGapRegistry
-            ? {
-                enabled: true,
-                threshold: parseInt(gapThreshold, 10),
-              }
-            : undefined,
+    try {
+      const result = await createPlan({
+        variables: {
+          projectId,
+          cerVersionId,
+          updateFrequency: frequency,
+          dataCollectionMethods: selectedMethods,
         },
-      },
-    });
+      });
 
-    if (result.data?.createPmsPlan) {
-      onSuccess?.(result.data.createPmsPlan.id);
+      if (result.data?.createPmsPlan) {
+        onSuccess?.(result.data.createPmsPlan.pmsPlanId);
+      }
+    } catch (err: any) {
+      setCreateError(err.message ?? 'Failed to create PMS plan');
     }
   };
 
-  const isValid = name.trim() && selectedDeviceId && frequency && startDate;
+  const isValid = cerVersionId && frequency && selectedMethods.length > 0;
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6" data-testid="pms-plan-form">
+    <form onSubmit={handleSubmit} className="space-y-5" data-testid="pms-plan-form">
       <div>
         <label
-          htmlFor="plan-name"
+          htmlFor="cer-version"
           className="mb-1 block text-sm font-medium text-[var(--cortex-text-primary)]"
         >
-          Plan Name <span className="text-red-500">*</span>
+          CER Version <span className="text-red-500">*</span>
         </label>
-        <input
-          id="plan-name"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Enter PMS plan name"
+        <select
+          id="cer-version"
+          value={cerVersionId}
+          onChange={(e) => setCerVersionId(e.target.value)}
           className="w-full rounded border border-[var(--cortex-border)] px-3 py-2 text-sm focus:border-[var(--cortex-primary)] focus:outline-none"
-          data-testid="plan-name-input"
+          data-testid="cer-version-select"
           required
-        />
-      </div>
-
-      <div>
-        <label
-          htmlFor="device-id"
-          className="mb-1 block text-sm font-medium text-[var(--cortex-text-primary)]"
         >
-          Device <span className="text-red-500">*</span>
-        </label>
-        <input
-          id="device-id"
-          type="text"
-          value={selectedDeviceId}
-          onChange={(e) => setSelectedDeviceId(e.target.value)}
-          placeholder="Enter device ID"
-          className="w-full rounded border border-[var(--cortex-border)] px-3 py-2 text-sm focus:border-[var(--cortex-primary)] focus:outline-none"
-          data-testid="device-id-input"
-          required
-        />
+          <option value="">-- Select a CER version --</option>
+          {cerVersions.map((cer) => (
+            <option key={cer.id} value={cer.id} disabled={cer.status !== 'LOCKED'}>
+              CER v{cer.versionNumber} ({cer.regulatoryContext.replace('_', ' ')}) — {cer.status}
+              {cer.status !== 'LOCKED' ? ' (must be locked)' : ''}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-[var(--cortex-text-muted)]">
+          Only locked CER versions can be used for PMS planning.
+        </p>
       </div>
 
       <div>
@@ -109,7 +148,7 @@ export function PmsPlanForm({ deviceId, onSuccess, onCancel }: PmsPlanFormProps)
           htmlFor="frequency"
           className="mb-1 block text-sm font-medium text-[var(--cortex-text-primary)]"
         >
-          Review Frequency <span className="text-red-500">*</span>
+          Update Frequency <span className="text-red-500">*</span>
         </label>
         <select
           id="frequency"
@@ -128,66 +167,32 @@ export function PmsPlanForm({ deviceId, onSuccess, onCancel }: PmsPlanFormProps)
       </div>
 
       <div>
-        <label
-          htmlFor="start-date"
-          className="mb-1 flex items-center gap-2 text-sm font-medium text-[var(--cortex-text-primary)]"
-        >
-          <Calendar size={14} />
-          Start Date <span className="text-red-500">*</span>
+        <label className="mb-2 block text-sm font-medium text-[var(--cortex-text-primary)]">
+          Data Collection Methods <span className="text-red-500">*</span>
         </label>
-        <input
-          id="start-date"
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="w-full rounded border border-[var(--cortex-border)] px-3 py-2 text-sm focus:border-[var(--cortex-primary)] focus:outline-none"
-          data-testid="start-date-input"
-          required
-        />
-      </div>
-
-      <div className="rounded-lg border border-[var(--cortex-border)] p-4">
-        <div className="mb-3 flex items-center gap-2">
-          <Settings size={16} className="text-[var(--cortex-text-muted)]" />
-          <h4 className="text-sm font-semibold text-[var(--cortex-text-primary)]">
-            Gap Registry Configuration
-          </h4>
-        </div>
-
-        <label className="mb-3 flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={enableGapRegistry}
-            onChange={(e) => setEnableGapRegistry(e.target.checked)}
-            data-testid="gap-registry-checkbox"
-          />
-          <span className="text-[var(--cortex-text-primary)]">Enable Gap Registry</span>
-        </label>
-
-        {enableGapRegistry && (
-          <div>
+        <div className="space-y-1">
+          {DATA_COLLECTION_METHODS.map((method) => (
             <label
-              htmlFor="gap-threshold"
-              className="mb-1 block text-sm text-[var(--cortex-text-muted)]"
+              key={method.value}
+              className="flex items-center gap-2 rounded border border-[var(--cortex-border)] p-2 text-sm"
             >
-              Detection Threshold
-            </label>
-            <div className="flex items-center gap-2">
               <input
-                id="gap-threshold"
-                type="number"
-                min="1"
-                max="100"
-                value={gapThreshold}
-                onChange={(e) => setGapThreshold(e.target.value)}
-                className="w-24 rounded border border-[var(--cortex-border)] px-3 py-2 text-sm focus:border-[var(--cortex-primary)] focus:outline-none"
-                data-testid="gap-threshold-input"
+                type="checkbox"
+                checked={selectedMethods.includes(method.value)}
+                onChange={() => toggleMethod(method.value)}
+                data-testid={`method-${method.value}`}
               />
-              <span className="text-sm text-[var(--cortex-text-muted)]">incidents per cycle</span>
-            </div>
-          </div>
-        )}
+              <span className="text-[var(--cortex-text-primary)]">{method.label}</span>
+            </label>
+          ))}
+        </div>
       </div>
+
+      {createError && (
+        <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {createError}
+        </div>
+      )}
 
       <div className="flex justify-end gap-3">
         {onCancel && (
@@ -203,11 +208,11 @@ export function PmsPlanForm({ deviceId, onSuccess, onCancel }: PmsPlanFormProps)
         <button
           type="submit"
           disabled={!isValid || loading}
-          className="inline-flex items-center gap-2 rounded bg-[var(--cortex-primary)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--cortex-primary-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded bg-[var(--cortex-primary)] px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           data-testid="submit-btn"
         >
           <FileText size={16} />
-          {loading ? 'Creating...' : 'Create Plan'}
+          {loading ? 'Creating...' : 'Create PMS Plan'}
         </button>
       </div>
     </form>

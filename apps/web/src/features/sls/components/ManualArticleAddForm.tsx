@@ -4,8 +4,26 @@ import { gql } from '@apollo/client';
 import { Upload, Plus, Trash2, Loader2 } from 'lucide-react';
 
 export const ADD_MANUAL_ARTICLE = gql`
-  mutation AddManualArticle($sessionId: String!, $metadata: ManualArticleInput!) {
-    addManualArticle(sessionId: $sessionId, metadata: $metadata) {
+  mutation AddManualArticle(
+    $sessionId: String!
+    $title: String!
+    $authors: JSON!
+    $year: Int
+    $journal: String
+    $doi: String
+    $pmid: String
+    $pdfStorageKey: String!
+  ) {
+    addManualArticle(
+      sessionId: $sessionId
+      title: $title
+      authors: $authors
+      year: $year
+      journal: $journal
+      doi: $doi
+      pmid: $pmid
+      pdfStorageKey: $pdfStorageKey
+    ) {
       articleId
       title
       status
@@ -82,10 +100,13 @@ export function ManualArticleAddForm({ sessionId, onAdded }: ManualArticleAddFor
     const result = await addArticle({
       variables: {
         sessionId,
-        metadata: {
-          ...metadata,
-          year: Number(metadata.year) || null,
-        },
+        title: metadata.title,
+        authors: metadata.authors,
+        year: Number(metadata.year) || null,
+        journal: metadata.journal || null,
+        doi: metadata.doi || null,
+        pmid: metadata.pmid || null,
+        pdfStorageKey: 'manual-upload-pending',
       },
     });
     if (result.data?.addManualArticle) {

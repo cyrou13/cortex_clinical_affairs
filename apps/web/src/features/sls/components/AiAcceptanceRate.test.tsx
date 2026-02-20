@@ -1,9 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-
-vi.mock('@apollo/client', () => ({
-  gql: (str: TemplateStringsArray) => str[0],
-}));
 
 import { AiAcceptanceRate } from './AiAcceptanceRate';
 
@@ -27,9 +23,7 @@ describe('AiAcceptanceRate', () => {
   it('shows total scored count', () => {
     render(<AiAcceptanceRate stats={defaultStats} />);
 
-    expect(screen.getByTestId('total-scored')).toHaveTextContent(
-      '4,500 articles scored',
-    );
+    expect(screen.getByTestId('total-scored')).toHaveTextContent('4,500 articles scored');
   });
 
   it('renders category breakdown with all three categories', () => {
@@ -44,19 +38,13 @@ describe('AiAcceptanceRate', () => {
   it('shows correct counts for each category', () => {
     render(<AiAcceptanceRate stats={defaultStats} />);
 
-    expect(screen.getByTestId('likely-relevant-row')).toHaveTextContent(
-      '1,200',
-    );
+    expect(screen.getByTestId('likely-relevant-row')).toHaveTextContent('1,200');
     expect(screen.getByTestId('uncertain-row')).toHaveTextContent('1,800');
-    expect(screen.getByTestId('likely-irrelevant-row')).toHaveTextContent(
-      '1,500',
-    );
+    expect(screen.getByTestId('likely-irrelevant-row')).toHaveTextContent('1,500');
   });
 
   it('shows green badge for high acceptance rate', () => {
-    render(
-      <AiAcceptanceRate stats={{ ...defaultStats, acceptanceRate: 80 }} />,
-    );
+    render(<AiAcceptanceRate stats={{ ...defaultStats, acceptanceRate: 80 }} />);
 
     const badge = screen.getByTestId('acceptance-rate-badge');
     expect(badge.className).toContain('bg-emerald-100');
@@ -64,9 +52,7 @@ describe('AiAcceptanceRate', () => {
   });
 
   it('shows orange badge for medium acceptance rate', () => {
-    render(
-      <AiAcceptanceRate stats={{ ...defaultStats, acceptanceRate: 55 }} />,
-    );
+    render(<AiAcceptanceRate stats={{ ...defaultStats, acceptanceRate: 55 }} />);
 
     const badge = screen.getByTestId('acceptance-rate-badge');
     expect(badge.className).toContain('bg-orange-100');
@@ -74,9 +60,7 @@ describe('AiAcceptanceRate', () => {
   });
 
   it('shows red badge for low acceptance rate', () => {
-    render(
-      <AiAcceptanceRate stats={{ ...defaultStats, acceptanceRate: 25 }} />,
-    );
+    render(<AiAcceptanceRate stats={{ ...defaultStats, acceptanceRate: 25 }} />);
 
     const badge = screen.getByTestId('acceptance-rate-badge');
     expect(badge.className).toContain('bg-red-100');
@@ -126,13 +110,9 @@ describe('AiAcceptanceRate', () => {
   });
 
   it('rounds acceptance rate display', () => {
-    render(
-      <AiAcceptanceRate stats={{ ...defaultStats, acceptanceRate: 72.7 }} />,
-    );
+    render(<AiAcceptanceRate stats={{ ...defaultStats, acceptanceRate: 72.7 }} />);
 
-    expect(screen.getByTestId('acceptance-rate-badge')).toHaveTextContent(
-      '73%',
-    );
+    expect(screen.getByTestId('acceptance-rate-badge')).toHaveTextContent('73%');
   });
 
   it('renders the overview heading', () => {

@@ -14,44 +14,13 @@ vi.mock('@apollo/client/react', () => ({
 import { ComparisonTable } from './ComparisonTable';
 
 const mockComparisonData = {
-  deviceComparison: {
-    targetDevice: {
-      id: 'device-1',
-      name: 'Target Device',
-      manufacturer: 'Acme Corp',
-    },
-    similarDevices: [
-      {
-        id: 'device-2',
-        name: 'Similar Device A',
-        manufacturer: 'TechMed',
-      },
-      {
-        id: 'device-3',
-        name: 'Similar Device B',
-        manufacturer: 'MediTech',
-      },
+  comparisonTable: {
+    headers: ['Target Device', 'Similar Device A', 'Similar Device B'],
+    rows: [
+      { metricName: 'Accuracy', values: ['95.5%', '93.2%', '96.8%'] },
+      { metricName: 'Response Time', values: ['1.2ms', '1.5ms', '1.1ms'] },
     ],
-    metrics: [
-      {
-        name: 'Accuracy',
-        category: 'Performance',
-        values: [
-          { deviceId: 'device-1', value: '95.5', unit: '%' },
-          { deviceId: 'device-2', value: '93.2', unit: '%' },
-          { deviceId: 'device-3', value: '96.8', unit: '%' },
-        ],
-      },
-      {
-        name: 'Response Time',
-        category: 'Performance',
-        values: [
-          { deviceId: 'device-1', value: '1.2', unit: 'ms' },
-          { deviceId: 'device-2', value: '1.5', unit: 'ms' },
-          { deviceId: 'device-3', value: '1.1', unit: 'ms' },
-        ],
-      },
-    ],
+    metricNames: ['Accuracy', 'Response Time'],
   },
 };
 
@@ -81,7 +50,7 @@ describe('ComparisonTable', () => {
     expect(screen.getByTestId('comparison-empty')).toBeInTheDocument();
   });
 
-  it('renders comparison table with devices and metrics', () => {
+  it('renders table with headers', () => {
     mockUseQuery.mockReturnValue({ data: mockComparisonData, loading: false, error: null });
     render(<ComparisonTable soaAnalysisId="soa-1" />);
 
@@ -99,14 +68,6 @@ describe('ComparisonTable', () => {
     expect(screen.getByTestId('metric-row-1')).toBeInTheDocument();
     expect(screen.getByText('Accuracy')).toBeInTheDocument();
     expect(screen.getByText('Response Time')).toBeInTheDocument();
-  });
-
-  it('shows variance indicators for similar devices', () => {
-    mockUseQuery.mockReturnValue({ data: mockComparisonData, loading: false, error: null });
-    render(<ComparisonTable soaAnalysisId="soa-1" />);
-
-    const varianceIcons = screen.getAllByTestId('variance-icon');
-    expect(varianceIcons.length).toBeGreaterThan(0);
   });
 
   it('highlights target device column', () => {

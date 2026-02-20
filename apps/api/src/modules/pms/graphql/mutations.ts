@@ -27,6 +27,7 @@ import {
   checkPermission,
   checkProjectMembership,
 } from '../../../shared/middleware/rbac-middleware.js';
+import { NotFoundError } from '../../../shared/errors/index.js';
 import { CreatePmsPlanUseCase } from '../application/use-cases/create-pms-plan.js';
 import { UpdatePmsPlanUseCase } from '../application/use-cases/update-pms-plan.js';
 import { ApprovePmsPlanUseCase } from '../application/use-cases/approve-pms-plan.js';
@@ -688,6 +689,59 @@ builder.mutationField('finalizeCerUpdateDecision', (t) =>
 
       const useCase = new FinalizeCerUpdateDecisionUseCase(ctx.prisma, getEventBus());
       return useCase.execute({ decisionId: args.decisionId, userId: ctx.user!.id }) as any;
+    },
+  }),
+);
+
+// --- Delete PMS Plan ---
+
+builder.mutationField('deletePmsPlan', (t) =>
+  t.field({
+    type: 'Boolean',
+    args: {
+      pmsPlanId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'pms', 'write');
+
+      const plan = await ctx.prisma.pmsPlan.findUnique({
+        where: { id: args.pmsPlanId },
+      });
+
+      if (!plan) {
+        throw new NotFoundError('PmsPlan', args.pmsPlanId);
+      }
+
+      await checkProjectMembership(ctx, plan.projectId);
+
+      if (plan.status !== 'DRAFT') {
+        throw new Error('Cannot delete an active or approved PMS plan');
+      }
+
+      await ctx.prisma.$transaction([
+        (ctx.prisma as any).cerUpdateDecision.deleteMany({
+          where: { pmsCycle: { pmsPlanId: args.pmsPlanId } },
+        }),
+        (ctx.prisma as any).installedBaseEntry.deleteMany({
+          where: { pmsCycle: { pmsPlanId: args.pmsPlanId } },
+        }),
+        (ctx.prisma as any).trendAnalysis.deleteMany({
+          where: { pmsCycle: { pmsPlanId: args.pmsPlanId } },
+        }),
+        (ctx.prisma as any).complaint.deleteMany({
+          where: { pmsCycle: { pmsPlanId: args.pmsPlanId } },
+        }),
+        (ctx.prisma as any).pmcfActivity.deleteMany({
+          where: { pmsCycle: { pmsPlanId: args.pmsPlanId } },
+        }),
+        ctx.prisma.pmsCycle.deleteMany({ where: { pmsPlanId: args.pmsPlanId } }),
+        ctx.prisma.gapRegistryEntry.deleteMany({ where: { pmsPlanId: args.pmsPlanId } }),
+        ctx.prisma.pmsResponsibility.deleteMany({ where: { pmsPlanId: args.pmsPlanId } }),
+        (ctx.prisma as any).pmsPlanVigilanceDb.deleteMany({ where: { pmsPlanId: args.pmsPlanId } }),
+        ctx.prisma.pmsPlan.delete({ where: { id: args.pmsPlanId } }),
+      ]);
+
+      return true;
     },
   }),
 );

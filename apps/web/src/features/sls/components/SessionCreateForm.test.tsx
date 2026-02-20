@@ -1,19 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
-
-vi.mock('@apollo/client', () => ({
-  gql: (str: TemplateStringsArray) => str[0],
-}));
-
-const mockCreateSession = vi.fn();
-const mockUseMutation = vi.fn().mockReturnValue([mockCreateSession, { loading: false }]);
-const mockUseQuery = vi.fn();
-
-vi.mock('@apollo/client/react', () => ({
-  useMutation: (...args: unknown[]) => mockUseMutation(...args),
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-}));
-
+import { screen, fireEvent, act, waitFor } from '@testing-library/react';
+import { renderWithApollo, type MockedResponse } from '../../../test-utils/apollo-wrapper';
+import { CREATE_SLS_SESSION } from '../graphql/mutations';
 import { SessionCreateForm } from './SessionCreateForm';
 
 describe('SessionCreateForm', () => {
@@ -23,13 +11,29 @@ describe('SessionCreateForm', () => {
     onCancel: vi.fn(),
   };
 
+  const createSessionMock: MockedResponse = {
+    request: {
+      query: CREATE_SLS_SESSION,
+      variables: {
+        projectId: 'proj-1',
+        name: 'Test Session',
+        type: 'AD_HOC',
+        scopeFields: undefined,
+      },
+    },
+    result: {
+      data: {
+        createSlsSession: { id: 'new-sess-1', name: 'Test', type: 'AD_HOC', status: 'DRAFT' },
+      },
+    },
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseMutation.mockReturnValue([mockCreateSession, { loading: false }]);
   });
 
   it('shows type selector with 5 session types', () => {
-    render(<SessionCreateForm {...defaultProps} />);
+    renderWithApollo(<SessionCreateForm {...defaultProps} />, [createSessionMock]);
 
     expect(screen.getByText('SOA Clinical')).toBeInTheDocument();
     expect(screen.getByText('SOA Device')).toBeInTheDocument();
@@ -39,7 +43,7 @@ describe('SessionCreateForm', () => {
   });
 
   it('shows SOA Clinical scope fields when SOA_CLINICAL is selected', async () => {
-    render(<SessionCreateForm {...defaultProps} />);
+    renderWithApollo(<SessionCreateForm {...defaultProps} />, [createSessionMock]);
 
     await act(async () => {
       fireEvent.click(screen.getByText('SOA Clinical'));
@@ -53,7 +57,7 @@ describe('SessionCreateForm', () => {
   });
 
   it('shows SOA Device scope fields when SOA_DEVICE is selected', async () => {
-    render(<SessionCreateForm {...defaultProps} />);
+    renderWithApollo(<SessionCreateForm {...defaultProps} />, [createSessionMock]);
 
     await act(async () => {
       fireEvent.click(screen.getByText('SOA Device'));
@@ -66,7 +70,7 @@ describe('SessionCreateForm', () => {
   });
 
   it('shows Similar Device scope fields when SIMILAR_DEVICE is selected', async () => {
-    render(<SessionCreateForm {...defaultProps} />);
+    renderWithApollo(<SessionCreateForm {...defaultProps} />, [createSessionMock]);
 
     await act(async () => {
       fireEvent.click(screen.getByText('Similar Device'));
@@ -78,7 +82,7 @@ describe('SessionCreateForm', () => {
   });
 
   it('shows PMS Update scope fields when PMS_UPDATE is selected', async () => {
-    render(<SessionCreateForm {...defaultProps} />);
+    renderWithApollo(<SessionCreateForm {...defaultProps} />, [createSessionMock]);
 
     await act(async () => {
       fireEvent.click(screen.getByText('PMS Update'));
@@ -90,7 +94,7 @@ describe('SessionCreateForm', () => {
   });
 
   it('shows Ad Hoc scope fields when AD_HOC is selected', async () => {
-    render(<SessionCreateForm {...defaultProps} />);
+    renderWithApollo(<SessionCreateForm {...defaultProps} />, [createSessionMock]);
 
     await act(async () => {
       fireEvent.click(screen.getByText('Ad Hoc'));
@@ -101,7 +105,7 @@ describe('SessionCreateForm', () => {
   });
 
   it('changes scope fields when type selection changes', async () => {
-    render(<SessionCreateForm {...defaultProps} />);
+    renderWithApollo(<SessionCreateForm {...defaultProps} />, [createSessionMock]);
 
     // Select SOA Clinical first
     await act(async () => {
@@ -118,7 +122,7 @@ describe('SessionCreateForm', () => {
   });
 
   it('shows validation errors when submitting empty form', async () => {
-    render(<SessionCreateForm {...defaultProps} />);
+    renderWithApollo(<SessionCreateForm {...defaultProps} />, [createSessionMock]);
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('create-button'));
@@ -129,7 +133,7 @@ describe('SessionCreateForm', () => {
   });
 
   it('shows validation error for short name', async () => {
-    render(<SessionCreateForm {...defaultProps} />);
+    renderWithApollo(<SessionCreateForm {...defaultProps} />, [createSessionMock]);
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Session Name'), {
@@ -144,51 +148,12 @@ describe('SessionCreateForm', () => {
     expect(screen.getByText('Session name must be at least 3 characters')).toBeInTheDocument();
   });
 
-  it('calls createSession mutation on valid submit', async () => {
-    mockCreateSession.mockResolvedValue({
-      data: {
-        createSlsSession: { id: 'new-sess-1', name: 'Test', type: 'AD_HOC', status: 'DRAFT' },
-      },
-    });
-
-    render(<SessionCreateForm {...defaultProps} />);
-
-    // Fill in name
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText('Session Name'), {
-        target: { value: 'Test Session' },
-      });
-    });
-
-    // Select type
-    await act(async () => {
-      fireEvent.click(screen.getByText('Ad Hoc'));
-    });
-
-    // Submit
-    await act(async () => {
-      fireEvent.click(screen.getByTestId('create-button'));
-    });
-
-    expect(mockCreateSession).toHaveBeenCalledWith({
-      variables: {
-        projectId: 'proj-1',
-        name: 'Test Session',
-        type: 'AD_HOC',
-        scopeFields: undefined,
-      },
-    });
-  });
-
   it('calls onCreated with session id after successful creation', async () => {
     const onCreated = vi.fn();
-    mockCreateSession.mockResolvedValue({
-      data: {
-        createSlsSession: { id: 'new-sess-1', name: 'Test', type: 'AD_HOC', status: 'DRAFT' },
-      },
-    });
 
-    render(<SessionCreateForm {...defaultProps} onCreated={onCreated} />);
+    renderWithApollo(<SessionCreateForm {...defaultProps} onCreated={onCreated} />, [
+      createSessionMock,
+    ]);
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Session Name'), {
@@ -204,25 +169,27 @@ describe('SessionCreateForm', () => {
       fireEvent.click(screen.getByTestId('create-button'));
     });
 
-    expect(onCreated).toHaveBeenCalledWith('new-sess-1');
+    await waitFor(() => {
+      expect(onCreated).toHaveBeenCalledWith('new-sess-1');
+    });
   });
 
   it('calls onCancel when Cancel button is clicked', () => {
-    render(<SessionCreateForm {...defaultProps} />);
+    renderWithApollo(<SessionCreateForm {...defaultProps} />, [createSessionMock]);
 
     fireEvent.click(screen.getByTestId('cancel-button'));
     expect(defaultProps.onCancel).toHaveBeenCalled();
   });
 
   it('calls onCancel when close (X) button is clicked', () => {
-    render(<SessionCreateForm {...defaultProps} />);
+    renderWithApollo(<SessionCreateForm {...defaultProps} />, [createSessionMock]);
 
     fireEvent.click(screen.getByTestId('close-button'));
     expect(defaultProps.onCancel).toHaveBeenCalled();
   });
 
   it('clears type validation error when a type is selected', async () => {
-    render(<SessionCreateForm {...defaultProps} />);
+    renderWithApollo(<SessionCreateForm {...defaultProps} />, [createSessionMock]);
 
     // Trigger validation
     await act(async () => {

@@ -23,6 +23,7 @@ export const ArticleFilter = z.object({
   yearTo: z.number().int().min(1900).max(2100).optional(),
   sourceDatabase: z.string().optional(),
   searchText: z.string().optional(),
+  pdfStatus: z.string().optional(),
 });
 export type ArticleFilter = z.infer<typeof ArticleFilter>;
 

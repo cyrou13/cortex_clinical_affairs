@@ -18,16 +18,18 @@ function makePrisma(overrides?: {
 }) {
   return {
     cerVersion: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.cerVersion !== undefined
-          ? overrides.cerVersion
-          : { id: CER_VERSION_ID, status: 'FINALIZED', projectId: PROJECT_ID },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.cerVersion !== undefined
+            ? overrides.cerVersion
+            : { id: CER_VERSION_ID, status: 'FINALIZED', projectId: PROJECT_ID },
+        ),
     },
     cerSection: {
-      count: vi.fn().mockResolvedValue(
-        overrides?.sectionCount !== undefined ? overrides.sectionCount : 14,
-      ),
+      count: vi
+        .fn()
+        .mockResolvedValue(overrides?.sectionCount !== undefined ? overrides.sectionCount : 14),
     },
   } as any;
 }
@@ -118,7 +120,7 @@ describe('ExportCerUseCase', () => {
     });
 
     expect(taskService.enqueueTask).toHaveBeenCalledWith(
-      'cer:generate-docx',
+      'cer.generate-docx',
       expect.objectContaining({
         cerVersionId: CER_VERSION_ID,
         exportFormat: 'GSPR_TABLE',

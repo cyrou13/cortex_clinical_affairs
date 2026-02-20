@@ -1,52 +1,35 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { gql } from '@apollo/client';
 import { Lock, AlertTriangle } from 'lucide-react';
-
-export const SOA_LOCK_PREFLIGHT = gql`
-  query SoaLockPreflight($soaAnalysisId: String!) {
-    soaLockPreflight(soaAnalysisId: $soaAnalysisId) {
-      totalSections
-      finalizedSections
-      allSectionsFinalized
-      soaStatus
-    }
-  }
-`;
-
-export const LOCK_SOA_ANALYSIS = gql`
-  mutation LockSoaAnalysis($soaAnalysisId: String!) {
-    lockSoaAnalysis(soaAnalysisId: $soaAnalysisId) {
-      soaAnalysisId
-      lockedAt
-      status
-    }
-  }
-`;
+import { GET_SOA_PROGRESS } from '../graphql/queries';
+import { LOCK_SOA_ANALYSIS } from '../graphql/mutations';
 
 interface LockSoaButtonProps {
   soaAnalysisId: string;
+  soaStatus?: string;
   onLocked?: () => void;
 }
 
-export function LockSoaButton({ soaAnalysisId, onLocked }: LockSoaButtonProps) {
+export function LockSoaButton({ soaAnalysisId, soaStatus, onLocked }: LockSoaButtonProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
 
-  const { data } = useQuery<any>(SOA_LOCK_PREFLIGHT, {
+  const { data } = useQuery<any>(GET_SOA_PROGRESS, {
     variables: { soaAnalysisId },
   });
 
   const [lockSoa, { loading: locking }] = useMutation<any>(LOCK_SOA_ANALYSIS);
 
-  const preflight = data?.soaLockPreflight;
-  const isLocked = preflight?.soaStatus === 'LOCKED';
-  const canLock = preflight?.allSectionsFinalized && !isLocked;
+  const progress = data?.soaProgress;
+  const isLocked = soaStatus === 'LOCKED';
+  const allSectionsFinalized =
+    progress?.finalizedCount === progress?.totalSections && (progress?.totalSections ?? 0) > 0;
+  const canLock = allSectionsFinalized && !isLocked;
 
   const disabledReason = isLocked
     ? 'SOA is already locked'
-    : !preflight?.allSectionsFinalized
-      ? `${(preflight?.totalSections ?? 0) - (preflight?.finalizedSections ?? 0)} sections not finalized`
+    : !allSectionsFinalized
+      ? `${(progress?.totalSections ?? 0) - (progress?.finalizedCount ?? 0)} sections not finalized`
       : undefined;
 
   const handleConfirm = async () => {
@@ -122,7 +105,7 @@ export function LockSoaButton({ soaAnalysisId, onLocked }: LockSoaButtonProps) {
               <div className="flex justify-between text-sm">
                 <span className="text-[var(--cortex-text-muted)]">Total sections</span>
                 <span className="font-medium" data-testid="recap-total-sections">
-                  {preflight?.totalSections ?? 0}
+                  {progress?.totalSections ?? 0}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
@@ -131,7 +114,7 @@ export function LockSoaButton({ soaAnalysisId, onLocked }: LockSoaButtonProps) {
                   className="font-medium text-emerald-600"
                   data-testid="recap-finalized-sections"
                 >
-                  {preflight?.finalizedSections ?? 0}
+                  {progress?.finalizedCount ?? 0}
                 </span>
               </div>
             </div>
@@ -157,7 +140,7 @@ export function LockSoaButton({ soaAnalysisId, onLocked }: LockSoaButtonProps) {
                   setDialogOpen(false);
                   setConfirmed(false);
                 }}
-                className="rounded border border-[var(--cortex-border)] px-4 py-2 text-sm text-[var(--cortex-text-secondary)] hover:bg-[var(--cortex-bg-hover)]"
+                className="rounded border border-[var(--cortex-border)] px-4 py-2 text-sm text-[var(--cortex-text-secondary)] hover:bg-gray-50"
                 data-testid="lock-cancel-btn"
               >
                 Cancel

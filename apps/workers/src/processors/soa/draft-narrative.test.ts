@@ -5,7 +5,7 @@ function makeMockJob(metadata: any) {
   return {
     data: {
       taskId: 'task-1',
-      type: 'soa:draft-narrative',
+      type: 'soa.draft-narrative',
       metadata,
       createdBy: 'user-1',
     },

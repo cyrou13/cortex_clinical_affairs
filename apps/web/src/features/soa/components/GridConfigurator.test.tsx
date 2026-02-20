@@ -1,16 +1,46 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 vi.mock('@apollo/client', () => ({
   gql: (str: TemplateStringsArray) => str[0],
 }));
 
-const mockUseQuery = vi.fn();
 const mockUseMutation = vi.fn();
+const mockUseQuery = vi.fn();
 
 vi.mock('@apollo/client/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
   useMutation: (...args: unknown[]) => mockUseMutation(...args),
+  useQuery: (...args: unknown[]) => mockUseQuery(...args),
+}));
+
+// Mock child components
+vi.mock('./TemplateSelector', () => ({
+  TemplateSelector: (props: any) => (
+    <div data-testid="template-selector-mock">
+      <button data-testid="mock-select-tpl" onClick={() => props.onSelectTemplate('tpl-1')}>
+        Select
+      </button>
+      <button data-testid="mock-start-empty" onClick={() => props.onStartEmpty()}>
+        Empty
+      </button>
+      <button data-testid="mock-create-new" onClick={() => props.onCreateNew()}>
+        Create
+      </button>
+    </div>
+  ),
+}));
+
+vi.mock('./TemplateEditor', () => ({
+  TemplateEditor: (props: any) => (
+    <div data-testid="template-editor-mock">
+      <button data-testid="mock-editor-save" onClick={() => props.onSave()}>
+        Save
+      </button>
+      <button data-testid="mock-editor-cancel" onClick={() => props.onCancel()}>
+        Cancel
+      </button>
+    </div>
+  ),
 }));
 
 import { GridConfigurator } from './GridConfigurator';
@@ -20,19 +50,24 @@ const mockColumns = [
   { id: 'col-2', name: 'year', displayName: 'Year', dataType: 'NUMERIC', orderIndex: 1 },
 ];
 
-const mockTemplates = [
-  { id: 'tpl-clinical-default', name: 'Clinical SOA — Default', soaType: 'CLINICAL', columns: [] },
-];
-
 describe('GridConfigurator', () => {
-  const mockCreateGrid = vi.fn().mockResolvedValue({ data: { createExtractionGrid: { gridId: 'grid-1', columnCount: 12 } } });
-  const mockAddColumn = vi.fn().mockResolvedValue({ data: { addGridColumn: { columnId: 'col-new' } } });
-  const mockRenameColumn = vi.fn().mockResolvedValue({ data: { renameGridColumn: { columnId: 'col-1', displayName: 'New Name' } } });
-  const mockRemoveColumn = vi.fn().mockResolvedValue({ data: { removeGridColumn: { columnId: 'col-1', removed: true } } });
+  const mockCreateGrid = vi
+    .fn()
+    .mockResolvedValue({ data: { createExtractionGrid: { gridId: 'grid-1', columnCount: 2 } } });
+  const mockAddColumn = vi
+    .fn()
+    .mockResolvedValue({ data: { addGridColumn: { columnId: 'col-new' } } });
+  const mockRenameColumn = vi
+    .fn()
+    .mockResolvedValue({
+      data: { renameGridColumn: { columnId: 'col-1', displayName: 'New Name' } },
+    });
+  const mockRemoveColumn = vi
+    .fn()
+    .mockResolvedValue({ data: { removeGridColumn: { columnId: 'col-1', removed: true } } });
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseQuery.mockReturnValue({ data: { gridTemplates: mockTemplates } });
     const mutationReturns = [
       [mockCreateGrid, { loading: false }],
       [mockAddColumn, { loading: false }],
@@ -45,36 +80,21 @@ describe('GridConfigurator', () => {
       mutationCallIndex++;
       return result;
     });
+    mockUseQuery.mockReturnValue({
+      data: { gridTemplates: [] },
+      loading: false,
+      refetch: vi.fn(),
+    });
   });
 
-  it('shows template list when no grid exists', () => {
-    render(<GridConfigurator soaAnalysisId="soa-1" columns={[]} />);
-    expect(screen.getByTestId('template-list')).toBeInTheDocument();
+  it('shows template selector when soaType is provided and no grid exists', () => {
+    render(<GridConfigurator soaAnalysisId="soa-1" soaType="CLINICAL" columns={[]} />);
+    expect(screen.getByTestId('template-selector-mock')).toBeInTheDocument();
   });
 
-  it('shows create empty grid button', () => {
+  it('shows create empty grid button when no soaType and no grid', () => {
     render(<GridConfigurator soaAnalysisId="soa-1" columns={[]} />);
     expect(screen.getByTestId('create-empty-grid-btn')).toBeInTheDocument();
-  });
-
-  it('shows template buttons', () => {
-    render(<GridConfigurator soaAnalysisId="soa-1" columns={[]} />);
-    expect(screen.getByTestId('template-tpl-clinical-default')).toBeInTheDocument();
-  });
-
-  it('calls create mutation on template select', async () => {
-    render(<GridConfigurator soaAnalysisId="soa-1" columns={[]} />);
-    fireEvent.click(screen.getByTestId('template-tpl-clinical-default'));
-
-    await waitFor(() => {
-      expect(mockCreateGrid).toHaveBeenCalledWith(
-        expect.objectContaining({
-          variables: expect.objectContaining({
-            templateId: 'tpl-clinical-default',
-          }),
-        }),
-      );
-    });
   });
 
   it('shows column list when grid exists', () => {
@@ -112,5 +132,11 @@ describe('GridConfigurator', () => {
   it('shows column count', () => {
     render(<GridConfigurator soaAnalysisId="soa-1" gridId="grid-1" columns={mockColumns} />);
     expect(screen.getByTestId('grid-configurator')).toHaveTextContent('Columns (2)');
+  });
+
+  it('opens template editor when create new is triggered', () => {
+    render(<GridConfigurator soaAnalysisId="soa-1" soaType="CLINICAL" columns={[]} />);
+    fireEvent.click(screen.getByTestId('mock-create-new'));
+    expect(screen.getByTestId('template-editor-mock')).toBeInTheDocument();
   });
 });

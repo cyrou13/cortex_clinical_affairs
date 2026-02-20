@@ -4,7 +4,7 @@ test.describe('Query Execution', () => {
   test('execute query button renders on session page', async ({ page }) => {
     await page.goto('/projects/proj-1/sls-sessions/sess-1');
 
-    const container = page.getByTestId('execute-query-container');
+    const _container = page.getByTestId('execute-query-container');
     // The button may or may not be present depending on routing and rendering
     // Verify the page loads without errors
     await expect(page.getByTestId('sls-session-detail-page')).toBeVisible();
@@ -23,14 +23,16 @@ test.describe('Query Execution', () => {
       const selector = page.getByTestId('database-selector');
       await expect(selector).toBeVisible();
 
-      await expect(page.getByTestId('db-checkbox-pubmed')).toBeVisible();
-      await expect(page.getByTestId('db-checkbox-cochrane')).toBeVisible();
-      await expect(page.getByTestId('db-checkbox-embase')).toBeVisible();
+      await expect(page.getByTestId('db-checkbox-PUBMED')).toBeVisible();
+      await expect(page.getByTestId('db-checkbox-PMC')).toBeVisible();
+      await expect(page.getByTestId('db-checkbox-GOOGLE_SCHOLAR')).toBeVisible();
+      await expect(page.getByTestId('db-checkbox-CLINICAL_TRIALS')).toBeVisible();
 
       // PubMed should be checked by default
-      await expect(page.getByTestId('db-checkbox-pubmed')).toBeChecked();
-      await expect(page.getByTestId('db-checkbox-cochrane')).not.toBeChecked();
-      await expect(page.getByTestId('db-checkbox-embase')).not.toBeChecked();
+      await expect(page.getByTestId('db-checkbox-PUBMED')).toBeChecked();
+      await expect(page.getByTestId('db-checkbox-PMC')).not.toBeChecked();
+      await expect(page.getByTestId('db-checkbox-GOOGLE_SCHOLAR')).not.toBeChecked();
+      await expect(page.getByTestId('db-checkbox-CLINICAL_TRIALS')).not.toBeChecked();
     }
   });
 

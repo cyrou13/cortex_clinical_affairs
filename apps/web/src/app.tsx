@@ -3,23 +3,17 @@ import { apolloClient } from './shared/graphql/client';
 import { AppLayout } from './shared/layouts/AppLayout';
 import { CommandPalette } from './shared/components/CommandPalette';
 import { ErrorBoundary } from './shared/components/ErrorBoundary';
+import { useRouter } from './router';
 import './app.css';
 
 export function App() {
+  const page = useRouter();
+
   return (
     <ErrorBoundary>
       <ApolloProvider client={apolloClient}>
         <AppLayout>
-          <ErrorBoundary>
-            <div className="space-y-4">
-              <h1 className="text-2xl font-semibold text-[var(--cortex-text-primary)]">
-                Welcome to Cortex Clinical Affairs
-              </h1>
-              <p className="text-[var(--cortex-text-secondary)]">
-                Select a project or module from the sidebar to begin.
-              </p>
-            </div>
-          </ErrorBoundary>
+          <ErrorBoundary>{page}</ErrorBoundary>
         </AppLayout>
         <CommandPalette />
       </ApolloProvider>

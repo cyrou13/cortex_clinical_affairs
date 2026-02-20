@@ -27,16 +27,17 @@ function makePrisma(overrides: {
   articles?: Array<Record<string, unknown>>;
   gatesMet?: boolean;
 }) {
-  const session = overrides.session !== undefined
-    ? overrides.session
-    : {
-        id: SESSION_ID,
-        projectId: PROJECT_ID,
-        status: 'SCREENING',
-        likelyRelevantThreshold: 75,
-        uncertainLowerThreshold: 40,
-        deduplicationStats: { doiDuplicates: 10, pmidDuplicates: 5, titleFuzzyDuplicates: 3 },
-      };
+  const session =
+    overrides.session !== undefined
+      ? overrides.session
+      : {
+          id: SESSION_ID,
+          projectId: PROJECT_ID,
+          status: 'SCREENING',
+          likelyRelevantThreshold: 75,
+          uncertainLowerThreshold: 40,
+          deduplicationStats: { doiDuplicates: 10, pmidDuplicates: 5, titleFuzzyDuplicates: 3 },
+        };
 
   const articles = overrides.articles ?? makeArticles(['INCLUDED', 'EXCLUDED', 'EXCLUDED']);
 
@@ -136,17 +137,17 @@ describe('LockDatasetUseCase', () => {
     // Gates not met: 0 spot-checks but articles need 10% checked
     const articles = [
       ...makeArticles(['INCLUDED', 'INCLUDED', 'INCLUDED']),
-      // Add likely relevant articles with high scores
-      { id: 'art-lr-1', status: 'INCLUDED', relevanceScore: 80 },
-      { id: 'art-lr-2', status: 'INCLUDED', relevanceScore: 85 },
-      { id: 'art-lr-3', status: 'INCLUDED', relevanceScore: 90 },
-      { id: 'art-lr-4', status: 'INCLUDED', relevanceScore: 92 },
-      { id: 'art-lr-5', status: 'INCLUDED', relevanceScore: 88 },
-      { id: 'art-lr-6', status: 'INCLUDED', relevanceScore: 82 },
-      { id: 'art-lr-7', status: 'INCLUDED', relevanceScore: 78 },
-      { id: 'art-lr-8', status: 'INCLUDED', relevanceScore: 95 },
-      { id: 'art-lr-9', status: 'INCLUDED', relevanceScore: 77 },
-      { id: 'art-lr-10', status: 'INCLUDED', relevanceScore: 81 },
+      // Add likely relevant articles with aiCategory so gate validation detects them
+      { id: 'art-lr-1', status: 'INCLUDED', relevanceScore: 80, aiCategory: 'likely_relevant' },
+      { id: 'art-lr-2', status: 'INCLUDED', relevanceScore: 85, aiCategory: 'likely_relevant' },
+      { id: 'art-lr-3', status: 'INCLUDED', relevanceScore: 90, aiCategory: 'likely_relevant' },
+      { id: 'art-lr-4', status: 'INCLUDED', relevanceScore: 92, aiCategory: 'likely_relevant' },
+      { id: 'art-lr-5', status: 'INCLUDED', relevanceScore: 88, aiCategory: 'likely_relevant' },
+      { id: 'art-lr-6', status: 'INCLUDED', relevanceScore: 82, aiCategory: 'likely_relevant' },
+      { id: 'art-lr-7', status: 'INCLUDED', relevanceScore: 78, aiCategory: 'likely_relevant' },
+      { id: 'art-lr-8', status: 'INCLUDED', relevanceScore: 95, aiCategory: 'likely_relevant' },
+      { id: 'art-lr-9', status: 'INCLUDED', relevanceScore: 77, aiCategory: 'likely_relevant' },
+      { id: 'art-lr-10', status: 'INCLUDED', relevanceScore: 81, aiCategory: 'likely_relevant' },
     ];
     const prisma = makePrisma({ articles, gatesMet: false });
     const useCase = new LockDatasetUseCase(prisma, eventBus);

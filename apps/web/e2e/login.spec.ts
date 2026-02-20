@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Login Page', () => {
-  test('displays CORTEX branding and Google sign-in button', async ({ page }) => {
+  test('displays branding and Google sign-in button', async ({ page }) => {
     await page.goto('/login');
 
     // Verify branding
@@ -10,7 +10,7 @@ test.describe('Login Page', () => {
     await expect(page.getByText('Regulatory Compliance, Simplified')).toBeVisible();
 
     // Verify Google sign-in button
-    const googleButton = page.getByText('Sign in with Google');
+    const googleButton = page.getByRole('button', { name: 'Sign in with Google' });
     await expect(googleButton).toBeVisible();
     await expect(googleButton).toBeEnabled();
   });

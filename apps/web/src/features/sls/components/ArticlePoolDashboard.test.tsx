@@ -1,16 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-
-vi.mock('@apollo/client', () => ({
-  gql: (str: TemplateStringsArray) => str[0],
-}));
-
-const mockUseQuery = vi.fn();
-
-vi.mock('@apollo/client/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-}));
-
+import { screen, fireEvent } from '@testing-library/react';
+import { renderWithApollo, type MockedResponse } from '../../../test-utils/apollo-wrapper';
+import { GET_ARTICLE_COUNT_BY_STATUS, GET_ARTICLES } from '../graphql/queries';
 import { ArticlePoolDashboard } from './ArticlePoolDashboard';
 
 const mockStatusCounts = [
@@ -21,42 +12,42 @@ const mockStatusCounts = [
   { status: 'DUPLICATE', count: 30 },
 ];
 
+function buildMocks(statusCounts = mockStatusCounts): MockedResponse[] {
+  return [
+    {
+      request: {
+        query: GET_ARTICLE_COUNT_BY_STATUS,
+        variables: { sessionId: 'sess-1' },
+      },
+      result: {
+        data: { articleCountByStatus: statusCounts },
+      },
+    },
+    {
+      request: {
+        query: GET_ARTICLES,
+        variables: { sessionId: 'sess-1', filter: {}, offset: 0, limit: 100 },
+      },
+      result: {
+        data: { articles: { items: [], total: 0, offset: 0, limit: 100 } },
+      },
+    },
+  ];
+}
+
 describe('ArticlePoolDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  function setupMocks(statusCounts = mockStatusCounts) {
-    // First call: GET_ARTICLE_COUNT_BY_STATUS
-    // Second call: GET_ARTICLES (from ArticleTable child)
-    let callCount = 0;
-    mockUseQuery.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) {
-        return {
-          data: { articleCountByStatus: statusCounts },
-          loading: false,
-        };
-      }
-      // ArticleTable's query
-      return {
-        data: { articles: { items: [], total: 0, offset: 0, limit: 100 } },
-        loading: false,
-        fetchMore: vi.fn(),
-      };
-    });
-  }
-
-  it('renders the article pool dashboard', () => {
-    setupMocks();
-    render(<ArticlePoolDashboard sessionId="sess-1" />);
-
-    expect(screen.getByTestId('article-pool-dashboard')).toBeInTheDocument();
+  it('renders the article pool dashboard', async () => {
+    renderWithApollo(<ArticlePoolDashboard sessionId="sess-1" />, buildMocks());
+    await screen.findByTestId('article-pool-dashboard');
   });
 
-  it('renders all metric cards with correct values', () => {
-    setupMocks();
-    render(<ArticlePoolDashboard sessionId="sess-1" />);
+  it('renders all metric cards with correct values', async () => {
+    renderWithApollo(<ArticlePoolDashboard sessionId="sess-1" />, buildMocks());
+    await screen.findByTestId('metric-total');
 
     expect(screen.getByTestId('metric-total')).toHaveTextContent('330');
     expect(screen.getByTestId('metric-duplicates')).toHaveTextContent('30');
@@ -66,9 +57,9 @@ describe('ArticlePoolDashboard', () => {
     expect(screen.getByTestId('metric-excluded')).toHaveTextContent('25');
   });
 
-  it('renders metrics labels', () => {
-    setupMocks();
-    render(<ArticlePoolDashboard sessionId="sess-1" />);
+  it('renders metrics labels', async () => {
+    renderWithApollo(<ArticlePoolDashboard sessionId="sess-1" />, buildMocks());
+    await screen.findByTestId('metric-total');
 
     expect(screen.getByTestId('metric-total')).toHaveTextContent('Total Articles');
     expect(screen.getByTestId('metric-duplicates')).toHaveTextContent('Duplicates Removed');
@@ -78,11 +69,10 @@ describe('ArticlePoolDashboard', () => {
     expect(screen.getByTestId('metric-excluded')).toHaveTextContent('Excluded');
   });
 
-  it('renders filter tabs', () => {
-    setupMocks();
-    render(<ArticlePoolDashboard sessionId="sess-1" />);
+  it('renders filter tabs', async () => {
+    renderWithApollo(<ArticlePoolDashboard sessionId="sess-1" />, buildMocks());
+    await screen.findByTestId('filter-tabs');
 
-    expect(screen.getByTestId('filter-tabs')).toBeInTheDocument();
     expect(screen.getByTestId('tab-all')).toBeInTheDocument();
     expect(screen.getByTestId('tab-pending')).toBeInTheDocument();
     expect(screen.getByTestId('tab-scored')).toBeInTheDocument();
@@ -90,9 +80,9 @@ describe('ArticlePoolDashboard', () => {
     expect(screen.getByTestId('tab-excluded')).toBeInTheDocument();
   });
 
-  it('renders filter tab count badges', () => {
-    setupMocks();
-    render(<ArticlePoolDashboard sessionId="sess-1" />);
+  it('renders filter tab count badges', async () => {
+    renderWithApollo(<ArticlePoolDashboard sessionId="sess-1" />, buildMocks());
+    await screen.findByTestId('tab-count-all');
 
     expect(screen.getByTestId('tab-count-all')).toHaveTextContent('330');
     expect(screen.getByTestId('tab-count-pending')).toHaveTextContent('150');
@@ -101,18 +91,18 @@ describe('ArticlePoolDashboard', () => {
     expect(screen.getByTestId('tab-count-excluded')).toHaveTextContent('25');
   });
 
-  it('highlights the "All" tab by default', () => {
-    setupMocks();
-    render(<ArticlePoolDashboard sessionId="sess-1" />);
+  it('highlights the "All" tab by default', async () => {
+    renderWithApollo(<ArticlePoolDashboard sessionId="sess-1" />, buildMocks());
+    await screen.findByTestId('tab-all');
 
     const allTab = screen.getByTestId('tab-all');
     expect(allTab).toHaveAttribute('aria-selected', 'true');
     expect(allTab.className).toContain('border-[var(--cortex-blue-500)]');
   });
 
-  it('switches active tab on click', () => {
-    setupMocks();
-    render(<ArticlePoolDashboard sessionId="sess-1" />);
+  it('switches active tab on click', async () => {
+    renderWithApollo(<ArticlePoolDashboard sessionId="sess-1" />, buildMocks());
+    await screen.findByTestId('tab-pending');
 
     const pendingTab = screen.getByTestId('tab-pending');
     fireEvent.click(pendingTab);
@@ -121,44 +111,38 @@ describe('ArticlePoolDashboard', () => {
     expect(screen.getByTestId('tab-all')).toHaveAttribute('aria-selected', 'false');
   });
 
-  it('renders the article table', () => {
-    setupMocks();
-    render(<ArticlePoolDashboard sessionId="sess-1" />);
-
-    expect(screen.getByTestId('article-table')).toBeInTheDocument();
+  it('renders the article table', async () => {
+    renderWithApollo(<ArticlePoolDashboard sessionId="sess-1" />, buildMocks());
+    await screen.findByTestId('article-table');
   });
 
   it('shows loading state', () => {
-    mockUseQuery.mockReturnValue({
-      data: null,
-      loading: true,
-    });
-
-    render(<ArticlePoolDashboard sessionId="sess-1" />);
+    // No mocks = queries never resolve = loading state
+    renderWithApollo(<ArticlePoolDashboard sessionId="sess-1" />, []);
 
     expect(screen.getByTestId('article-pool-loading')).toBeInTheDocument();
     expect(screen.getByText('Loading article pool...')).toBeInTheDocument();
   });
 
-  it('renders zero counts gracefully when no data', () => {
-    setupMocks([]);
-    render(<ArticlePoolDashboard sessionId="sess-1" />);
+  it('renders zero counts gracefully when no data', async () => {
+    renderWithApollo(<ArticlePoolDashboard sessionId="sess-1" />, buildMocks([]));
+    await screen.findByTestId('metric-total');
 
     expect(screen.getByTestId('metric-total')).toHaveTextContent('0');
     expect(screen.getByTestId('metric-duplicates')).toHaveTextContent('0');
     expect(screen.getByTestId('metric-pending')).toHaveTextContent('0');
   });
 
-  it('has role="tablist" on filter tabs container', () => {
-    setupMocks();
-    render(<ArticlePoolDashboard sessionId="sess-1" />);
+  it('has role="tablist" on filter tabs container', async () => {
+    renderWithApollo(<ArticlePoolDashboard sessionId="sess-1" />, buildMocks());
+    await screen.findByRole('tablist');
 
     expect(screen.getByRole('tablist')).toBeInTheDocument();
   });
 
-  it('has role="tab" on each filter tab', () => {
-    setupMocks();
-    render(<ArticlePoolDashboard sessionId="sess-1" />);
+  it('has role="tab" on each filter tab', async () => {
+    renderWithApollo(<ArticlePoolDashboard sessionId="sess-1" />, buildMocks());
+    await screen.findByRole('tablist');
 
     const tabs = screen.getAllByRole('tab');
     expect(tabs).toHaveLength(5);

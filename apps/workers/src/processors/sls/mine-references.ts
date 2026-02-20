@@ -3,6 +3,6 @@ import { BaseProcessor, type TaskJobData } from '../../shared/base-processor.js'
 
 export class MineReferencesProcessor extends BaseProcessor {
   async process(_job: Job<TaskJobData>): Promise<never> {
-    throw new Error('Not yet implemented: sls:mine-references');
+    throw new Error('Not yet implemented: sls.mine-references');
   }
 }

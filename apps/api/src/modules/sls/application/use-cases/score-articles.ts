@@ -54,7 +54,7 @@ export class ScoreArticlesUseCase {
 
     // Create AsyncTask record and enqueue BullMQ job
     const task = await this.taskService.enqueueTask(
-      'sls:score-articles',
+      'sls.score-articles',
       {
         sessionId,
         articleIds,

@@ -20,11 +20,7 @@ function computeDiff(
 export class UpdateQueryUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async execute(
-    queryId: string,
-    input: unknown,
-    userId: string,
-  ) {
+  async execute(queryId: string, input: unknown, userId: string) {
     const parsed = UpdateQueryInput.safeParse(input);
     if (!parsed.success) {
       throw new ValidationError(
@@ -32,7 +28,7 @@ export class UpdateQueryUseCase {
       );
     }
 
-    const { queryString: newQueryString } = parsed.data;
+    const { queryString: newQueryString, dateFrom, dateTo } = parsed.data;
 
     // 1. Find existing query
     const existing = await this.prisma.slsQuery.findUnique({
@@ -59,9 +55,7 @@ export class UpdateQueryUseCase {
     // 3. Validate new query syntax
     const validation = validateBooleanQuery(newQueryString);
     if (!validation.valid) {
-      throw new ValidationError(
-        `Invalid query syntax: ${validation.errors.join('; ')}`,
-      );
+      throw new ValidationError(`Invalid query syntax: ${validation.errors.join('; ')}`);
     }
 
     // 4. Use domain entity to create version data
@@ -88,12 +82,16 @@ export class UpdateQueryUseCase {
     });
 
     // 6. Update query with new version and queryString
+    const updateData: Record<string, unknown> = {
+      queryString: newQueryString,
+      version: newVersion,
+    };
+    if (dateFrom !== undefined) updateData.dateFrom = dateFrom ? new Date(dateFrom) : null;
+    if (dateTo !== undefined) updateData.dateTo = dateTo ? new Date(dateTo) : null;
+
     const updated = await this.prisma.slsQuery.update({
       where: { id: queryId },
-      data: {
-        queryString: newQueryString,
-        version: newVersion,
-      },
+      data: updateData,
     });
 
     // 7. Audit log
@@ -103,8 +101,14 @@ export class UpdateQueryUseCase {
         action: 'sls.query.updated',
         targetType: 'slsQuery',
         targetId: queryId,
-        before: { queryString: existing.queryString, version: existing.version } as unknown as Prisma.InputJsonValue,
-        after: { queryString: newQueryString, version: newVersion } as unknown as Prisma.InputJsonValue,
+        before: {
+          queryString: existing.queryString,
+          version: existing.version,
+        } as unknown as Prisma.InputJsonValue,
+        after: {
+          queryString: newQueryString,
+          version: newVersion,
+        } as unknown as Prisma.InputJsonValue,
       },
     });
 

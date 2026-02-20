@@ -15,7 +15,7 @@ export class ConstructQueryUseCase {
       );
     }
 
-    const { sessionId, name, queryString } = parsed.data;
+    const { sessionId, name, queryString, dateFrom, dateTo } = parsed.data;
 
     // 1. Check session exists and is not LOCKED
     const session = await this.prisma.slsSession.findUnique({
@@ -46,6 +46,8 @@ export class ConstructQueryUseCase {
         queryString,
         version: 1,
         isActive: true,
+        dateFrom: dateFrom ? new Date(dateFrom) : null,
+        dateTo: dateTo ? new Date(dateTo) : null,
         createdById: userId,
       },
     });
@@ -70,7 +72,14 @@ export class ConstructQueryUseCase {
         action: 'sls.query.created',
         targetType: 'slsQuery',
         targetId: queryId,
-        after: { name, queryString, sessionId, version: 1 } as unknown as Prisma.InputJsonValue,
+        after: {
+          name,
+          queryString,
+          sessionId,
+          version: 1,
+          dateFrom,
+          dateTo,
+        } as unknown as Prisma.InputJsonValue,
       },
     });
 

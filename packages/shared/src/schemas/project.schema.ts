@@ -6,13 +6,7 @@ export type DeviceClass = z.infer<typeof DeviceClass>;
 export const RegulatoryContext = z.enum(['CE_MDR', 'FDA_510K', 'BOTH']);
 export type RegulatoryContext = z.infer<typeof RegulatoryContext>;
 
-export const ModuleStatus = z.enum([
-  'NOT_STARTED',
-  'ACTIVE',
-  'COMPLETED',
-  'LOCKED',
-  'BLOCKED',
-]);
+export const ModuleStatus = z.enum(['NOT_STARTED', 'ACTIVE', 'COMPLETED', 'LOCKED', 'BLOCKED']);
 export type ModuleStatus = z.infer<typeof ModuleStatus>;
 
 export const CreateProjectInput = z.object({
@@ -54,9 +48,9 @@ export interface PipelineStatus {
 export function getDefaultPipelineStatus(): PipelineStatus {
   return {
     sls: 'NOT_STARTED',
-    soa: 'BLOCKED',
-    validation: 'BLOCKED',
-    cer: 'BLOCKED',
-    pms: 'BLOCKED',
+    soa: 'NOT_STARTED',
+    validation: 'NOT_STARTED',
+    cer: 'NOT_STARTED',
+    pms: 'NOT_STARTED',
   };
 }

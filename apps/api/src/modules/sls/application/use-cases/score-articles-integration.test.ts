@@ -108,14 +108,20 @@ describe('Score Articles Integration Flow', () => {
     const metadata = taskData.metadata;
 
     // Task type must match queue name
-    expect(taskData.type).toBe('sls:score-articles');
+    expect(taskData.type).toBe('sls.score-articles');
     expect(taskData.status).toBe('PENDING');
     expect(taskData.createdBy).toBe(TEST_USER_ID);
 
     // Metadata must contain everything the worker needs
     expect(metadata.sessionId).toBe(TEST_SESSION_ID);
     expect(metadata.projectId).toBe(TEST_PROJECT_ID);
-    expect(metadata.articleIds).toEqual(['art-int-1', 'art-int-2', 'art-int-3', 'art-int-4', 'art-int-5']);
+    expect(metadata.articleIds).toEqual([
+      'art-int-1',
+      'art-int-2',
+      'art-int-3',
+      'art-int-4',
+      'art-int-5',
+    ]);
     expect(metadata.totalArticles).toBe(5);
     expect(metadata.sessionName).toBe('Cervical Disc Arthroplasty SLS');
     expect(metadata.sessionType).toBe('SOA_CLINICAL');
@@ -162,7 +168,7 @@ describe('Score Articles Integration Flow', () => {
 
     const publishedEvent = JSON.parse(redis.publish.mock.calls[0][1]);
     expect(publishedEvent.taskId).toBe('task-int-001');
-    expect(publishedEvent.type).toBe('sls:score-articles');
+    expect(publishedEvent.type).toBe('sls.score-articles');
     expect(publishedEvent.status).toBe('PENDING');
   });
 
@@ -176,9 +182,9 @@ describe('Score Articles Integration Flow', () => {
       scopeFields: mockScopeFields,
     });
 
-    await expect(
-      useCase.execute(TEST_SESSION_ID, TEST_USER_ID),
-    ).rejects.toThrow('session is locked');
+    await expect(useCase.execute(TEST_SESSION_ID, TEST_USER_ID)).rejects.toThrow(
+      'session is locked',
+    );
 
     // No task should be created
     expect(prisma.asyncTask.create).not.toHaveBeenCalled();
@@ -187,9 +193,9 @@ describe('Score Articles Integration Flow', () => {
   it('rejects scoring when no pending articles exist', async () => {
     prisma.article.findMany.mockResolvedValue([]);
 
-    await expect(
-      useCase.execute(TEST_SESSION_ID, TEST_USER_ID),
-    ).rejects.toThrow('No pending articles');
+    await expect(useCase.execute(TEST_SESSION_ID, TEST_USER_ID)).rejects.toThrow(
+      'No pending articles',
+    );
 
     expect(prisma.asyncTask.create).not.toHaveBeenCalled();
   });

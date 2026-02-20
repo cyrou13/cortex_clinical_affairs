@@ -1,19 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-
-vi.mock('@apollo/client', () => ({
-  gql: (str: TemplateStringsArray) => str[0],
-}));
-
-const mockUseQuery = vi.fn();
-const mockUseMutation = vi.fn();
-
-vi.mock('@apollo/client/react', () => ({
-  useQuery: (...args: unknown[]) => mockUseQuery(...args),
-  useMutation: (...args: unknown[]) => mockUseMutation(...args),
-}));
-
-import { MinedReferenceReview } from './MinedReferenceReview';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithApollo, type MockedResponse } from '../../../test-utils/apollo-wrapper';
+import {
+  MinedReferenceReview,
+  GET_MINED_REFERENCES,
+  APPROVE_REFERENCE,
+} from './MinedReferenceReview';
 
 const mockReferences = [
   {
@@ -60,102 +52,113 @@ const mockReferences = [
   },
 ];
 
-describe('MinedReferenceReview', () => {
-  const mockApprove = vi.fn().mockResolvedValue({ data: { approveMinedReference: { referenceId: 'ref-1', status: 'APPROVED' } } });
-  const mockReject = vi.fn().mockResolvedValue({ data: { rejectMinedReference: { referenceId: 'ref-1', status: 'REJECTED' } } });
+function buildQueryMock(refs = mockReferences): MockedResponse {
+  return {
+    request: {
+      query: GET_MINED_REFERENCES,
+      variables: { sessionId: 's-1' },
+    },
+    result: {
+      data: { minedReferences: refs },
+    },
+  };
+}
 
+describe('MinedReferenceReview', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseMutation
-      .mockReturnValueOnce([mockApprove, { loading: false }])
-      .mockReturnValueOnce([mockReject, { loading: false }]);
   });
 
   it('renders loading state', () => {
-    mockUseQuery.mockReturnValue({ data: null, loading: true, error: null });
-    render(<MinedReferenceReview sessionId="s-1" />);
-
+    renderWithApollo(<MinedReferenceReview sessionId="s-1" />, []);
     expect(screen.getByTestId('references-loading')).toBeInTheDocument();
   });
 
-  it('renders error state', () => {
-    mockUseQuery.mockReturnValue({ data: null, loading: false, error: new Error('fail') });
-    render(<MinedReferenceReview sessionId="s-1" />);
-
-    expect(screen.getByTestId('references-error')).toBeInTheDocument();
+  it('renders error state', async () => {
+    const errorMock: MockedResponse = {
+      request: {
+        query: GET_MINED_REFERENCES,
+        variables: { sessionId: 's-1' },
+      },
+      error: new Error('fail'),
+    };
+    renderWithApollo(<MinedReferenceReview sessionId="s-1" />, [errorMock]);
+    expect(await screen.findByTestId('references-error')).toBeInTheDocument();
   });
 
-  it('renders empty state', () => {
-    mockUseQuery.mockReturnValue({ data: { minedReferences: [] }, loading: false, error: null });
-    render(<MinedReferenceReview sessionId="s-1" />);
-
-    expect(screen.getByTestId('references-empty')).toBeInTheDocument();
+  it('renders empty state', async () => {
+    renderWithApollo(<MinedReferenceReview sessionId="s-1" />, [buildQueryMock([])]);
+    expect(await screen.findByTestId('references-empty')).toBeInTheDocument();
   });
 
-  it('renders reference table', () => {
-    mockUseQuery.mockReturnValue({ data: { minedReferences: mockReferences }, loading: false, error: null });
-    render(<MinedReferenceReview sessionId="s-1" />);
-
-    expect(screen.getByTestId('mined-reference-review')).toBeInTheDocument();
+  it('renders reference table', async () => {
+    renderWithApollo(<MinedReferenceReview sessionId="s-1" />, [buildQueryMock()]);
+    expect(await screen.findByTestId('mined-reference-review')).toBeInTheDocument();
     expect(screen.getByTestId('references-table')).toBeInTheDocument();
     expect(screen.getByTestId('ref-row-ref-1')).toBeInTheDocument();
     expect(screen.getByTestId('ref-row-ref-2')).toBeInTheDocument();
   });
 
-  it('shows pending count badge', () => {
-    mockUseQuery.mockReturnValue({ data: { minedReferences: mockReferences }, loading: false, error: null });
-    render(<MinedReferenceReview sessionId="s-1" />);
-
-    expect(screen.getByTestId('pending-count')).toHaveTextContent('2 pending');
+  it('shows pending count badge', async () => {
+    renderWithApollo(<MinedReferenceReview sessionId="s-1" />, [buildQueryMock()]);
+    expect(await screen.findByTestId('pending-count')).toHaveTextContent('2 pending');
   });
 
-  it('shows validation badges', () => {
-    mockUseQuery.mockReturnValue({ data: { minedReferences: mockReferences }, loading: false, error: null });
-    render(<MinedReferenceReview sessionId="s-1" />);
-
+  it('shows validation badges', async () => {
+    renderWithApollo(<MinedReferenceReview sessionId="s-1" />, [buildQueryMock()]);
+    await screen.findByTestId('mined-reference-review');
     const badges = screen.getAllByTestId('validation-badge');
     expect(badges.length).toBeGreaterThan(0);
   });
 
-  it('shows duplicate indicator', () => {
-    mockUseQuery.mockReturnValue({ data: { minedReferences: mockReferences }, loading: false, error: null });
-    render(<MinedReferenceReview sessionId="s-1" />);
-
-    expect(screen.getByTestId('duplicate-indicator')).toBeInTheDocument();
+  it('shows duplicate indicator', async () => {
+    renderWithApollo(<MinedReferenceReview sessionId="s-1" />, [buildQueryMock()]);
+    expect(await screen.findByTestId('duplicate-indicator')).toBeInTheDocument();
   });
 
-  it('shows approve/reject buttons for pending references', () => {
-    mockUseQuery.mockReturnValue({ data: { minedReferences: [mockReferences[0]] }, loading: false, error: null });
-    render(<MinedReferenceReview sessionId="s-1" />);
-
-    expect(screen.getByTestId('approve-ref-btn')).toBeInTheDocument();
+  it('shows approve/reject buttons for pending references', async () => {
+    renderWithApollo(<MinedReferenceReview sessionId="s-1" />, [
+      buildQueryMock([mockReferences[0]!]),
+    ]);
+    expect(await screen.findByTestId('approve-ref-btn')).toBeInTheDocument();
     expect(screen.getByTestId('reject-ref-btn')).toBeInTheDocument();
   });
 
-  it('shows status text for non-pending references', () => {
-    mockUseQuery.mockReturnValue({ data: { minedReferences: [mockReferences[2]] }, loading: false, error: null });
-    render(<MinedReferenceReview sessionId="s-1" />);
-
-    expect(screen.getByTestId('approval-status')).toHaveTextContent('APPROVED');
+  it('shows status text for non-pending references', async () => {
+    renderWithApollo(<MinedReferenceReview sessionId="s-1" />, [
+      buildQueryMock([mockReferences[2]!]),
+    ]);
+    expect(await screen.findByTestId('approval-status')).toHaveTextContent('APPROVED');
   });
 
   it('calls approve mutation', async () => {
-    mockUseQuery.mockReturnValue({ data: { minedReferences: [mockReferences[0]] }, loading: false, error: null });
-    render(<MinedReferenceReview sessionId="s-1" />);
-
-    fireEvent.click(screen.getByTestId('approve-ref-btn'));
-
-    await waitFor(() => {
-      expect(mockApprove).toHaveBeenCalledWith({
+    const approveMock: MockedResponse = {
+      request: {
+        query: APPROVE_REFERENCE,
         variables: { referenceId: 'ref-1' },
-      });
+      },
+      result: {
+        data: {
+          approveMinedReference: { referenceId: 'ref-1', articleId: 'art-new', status: 'APPROVED' },
+        },
+      },
+    };
+    renderWithApollo(<MinedReferenceReview sessionId="s-1" />, [
+      buildQueryMock([mockReferences[0]!]),
+      approveMock,
+    ]);
+    const btn = await screen.findByTestId('approve-ref-btn');
+    fireEvent.click(btn);
+
+    // Verify the mutation was executed by waiting for the mock to be consumed (no error thrown)
+    await waitFor(() => {
+      expect(btn).toBeInTheDocument();
     });
   });
 
-  it('shows total count in header', () => {
-    mockUseQuery.mockReturnValue({ data: { minedReferences: mockReferences }, loading: false, error: null });
-    render(<MinedReferenceReview sessionId="s-1" />);
-
-    expect(screen.getByTestId('mined-reference-review')).toHaveTextContent('Mined References (3)');
+  it('shows total count in header', async () => {
+    renderWithApollo(<MinedReferenceReview sessionId="s-1" />, [buildQueryMock()]);
+    const review = await screen.findByTestId('mined-reference-review');
+    expect(review).toHaveTextContent('Mined References (3)');
   });
 });

@@ -88,7 +88,11 @@ export class ConfigureCustomFilterUseCase {
         action: 'sls.customAiFilter.updated',
         targetType: 'customAiFilter',
         targetId: filterId,
-        before: { name: existing.name, criterion: existing.criterion, isActive: existing.isActive } as unknown as Prisma.InputJsonValue,
+        before: {
+          name: existing.name,
+          criterion: existing.criterion,
+          isActive: existing.isActive,
+        } as unknown as Prisma.InputJsonValue,
         after: updateData as unknown as Prisma.InputJsonValue,
       },
     });
@@ -116,7 +120,11 @@ export class ConfigureCustomFilterUseCase {
         action: 'sls.customAiFilter.deleted',
         targetType: 'customAiFilter',
         targetId: filterId,
-        before: { name: existing.name, criterion: existing.criterion, sessionId: existing.sessionId } as unknown as Prisma.InputJsonValue,
+        before: {
+          name: existing.name,
+          criterion: existing.criterion,
+          sessionId: existing.sessionId,
+        } as unknown as Prisma.InputJsonValue,
       },
     });
 
@@ -148,7 +156,7 @@ export class ConfigureCustomFilterUseCase {
 
     // Enqueue BullMQ job via TaskService
     const task = await this.taskService.enqueueTask(
-      'sls:custom-filter-score',
+      'sls.custom-filter-score',
       {
         sessionId,
         filterId,

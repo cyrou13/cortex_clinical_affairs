@@ -9,11 +9,13 @@ function makePrisma(overrides?: {
 }) {
   return {
     extractionGrid: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.grid !== undefined
-          ? overrides.grid
-          : { id: 'grid-1', soaAnalysis: { id: 'soa-1', status: 'IN_PROGRESS' } },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.grid !== undefined
+            ? overrides.grid
+            : { id: 'grid-1', soaAnalysis: { id: 'soa-1', status: 'IN_PROGRESS' } },
+        ),
     },
     gridColumn: {
       findMany: vi.fn().mockResolvedValue(
@@ -58,7 +60,7 @@ describe('ExtractGridDataUseCase', () => {
     expect(result.articleCount).toBe(2);
     expect(result.columnCount).toBe(2);
     expect(mockEnqueue).toHaveBeenCalledWith(
-      'soa:extract-grid-data',
+      'soa.extract-grid-data',
       expect.objectContaining({
         extractionGridId: 'grid-1',
       }),
@@ -69,9 +71,9 @@ describe('ExtractGridDataUseCase', () => {
     const prisma = makePrisma({ grid: null });
     const useCase = new ExtractGridDataUseCase(prisma, mockEnqueue);
 
-    await expect(
-      useCase.execute({ gridId: 'missing', userId: 'user-1' }),
-    ).rejects.toThrow('not found');
+    await expect(useCase.execute({ gridId: 'missing', userId: 'user-1' })).rejects.toThrow(
+      'not found',
+    );
   });
 
   it('throws for locked SOA', async () => {
@@ -80,27 +82,25 @@ describe('ExtractGridDataUseCase', () => {
     });
     const useCase = new ExtractGridDataUseCase(prisma, mockEnqueue);
 
-    await expect(
-      useCase.execute({ gridId: 'grid-1', userId: 'user-1' }),
-    ).rejects.toThrow('locked');
+    await expect(useCase.execute({ gridId: 'grid-1', userId: 'user-1' })).rejects.toThrow('locked');
   });
 
   it('throws when no columns defined', async () => {
     const prisma = makePrisma({ columns: [] });
     const useCase = new ExtractGridDataUseCase(prisma, mockEnqueue);
 
-    await expect(
-      useCase.execute({ gridId: 'grid-1', userId: 'user-1' }),
-    ).rejects.toThrow('No columns');
+    await expect(useCase.execute({ gridId: 'grid-1', userId: 'user-1' })).rejects.toThrow(
+      'No columns',
+    );
   });
 
   it('throws when no articles with PDFs', async () => {
     const prisma = makePrisma({ articles: [] });
     const useCase = new ExtractGridDataUseCase(prisma, mockEnqueue);
 
-    await expect(
-      useCase.execute({ gridId: 'grid-1', userId: 'user-1' }),
-    ).rejects.toThrow('No articles');
+    await expect(useCase.execute({ gridId: 'grid-1', userId: 'user-1' })).rejects.toThrow(
+      'No articles',
+    );
   });
 
   it('filters by specific article IDs when provided', async () => {
