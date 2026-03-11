@@ -9,26 +9,29 @@ function makePrisma(overrides?: {
 }) {
   return {
     extractionGrid: {
-      findUnique: vi.fn().mockResolvedValue(
-        overrides?.grid !== undefined ? overrides.grid : { id: 'grid-1', soaAnalysisId: 'soa-1' },
-      ),
+      findUnique: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.grid !== undefined ? overrides.grid : { id: 'grid-1', soaAnalysisId: 'soa-1' },
+        ),
     },
     soaSlsLink: {
-      findMany: vi.fn().mockResolvedValue(
-        overrides?.links ?? [{ slsSessionId: 'sess-1' }],
-      ),
+      findMany: vi.fn().mockResolvedValue(overrides?.links ?? [{ slsSessionId: 'sess-1' }]),
     },
     article: {
-      findMany: vi.fn().mockResolvedValue(
-        overrides?.articles ?? [{ id: 'art-1' }, { id: 'art-2' }],
-      ),
+      findMany: vi
+        .fn()
+        .mockResolvedValue(overrides?.articles ?? [{ id: 'art-1' }, { id: 'art-2' }]),
     },
     gridColumn: {
-      findMany: vi.fn().mockResolvedValue(
-        overrides?.columns ?? [{ id: 'col-1' }, { id: 'col-2' }, { id: 'col-3' }],
-      ),
+      findMany: vi
+        .fn()
+        .mockResolvedValue(
+          overrides?.columns ?? [{ id: 'col-1' }, { id: 'col-2' }, { id: 'col-3' }],
+        ),
     },
     gridCell: {
+      findFirst: vi.fn().mockResolvedValue(null),
       create: vi.fn().mockResolvedValue({ id: 'cell-1' }),
     },
   } as any;
@@ -76,7 +79,7 @@ describe('PopulateGridRowsUseCase', () => {
     expect(result.cellCount).toBe(0);
   });
 
-  it('queries only FINAL_INCLUDED articles', async () => {
+  it('queries INCLUDED and FINAL_INCLUDED articles', async () => {
     const prisma = makePrisma();
     const useCase = new PopulateGridRowsUseCase(prisma);
 
@@ -85,7 +88,7 @@ describe('PopulateGridRowsUseCase', () => {
     expect(prisma.article.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          status: 'FINAL_INCLUDED',
+          status: { in: ['INCLUDED', 'FINAL_INCLUDED'] },
         }),
       }),
     );

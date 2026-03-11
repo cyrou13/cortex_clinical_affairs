@@ -7,6 +7,35 @@ interface PopulateGridRowsResult {
   cellCount: number;
 }
 
+interface ArticleRow {
+  id: string;
+  title: string;
+  authors: unknown;
+  publicationDate: string | null;
+  journal: string | null;
+  doi: string | null;
+}
+
+// Map known column names to article field extractors
+function getArticleValue(article: ArticleRow, columnName: string): string | null {
+  switch (columnName) {
+    case 'author': {
+      const authors = article.authors as string[] | null;
+      if (!authors || authors.length === 0) return null;
+      // First author et al. format
+      return authors.length === 1 ? authors[0] : `${authors[0]} et al.`;
+    }
+    case 'year': {
+      if (!article.publicationDate) return null;
+      const dateStr = String(article.publicationDate);
+      const match = dateStr.match(/\d{4}/);
+      return match ? match[0] : null;
+    }
+    default:
+      return null;
+  }
+}
+
 export class PopulateGridRowsUseCase {
   constructor(private readonly prisma: PrismaClient) {}
 
@@ -30,31 +59,48 @@ export class PopulateGridRowsUseCase {
     const articles = await this.prisma.article.findMany({
       where: {
         sessionId: { in: sessionIds },
-        status: 'FINAL_INCLUDED',
+        status: { in: ['INCLUDED', 'FINAL_INCLUDED'] },
       },
-      select: { id: true },
+      select: {
+        id: true,
+        title: true,
+        authors: true,
+        publicationDate: true,
+        journal: true,
+        doi: true,
+      },
     });
 
     const columns = await this.prisma.gridColumn.findMany({
       where: { extractionGridId: gridId },
-      select: { id: true },
+      select: { id: true, name: true },
     });
 
     let cellCount = 0;
 
     for (const article of articles) {
       for (const column of columns) {
-        await this.prisma.gridCell.create({
-          data: {
-            id: crypto.randomUUID(),
+        const existing = await this.prisma.gridCell.findFirst({
+          where: {
             extractionGridId: gridId,
             articleId: article.id,
             gridColumnId: column.id,
-            value: null,
-            validationStatus: 'PENDING',
           },
         });
-        cellCount++;
+        if (!existing) {
+          const prefillValue = getArticleValue(article as ArticleRow, column.name);
+          await this.prisma.gridCell.create({
+            data: {
+              id: crypto.randomUUID(),
+              extractionGridId: gridId,
+              articleId: article.id,
+              gridColumnId: column.id,
+              value: prefillValue,
+              validationStatus: 'PENDING',
+            },
+          });
+          cellCount++;
+        }
       }
     }
 

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { Table, Download, Sparkles } from 'lucide-react';
+import { Table, Download, Sparkles, RefreshCw } from 'lucide-react';
 import { GET_GRID_COLUMNS, GET_GRID_CELLS } from '../graphql/queries';
-import { UPDATE_GRID_CELL } from '../graphql/mutations';
+import { UPDATE_GRID_CELL, POPULATE_GRID_ROWS } from '../graphql/mutations';
 
 interface Column {
   id: string;
@@ -40,6 +40,10 @@ export function ExtractionGridPage({ gridId, soaStatus }: ExtractionGridPageProp
   });
 
   const [updateCell] = useMutation(UPDATE_GRID_CELL);
+  const [populateRows, { loading: populating }] = useMutation(POPULATE_GRID_ROWS, {
+    variables: { gridId },
+    refetchQueries: [{ query: GET_GRID_CELLS, variables: { gridId } }],
+  });
 
   const isLocked = soaStatus === 'LOCKED';
 
@@ -111,6 +115,16 @@ export function ExtractionGridPage({ gridId, soaStatus }: ExtractionGridPageProp
           </span>
         </div>
         <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => populateRows()}
+            disabled={populating}
+            className="inline-flex items-center gap-1 rounded border border-[var(--cortex-border)] px-3 py-1.5 text-xs hover:bg-gray-50 disabled:opacity-50"
+            data-testid="populate-grid-btn"
+          >
+            <RefreshCw size={12} className={populating ? 'animate-spin' : ''} />
+            {populating ? 'Loading...' : 'Load Articles'}
+          </button>
           <button
             type="button"
             disabled
