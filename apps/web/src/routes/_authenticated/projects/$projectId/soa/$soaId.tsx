@@ -19,7 +19,7 @@ import { SoaDashboard } from '../../../../../features/soa/components/SoaDashboar
 import { ExtractionGridPage } from '../../../../../features/soa/components/ExtractionGridPage';
 import { GridConfigurator } from '../../../../../features/soa/components/GridConfigurator';
 import { ExtractionProgressPanel } from '../../../../../features/soa/components/ExtractionProgressPanel';
-import { QualityAssessmentForm } from '../../../../../features/soa/components/QualityAssessmentForm';
+import { QualityDashboard } from '../../../../../features/soa/components/QualityDashboard';
 import { NarrativeDraftPanel } from '../../../../../features/soa/components/NarrativeDraftPanel';
 import { ThematicSectionEditor } from '../../../../../features/soa/components/ThematicSectionEditor';
 import { LockSoaButton } from '../../../../../features/soa/components/LockSoaButton';
@@ -60,7 +60,7 @@ export default function SoaDetailPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [selectedGridId, setSelectedGridId] = useState<string | null>(null);
-  const [selectedArticleId, setSelectedArticleId] = useState<string>('');
+  const [_selectedArticleId, setSelectedArticleId] = useState<string>('');
 
   const pathParts = window.location.pathname.split('/');
   const projectId = pathParts[pathParts.indexOf('projects') + 1] ?? '';
@@ -242,26 +242,20 @@ export default function SoaDetailPage() {
         )}
 
         {activeTab === 'quality' && (
-          <div className="mx-auto max-w-2xl">
-            {selectedArticleId ? (
-              <QualityAssessmentForm
-                soaAnalysisId={soaId}
-                articleId={selectedArticleId}
-                locked={isLocked}
-              />
+          <div className="mx-auto max-w-6xl">
+            {activeGridId ? (
+              <QualityDashboard gridId={activeGridId} soaAnalysisId={soaId} locked={isLocked} />
             ) : (
               <div
                 className="rounded-lg border-2 border-dashed border-[var(--cortex-border)] p-12 text-center"
-                data-testid="no-article-selected"
+                data-testid="no-grid-for-quality"
               >
                 <ClipboardCheck
                   size={32}
                   className="mx-auto mb-3 text-[var(--cortex-text-muted)]"
                 />
                 <p className="text-sm text-[var(--cortex-text-muted)]">
-                  No article selected. Go to the Grid tab and click the
-                  <ClipboardCheck size={12} className="mx-1 inline text-emerald-600" />
-                  button on an article row to assess its quality.
+                  No extraction grid available. Create a grid in the Grid tab first.
                 </p>
               </div>
             )}
@@ -301,13 +295,13 @@ export default function SoaDetailPage() {
 
         {activeTab === 'devices' && (
           <div className="mx-auto max-w-5xl space-y-6">
-            <DeviceRegistryPanel soaAnalysisId={soaId} locked={isLocked} onDeviceAdded={() => {}} />
+            <DeviceRegistryPanel soaAnalysisId={soaId} gridId={activeGridId} locked={isLocked} />
           </div>
         )}
 
         {activeTab === 'claims' && (
           <div className="mx-auto max-w-3xl">
-            <ClaimsManagement soaAnalysisId={soaId} locked={isLocked} />
+            <ClaimsManagement soaAnalysisId={soaId} gridId={activeGridId} locked={isLocked} />
           </div>
         )}
       </div>

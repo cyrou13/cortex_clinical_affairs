@@ -402,6 +402,50 @@ builder.objectType(QualitySummaryType, {
   }),
 });
 
+// --- Article Quality Assessment type (AI-generated) ---
+
+export const ArticleQualityAssessmentObjectType = builder.objectRef<{
+  id: string;
+  extractionGridId: string;
+  articleId: string;
+  overallQuality: string;
+  overallScore: number;
+  criteriaScores: unknown;
+  strengths: unknown;
+  weaknesses: unknown;
+  recommendation: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}>('ArticleQualityAssessment');
+
+builder.objectType(ArticleQualityAssessmentObjectType, {
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    extractionGridId: t.exposeString('extractionGridId'),
+    articleId: t.exposeString('articleId'),
+    overallQuality: t.exposeString('overallQuality'),
+    overallScore: t.exposeInt('overallScore'),
+    criteriaScores: t.expose('criteriaScores', { type: 'JSON', nullable: true }),
+    strengths: t.expose('strengths', { type: 'JSON', nullable: true }),
+    weaknesses: t.expose('weaknesses', { type: 'JSON', nullable: true }),
+    recommendation: t.exposeString('recommendation', { nullable: true }),
+    createdAt: t.expose('createdAt', { type: 'DateTime' }),
+    updatedAt: t.expose('updatedAt', { type: 'DateTime' }),
+  }),
+});
+
+export const BatchAssessQualityResultType = builder.objectRef<{
+  taskId: string;
+  articleCount: number;
+}>('BatchAssessQualityResult');
+
+builder.objectType(BatchAssessQualityResultType, {
+  fields: (t) => ({
+    taskId: t.exposeString('taskId'),
+    articleCount: t.exposeInt('articleCount'),
+  }),
+});
+
 // --- Section Management Result types (Story 3.7) ---
 
 export const UpdateSectionContentResultType = builder.objectRef<{
@@ -453,6 +497,8 @@ export const SimilarDeviceObjectType = builder.objectRef<{
   manufacturer: string;
   indication: string;
   regulatoryStatus: string;
+  status: string;
+  articleCount: number;
   metadata: unknown;
   createdAt: Date;
 }>('SimilarDevice');
@@ -465,8 +511,34 @@ builder.objectType(SimilarDeviceObjectType, {
     manufacturer: t.exposeString('manufacturer'),
     indication: t.exposeString('indication'),
     regulatoryStatus: t.exposeString('regulatoryStatus'),
+    status: t.exposeString('status'),
+    articleCount: t.exposeInt('articleCount'),
     metadata: t.expose('metadata', { type: 'JSON', nullable: true }),
     createdAt: t.expose('createdAt', { type: 'DateTime' }),
+  }),
+});
+
+export const DiscoverDevicesResultType = builder.objectRef<{
+  discoveredCount: number;
+  totalBenchmarks: number;
+}>('DiscoverDevicesResult');
+
+builder.objectType(DiscoverDevicesResultType, {
+  fields: (t) => ({
+    discoveredCount: t.exposeInt('discoveredCount'),
+    totalBenchmarks: t.exposeInt('totalBenchmarks'),
+  }),
+});
+
+export const UpdateDeviceStatusResultType = builder.objectRef<{
+  id: string;
+  status: string;
+}>('UpdateDeviceStatusResult');
+
+builder.objectType(UpdateDeviceStatusResultType, {
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    status: t.exposeString('status'),
   }),
 });
 
@@ -525,8 +597,11 @@ export const ClaimObjectType = builder.objectRef<{
   soaAnalysisId: string;
   statementText: string;
   thematicSectionId: string | null;
+  status: string;
+  evidenceStrength: string | null;
   createdById: string;
   createdAt: Date;
+  updatedAt: Date;
 }>('Claim');
 
 builder.objectType(ClaimObjectType, {
@@ -535,8 +610,39 @@ builder.objectType(ClaimObjectType, {
     soaAnalysisId: t.exposeString('soaAnalysisId'),
     statementText: t.exposeString('statementText'),
     thematicSectionId: t.exposeString('thematicSectionId', { nullable: true }),
+    status: t.exposeString('status'),
+    evidenceStrength: t.exposeString('evidenceStrength', { nullable: true }),
     createdById: t.exposeString('createdById'),
     createdAt: t.expose('createdAt', { type: 'DateTime' }),
+    updatedAt: t.expose('updatedAt', { type: 'DateTime' }),
+  }),
+});
+
+// --- Generate Claims Result type ---
+
+export const GenerateClaimsResultType = builder.objectRef<{
+  taskId: string;
+  sectionCount: number;
+}>('GenerateClaimsResult');
+
+builder.objectType(GenerateClaimsResultType, {
+  fields: (t) => ({
+    taskId: t.exposeString('taskId'),
+    sectionCount: t.exposeInt('sectionCount'),
+  }),
+});
+
+// --- Update Claim Status Result type ---
+
+export const UpdateClaimStatusResultType = builder.objectRef<{
+  id: string;
+  status: string;
+}>('UpdateClaimStatusResult');
+
+builder.objectType(UpdateClaimStatusResultType, {
+  fields: (t) => ({
+    id: t.exposeString('id'),
+    status: t.exposeString('status'),
   }),
 });
 

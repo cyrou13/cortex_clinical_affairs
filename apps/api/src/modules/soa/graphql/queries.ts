@@ -20,6 +20,7 @@ import {
   TraceabilityReportType,
   GridTemplateObjectType,
   SoaImportObjectType,
+  ArticleQualityAssessmentObjectType,
 } from './types.js';
 import {
   checkPermission,
@@ -490,6 +491,27 @@ builder.queryField('qualitySummary', (t) =>
 
       const useCase = new AssessQualityUseCase(ctx.prisma);
       return useCase.getCombinedSummary(args.soaAnalysisId) as any;
+    },
+  }),
+);
+
+// --- Article Quality Assessments (AI-generated) ---
+
+builder.queryField('articleQualityAssessments', (t) =>
+  t.field({
+    type: [ArticleQualityAssessmentObjectType],
+    args: {
+      gridId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'read');
+
+      const assessments = await (ctx.prisma as any).articleQualityAssessment.findMany({
+        where: { extractionGridId: args.gridId },
+        orderBy: { overallScore: 'desc' },
+      });
+
+      return assessments as any;
     },
   }),
 );

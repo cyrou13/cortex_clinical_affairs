@@ -76,6 +76,28 @@ export class PopulateGridRowsUseCase {
       select: { id: true, name: true },
     });
 
+    // Remove cells for articles no longer INCLUDED
+    const includedArticleIds = new Set(articles.map((a) => a.id));
+    const existingCells = await this.prisma.gridCell.findMany({
+      where: { extractionGridId: gridId },
+      select: { articleId: true },
+    });
+    const staleArticleIds = [
+      ...new Set(
+        existingCells
+          .map((c: { articleId: string }) => c.articleId)
+          .filter((id: string) => !includedArticleIds.has(id)),
+      ),
+    ];
+    if (staleArticleIds.length > 0) {
+      await this.prisma.gridCell.deleteMany({
+        where: {
+          extractionGridId: gridId,
+          articleId: { in: staleArticleIds },
+        },
+      });
+    }
+
     let cellCount = 0;
 
     for (const article of articles) {

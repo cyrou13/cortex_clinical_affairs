@@ -180,6 +180,15 @@ export const ASSESS_QUALITY = gql`
   }
 `;
 
+export const BATCH_ASSESS_QUALITY = gql`
+  mutation BatchAssessQuality($gridId: String!, $soaAnalysisId: String!) {
+    batchAssessQuality(gridId: $gridId, soaAnalysisId: $soaAnalysisId) {
+      taskId
+      articleCount
+    }
+  }
+`;
+
 // --- Story 3.7 ---
 
 export const UPDATE_SECTION_CONTENT = gql`
@@ -271,7 +280,43 @@ export const ADD_BENCHMARK = gql`
   }
 `;
 
+export const DISCOVER_SIMILAR_DEVICES = gql`
+  mutation DiscoverSimilarDevices($soaAnalysisId: String!, $gridId: String!) {
+    discoverSimilarDevices(soaAnalysisId: $soaAnalysisId, gridId: $gridId) {
+      discoveredCount
+      totalBenchmarks
+    }
+  }
+`;
+
+export const UPDATE_DEVICE_STATUS = gql`
+  mutation UpdateDeviceStatus($deviceId: String!, $status: String!) {
+    updateDeviceStatus(deviceId: $deviceId, status: $status) {
+      id
+      status
+    }
+  }
+`;
+
 // --- Story 3.10 ---
+
+export const GENERATE_CLAIMS = gql`
+  mutation GenerateClaims($soaAnalysisId: String!, $gridId: String!) {
+    generateClaims(soaAnalysisId: $soaAnalysisId, gridId: $gridId) {
+      taskId
+      sectionCount
+    }
+  }
+`;
+
+export const UPDATE_CLAIM_STATUS = gql`
+  mutation UpdateClaimStatus($claimId: String!, $status: String!) {
+    updateClaimStatus(claimId: $claimId, status: $status) {
+      id
+      status
+    }
+  }
+`;
 
 export const CREATE_CLAIM = gql`
   mutation CreateClaim(

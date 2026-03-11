@@ -9,6 +9,7 @@ import {
   ExtractGridDataResultType,
   CellValidationResultType,
   AssessQualityResultType,
+  BatchAssessQualityResultType,
   UpdateSectionContentResultType,
   FinalizeSectionResultType,
   DraftNarrativeResultType,
@@ -16,11 +17,15 @@ import {
   BenchmarkObjectType,
   ClaimObjectType,
   ClaimArticleLinkObjectType,
+  GenerateClaimsResultType,
+  UpdateClaimStatusResultType,
   LockSoaResultType,
   CreateTemplateResultType,
   DeleteTemplateResultType,
   ImportSoaDocumentResultType,
   ConfirmSoaImportResultType,
+  DiscoverDevicesResultType,
+  UpdateDeviceStatusResultType,
 } from './types.js';
 import {
   checkPermission,
@@ -438,6 +443,95 @@ builder.mutationField('assessQuality', (t) =>
   }),
 );
 
+// --- Batch AI Quality Assessment mutation ---
+
+builder.mutationField('batchAssessQuality', (t) =>
+  t.field({
+    type: BatchAssessQualityResultType,
+    args: {
+      gridId: t.arg.string({ required: true }),
+      soaAnalysisId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
+        where: { id: args.soaAnalysisId },
+      });
+
+      if (!soa) {
+        throw new NotFoundError('SoaAnalysis', args.soaAnalysisId);
+      }
+
+      await checkProjectMembership(ctx, soa.projectId);
+
+      // Get all article IDs from the grid cells
+      const cells = await ctx.prisma.gridCell.findMany({
+        where: { extractionGridId: args.gridId },
+        select: { articleId: true },
+        distinct: ['articleId'],
+      });
+
+      const articleIds = cells.map((c: { articleId: string }) => c.articleId);
+
+      if (articleIds.length === 0) {
+        throw new Error('No articles in extraction grid');
+      }
+
+      // Default quality criteria for SOA
+      const qualityCriteria = [
+        {
+          id: 'study_design',
+          name: 'Study Design',
+          description: 'Quality and appropriateness of the study design',
+        },
+        {
+          id: 'sample_size',
+          name: 'Sample Size',
+          description: 'Adequacy of sample size and statistical power',
+        },
+        {
+          id: 'methodology',
+          name: 'Methodology',
+          description: 'Rigor of methods, data collection, and analysis',
+        },
+        {
+          id: 'reporting',
+          name: 'Reporting Quality',
+          description: 'Completeness and transparency of reporting',
+        },
+        {
+          id: 'bias_risk',
+          name: 'Risk of Bias',
+          description: 'Potential sources of bias and their management',
+        },
+      ];
+
+      const taskId = crypto.randomUUID();
+
+      const redis = getRedis();
+      await redis.publish(
+        'task:enqueued',
+        JSON.stringify({
+          taskId,
+          type: 'soa.assess-quality',
+          status: 'PENDING',
+          metadata: {
+            taskId,
+            gridId: args.gridId,
+            soaAnalysisId: args.soaAnalysisId,
+            articleIds,
+            qualityCriteria,
+          },
+          createdBy: ctx.user!.id,
+        }),
+      );
+
+      return { taskId, articleCount: articleIds.length };
+    },
+  }),
+);
+
 // --- Section Management mutations (Story 3.7) ---
 
 builder.mutationField('updateSectionContent', (t) =>
@@ -587,6 +681,193 @@ builder.mutationField('addBenchmark', (t) =>
   }),
 );
 
+// --- Discover Similar Devices from Grid ---
+
+builder.mutationField('discoverSimilarDevices', (t) =>
+  t.field({
+    type: DiscoverDevicesResultType,
+    args: {
+      soaAnalysisId: t.arg.string({ required: true }),
+      gridId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
+        where: { id: args.soaAnalysisId },
+      });
+      if (!soa) throw new NotFoundError('SoaAnalysis', args.soaAnalysisId);
+      await checkProjectMembership(ctx, soa.projectId);
+
+      // Get grid columns to identify device_name, manufacturer, etc.
+      const columns = await ctx.prisma.gridColumn.findMany({
+        where: { extractionGridId: args.gridId },
+        select: { id: true, name: true },
+      });
+      const colMap = new Map(
+        columns.map((c: { id: string; name: string }) => [c.name.toLowerCase(), c.id]),
+      );
+
+      const deviceNameColId = colMap.get('device_name');
+      const manufacturerColId = colMap.get('manufacturer');
+      const endpointColId = colMap.get('primary_endpoint');
+      const resultColId = colMap.get('result');
+      const _populationColId = colMap.get('population_n');
+      const _comparatorColId = colMap.get('comparator');
+
+      if (!deviceNameColId) {
+        throw new Error('Grid has no device_name column — cannot discover devices');
+      }
+
+      // Get all cells for relevant columns
+      const cells = await ctx.prisma.gridCell.findMany({
+        where: { extractionGridId: args.gridId },
+        select: { articleId: true, gridColumnId: true, value: true, aiExtractedValue: true },
+      });
+
+      // Build per-article data
+      const articleData = new Map<string, Record<string, string>>();
+      for (const cell of cells) {
+        const val = (cell as any).value || (cell as any).aiExtractedValue || '';
+        if (!val) continue;
+        if (!articleData.has((cell as any).articleId)) articleData.set((cell as any).articleId, {});
+        articleData.get((cell as any).articleId)![(cell as any).gridColumnId] = val;
+      }
+
+      // Group by device name (normalized)
+      const deviceGroups = new Map<
+        string,
+        {
+          manufacturer: string;
+          articles: string[];
+          benchmarks: Array<{ metric: string; value: string; articleId: string }>;
+        }
+      >();
+
+      for (const [articleId, data] of articleData) {
+        const rawName = data[deviceNameColId];
+        if (!rawName) continue;
+        const deviceKey = rawName.trim().toLowerCase();
+
+        if (!deviceGroups.has(deviceKey)) {
+          deviceGroups.set(deviceKey, {
+            manufacturer: data[manufacturerColId ?? ''] || 'Unknown',
+            articles: [],
+            benchmarks: [],
+          });
+        }
+        const group = deviceGroups.get(deviceKey)!;
+        group.articles.push(articleId);
+
+        // Add performance benchmarks from this article
+        if (endpointColId && data[endpointColId]) {
+          const resultVal = resultColId ? data[resultColId] || '' : '';
+          group.benchmarks.push({
+            metric: data[endpointColId],
+            value: resultVal,
+            articleId,
+          });
+        }
+      }
+
+      // Upsert devices and benchmarks
+      let discoveredCount = 0;
+      let totalBenchmarks = 0;
+
+      for (const [, group] of deviceGroups) {
+        const displayName =
+          group.articles.length > 0
+            ? (articleData.get(group.articles[0])![deviceNameColId] ?? 'Unknown')
+            : 'Unknown';
+
+        // Check if already exists
+        const existing = await ctx.prisma.similarDevice.findFirst({
+          where: {
+            soaAnalysisId: args.soaAnalysisId,
+            deviceName: displayName,
+          },
+        });
+
+        let deviceId: string;
+        if (existing) {
+          await ctx.prisma.similarDevice.update({
+            where: { id: existing.id },
+            data: { articleCount: group.articles.length },
+          });
+          deviceId = existing.id;
+        } else {
+          const device = await ctx.prisma.similarDevice.create({
+            data: {
+              id: crypto.randomUUID(),
+              soaAnalysisId: args.soaAnalysisId,
+              deviceName: displayName,
+              manufacturer: group.manufacturer,
+              indication: 'Cervical spine',
+              regulatoryStatus: 'Unknown',
+              status: 'DISCOVERED',
+              articleCount: group.articles.length,
+              createdById: ctx.user!.id,
+            },
+          });
+          deviceId = device.id;
+          discoveredCount++;
+        }
+
+        // Add benchmarks (skip duplicates)
+        for (const bm of group.benchmarks) {
+          if (!bm.metric || !bm.value) continue;
+          const existingBm = await ctx.prisma.benchmark.findFirst({
+            where: {
+              similarDeviceId: deviceId,
+              metricName: bm.metric,
+              sourceArticleId: bm.articleId,
+            },
+          });
+          if (!existingBm) {
+            await ctx.prisma.benchmark.create({
+              data: {
+                id: crypto.randomUUID(),
+                similarDeviceId: deviceId,
+                metricName: bm.metric,
+                metricValue: bm.value,
+                unit: 'N/A',
+                sourceArticleId: bm.articleId,
+              },
+            });
+            totalBenchmarks++;
+          }
+        }
+      }
+
+      return { discoveredCount, totalBenchmarks };
+    },
+  }),
+);
+
+builder.mutationField('updateDeviceStatus', (t) =>
+  t.field({
+    type: UpdateDeviceStatusResultType,
+    args: {
+      deviceId: t.arg.string({ required: true }),
+      status: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      if (!['APPROVED', 'REJECTED', 'DISCOVERED'].includes(args.status)) {
+        throw new Error('Status must be APPROVED, REJECTED, or DISCOVERED');
+      }
+
+      const device = await ctx.prisma.similarDevice.update({
+        where: { id: args.deviceId },
+        data: { status: args.status },
+      });
+
+      return { id: device.id, status: device.status };
+    },
+  }),
+);
+
 // --- Claims mutations (Story 3.10) ---
 
 builder.mutationField('createClaim', (t) =>
@@ -638,6 +919,94 @@ builder.mutationField('linkClaimToArticle', (t) =>
         articleId: args.articleId,
         sourceQuote: args.sourceQuote ?? undefined,
       }) as any;
+    },
+  }),
+);
+
+builder.mutationField('generateClaims', (t) =>
+  t.field({
+    type: GenerateClaimsResultType,
+    args: {
+      soaAnalysisId: t.arg.string({ required: true }),
+      gridId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      const soa = await ctx.prisma.soaAnalysis.findUnique({
+        where: { id: args.soaAnalysisId },
+      });
+
+      if (!soa) {
+        throw new NotFoundError('SoaAnalysis', args.soaAnalysisId);
+      }
+
+      await checkProjectMembership(ctx, soa.projectId);
+
+      // Count eligible sections (any with narrative content or AI draft)
+      const sections = await ctx.prisma.thematicSection.findMany({
+        where: {
+          soaAnalysisId: args.soaAnalysisId,
+          OR: [{ narrativeContent: { not: null } }, { narrativeAiDraft: { not: null } }] as any,
+        },
+        select: { id: true },
+      });
+
+      if (sections.length === 0) {
+        throw new Error('No sections with narrative content found for this SOA analysis');
+      }
+
+      const taskId = crypto.randomUUID();
+
+      const redis = getRedis();
+      await redis.publish(
+        'task:enqueued',
+        JSON.stringify({
+          taskId,
+          type: 'soa.generate-claims',
+          status: 'PENDING',
+          metadata: {
+            taskId,
+            soaAnalysisId: args.soaAnalysisId,
+            gridId: args.gridId,
+          },
+          createdBy: ctx.user!.id,
+        }),
+      );
+
+      return { taskId, sectionCount: sections.length };
+    },
+  }),
+);
+
+builder.mutationField('updateClaimStatus', (t) =>
+  t.field({
+    type: UpdateClaimStatusResultType,
+    args: {
+      claimId: t.arg.string({ required: true }),
+      status: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'soa', 'write');
+
+      if (!['DRAFT', 'APPROVED', 'REJECTED'].includes(args.status)) {
+        throw new Error('Status must be DRAFT, APPROVED, or REJECTED');
+      }
+
+      const claim = await ctx.prisma.claim.findUnique({
+        where: { id: args.claimId },
+      });
+
+      if (!claim) {
+        throw new NotFoundError('Claim', args.claimId);
+      }
+
+      const updatedClaim = await ctx.prisma.claim.update({
+        where: { id: args.claimId },
+        data: { status: args.status },
+      });
+
+      return { id: updatedClaim.id, status: updatedClaim.status };
     },
   }),
 );

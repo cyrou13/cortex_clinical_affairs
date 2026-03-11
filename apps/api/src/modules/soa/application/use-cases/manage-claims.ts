@@ -106,7 +106,7 @@ export class ManageClaimsUseCase {
       throw new NotFoundError('SoaAnalysis', soaAnalysisId);
     }
 
-    const claims = await this.prisma.claim.findMany({
+    const claims = await (this.prisma as any).claim.findMany({
       where: { soaAnalysisId },
       include: {
         claimArticleLinks: {
@@ -115,7 +115,7 @@ export class ManageClaimsUseCase {
           },
         },
         thematicSection: { select: { id: true, title: true } },
-      } as any,
+      },
       orderBy: { createdAt: 'asc' },
     });
 

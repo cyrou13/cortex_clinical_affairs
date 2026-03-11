@@ -94,6 +94,7 @@ model ThematicSection {
   updatedById      String?
 
   soaAnalysis SoaAnalysis @relation(fields: [soaAnalysisId], references: [id])
+  claims     Claim[]
 
   @@index([soaAnalysisId])
 }
@@ -107,6 +108,8 @@ model SimilarDevice {
   manufacturer     String
   indication       String
   regulatoryStatus String
+  status           String   @default("DISCOVERED") // DISCOVERED | APPROVED | REJECTED
+  articleCount     Int      @default(0)
   metadata         Json?
   createdById      String
   createdAt        DateTime @default(now())
@@ -141,10 +144,14 @@ model Claim {
   soaAnalysisId     String
   statementText     String
   thematicSectionId String?
+  status            String   @default("DRAFT") // DRAFT | APPROVED | REJECTED
+  evidenceStrength  String?  // HIGH | MEDIUM | LOW
   createdById       String
   createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  soaAnalysis       SoaAnalysis        @relation(fields: [soaAnalysisId], references: [id])
+  soaAnalysis       SoaAnalysis         @relation(fields: [soaAnalysisId], references: [id])
+  thematicSection   ThematicSection?    @relation(fields: [thematicSectionId], references: [id])
   claimArticleLinks ClaimArticleLink[]
 
   @@index([soaAnalysisId])
@@ -178,6 +185,7 @@ model ExtractionGrid {
   soaAnalysis SoaAnalysis  @relation(fields: [soaAnalysisId], references: [id])
   columns     GridColumn[]
   cells       GridCell[]
+  articleQualityAssessments ArticleQualityAssessment[]
 
   @@index([soaAnalysisId])
 }
@@ -241,6 +249,29 @@ model QualityAssessment {
   soaAnalysis SoaAnalysis @relation(fields: [soaAnalysisId], references: [id])
 
   @@index([soaAnalysisId])
+}
+
+// --- Model 11b: ArticleQualityAssessment (AI-generated) ---
+
+model ArticleQualityAssessment {
+  id               String   @id @default(uuid())
+  extractionGridId String
+  articleId        String
+  overallQuality   String   // HIGH, MEDIUM, LOW
+  overallScore     Int
+  criteriaScores   Json?
+  strengths        Json?    // String[]
+  weaknesses       Json?    // String[]
+  recommendation   String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  extractionGrid ExtractionGrid @relation(fields: [extractionGridId], references: [id])
+  article        Article        @relation(fields: [articleId], references: [id])
+
+  @@unique([extractionGridId, articleId])
+  @@index([extractionGridId])
+  @@index([articleId])
 }
 
 // --- Model 12: SoaBenchmark ---

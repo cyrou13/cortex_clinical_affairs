@@ -81,7 +81,7 @@ export function ThematicSectionEditor({
   onFinalized,
 }: ThematicSectionEditorProps) {
   const [content, setContent] = useState('');
-  const [contentInitialized, setContentInitialized] = useState(false);
+  const [initializedForSection, setInitializedForSection] = useState<string | null>(null);
 
   const { data, loading } = useQuery<any>(GET_SOA_SECTIONS, {
     variables: { soaAnalysisId },
@@ -94,27 +94,27 @@ export function ThematicSectionEditor({
   const section = allSections.find((s: any) => s.id === sectionId);
 
   useEffect(() => {
-    if (!contentInitialized && section) {
-      if (section.narrativeContent) {
-        setContent(section.narrativeContent);
-        setContentInitialized(true);
-      } else if (section.narrativeAiDraft) {
-        // Extract plain text from TipTap JSON or plain string
-        const draft = section.narrativeAiDraft;
-        if (typeof draft === 'string') {
-          try {
-            const parsed = JSON.parse(draft);
-            setContent(extractTextFromTipTap(parsed));
-          } catch {
-            setContent(draft);
-          }
-        } else if (typeof draft === 'object') {
-          setContent(extractTextFromTipTap(draft));
+    if (initializedForSection === sectionId || !section) return;
+
+    if (section.narrativeContent) {
+      setContent(section.narrativeContent);
+    } else if (section.narrativeAiDraft) {
+      const draft = section.narrativeAiDraft;
+      if (typeof draft === 'string') {
+        try {
+          const parsed = JSON.parse(draft);
+          setContent(extractTextFromTipTap(parsed));
+        } catch {
+          setContent(draft);
         }
-        setContentInitialized(true);
+      } else if (typeof draft === 'object') {
+        setContent(extractTextFromTipTap(draft));
       }
+    } else {
+      setContent('');
     }
-  }, [section, contentInitialized]);
+    setInitializedForSection(sectionId);
+  }, [section, sectionId, initializedForSection]);
 
   const isFinalized = section?.status === 'FINALIZED';
 

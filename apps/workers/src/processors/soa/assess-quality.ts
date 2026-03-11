@@ -75,12 +75,10 @@ export class AssessQualityProcessor extends BaseProcessor {
             journal: true,
             publicationYear: true,
             abstract: true,
-            pdfTextContent: true,
           },
         });
 
-        if (!article || !article.pdfTextContent) {
-          // Skip articles without PDF text
+        if (!article) {
           failed++;
           continue;
         }
@@ -184,7 +182,6 @@ Return your response as JSON in this format:
       journal: string | null;
       publicationYear: number | null;
       abstract: string | null;
-      pdfTextContent: string;
     },
     gridCells: Array<{
       gridColumn: { name: string; displayName: string };
@@ -212,9 +209,6 @@ ${article.abstract || 'No abstract available'}
 
 Extracted Data from Grid:
 ${extractedData}
-
-Article Content (first 8000 characters):
-${article.pdfTextContent.substring(0, 8000)}
 
 Assess the quality of this article based on the following criteria: ${qualityCriteria.map((c) => c.name).join(', ')}`;
   }

@@ -31,6 +31,8 @@ function makePrisma(overrides?: {
         ),
     },
     gridCell: {
+      findMany: vi.fn().mockResolvedValue([]),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
       findFirst: vi.fn().mockResolvedValue(null),
       create: vi.fn().mockResolvedValue({ id: 'cell-1' }),
     },

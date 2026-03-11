@@ -171,6 +171,24 @@ export const GET_QUALITY_ASSESSMENTS = gql`
   }
 `;
 
+export const GET_ARTICLE_QUALITY_ASSESSMENTS = gql`
+  query GetArticleQualityAssessments($gridId: String!) {
+    articleQualityAssessments(gridId: $gridId) {
+      id
+      extractionGridId
+      articleId
+      overallQuality
+      overallScore
+      criteriaScores
+      strengths
+      weaknesses
+      recommendation
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
 export const GET_SIMILAR_DEVICES = gql`
   query GetSimilarDevices($soaAnalysisId: String!) {
     similarDevices(soaAnalysisId: $soaAnalysisId) {
@@ -180,6 +198,8 @@ export const GET_SIMILAR_DEVICES = gql`
       manufacturer
       indication
       regulatoryStatus
+      status
+      articleCount
       metadata
       createdAt
     }
@@ -208,6 +228,8 @@ export const GET_CLAIMS = gql`
       soaAnalysisId
       statementText
       thematicSectionId
+      status
+      evidenceStrength
       createdAt
       updatedAt
     }

@@ -30,6 +30,7 @@ import { GeneratePsurProcessor } from './processors/pms/generate-psur.js';
 import { CustomFilterScoreProcessor } from './processors/sls/custom-filter-score.js';
 import { EnrichAbstractsProcessor } from './processors/sls/enrich-abstracts.js';
 import { ImportSoaDocumentProcessor } from './processors/soa/import-soa-document.js';
+import { GenerateClaimsProcessor } from './processors/soa/generate-claims.js';
 
 const log = {
   info: (msg: string) => process.stdout.write(`[INFO] ${msg}\n`),
@@ -154,6 +155,7 @@ const processors: Record<string, { process: (job: Job<TaskJobData>) => Promise<u
   })(),
   'sls.enrich-abstracts': new EnrichAbstractsProcessor(redis, prisma),
   'soa.import-document': new ImportSoaDocumentProcessor(redis, prisma, llmService),
+  'soa.generate-claims': new GenerateClaimsProcessor(redis, prisma, llmService),
 };
 
 const workers: Worker[] = [];
