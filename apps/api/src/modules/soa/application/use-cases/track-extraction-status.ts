@@ -40,7 +40,7 @@ export class TrackExtractionStatusUseCase {
         extractionGridId: gridId,
         articleId,
       },
-      select: { id: true, validationStatus: true },
+      select: { id: true, validationStatus: true, aiExtractedValue: true },
     });
 
     if (cells.length === 0) {
@@ -50,17 +50,19 @@ export class TrackExtractionStatusUseCase {
     const statuses = cells.map((c) => c.validationStatus as CellValidationStatus);
     const flaggedCells = statuses.filter((s) => s === 'FLAGGED').length;
     const validatedCells = statuses.filter((s) => s === 'VALIDATED' || s === 'CORRECTED').length;
-    const pendingCells = statuses.filter((s) => s === 'PENDING').length;
+    const hasAiValue = cells.some(
+      (c) => (c as { aiExtractedValue: string | null }).aiExtractedValue != null,
+    );
 
     let status: ArticleExtractionStatus;
     if (flaggedCells > 0) {
       status = 'FLAGGED';
-    } else if (pendingCells === cells.length) {
-      status = 'PENDING';
     } else if (validatedCells === cells.length) {
       status = 'REVIEWED';
-    } else {
+    } else if (hasAiValue || validatedCells > 0) {
       status = 'EXTRACTED';
+    } else {
+      status = 'PENDING';
     }
 
     return {
@@ -83,16 +85,23 @@ export class TrackExtractionStatusUseCase {
 
     const cells = await this.prisma.gridCell.findMany({
       where: { extractionGridId: gridId },
-      select: { articleId: true, validationStatus: true },
+      select: { articleId: true, validationStatus: true, aiExtractedValue: true },
     });
 
-    const articleMap = new Map<string, CellValidationStatus[]>();
+    const articleMap = new Map<
+      string,
+      Array<{ validationStatus: CellValidationStatus; aiExtractedValue: string | null }>
+    >();
     for (const cell of cells as Array<{
       articleId: string;
       validationStatus: CellValidationStatus;
+      aiExtractedValue: string | null;
     }>) {
       const existing = articleMap.get(cell.articleId) ?? [];
-      existing.push(cell.validationStatus);
+      existing.push({
+        validationStatus: cell.validationStatus,
+        aiExtractedValue: cell.aiExtractedValue,
+      });
       articleMap.set(cell.articleId, existing);
     }
 
@@ -103,26 +112,29 @@ export class TrackExtractionStatusUseCase {
       FLAGGED: 0,
     };
 
-    for (const [, statuses] of articleMap) {
+    for (const [, cellData] of articleMap) {
+      const statuses = cellData.map((c) => c.validationStatus);
       const hasFlagged = statuses.some((s) => s === 'FLAGGED');
-      const allPending = statuses.every((s) => s === 'PENDING');
       const allReviewed = statuses.every((s) => s === 'VALIDATED' || s === 'CORRECTED');
+      const hasAiValue = cellData.some((c) => c.aiExtractedValue != null);
+
+      const hasValidated = statuses.some((s) => s === 'VALIDATED' || s === 'CORRECTED');
 
       if (hasFlagged) {
         counts.FLAGGED++;
-      } else if (allPending) {
-        counts.PENDING++;
       } else if (allReviewed) {
         counts.REVIEWED++;
-      } else {
+      } else if (hasAiValue || hasValidated) {
         counts.EXTRACTED++;
+      } else {
+        counts.PENDING++;
       }
     }
 
     const totalArticles = articleMap.size;
-    const completedArticles = counts.REVIEWED;
+    const extractedOrReviewed = counts.EXTRACTED + counts.REVIEWED;
     const overallPercentage =
-      totalArticles > 0 ? Math.round((completedArticles / totalArticles) * 100) : 0;
+      totalArticles > 0 ? Math.round((extractedOrReviewed / totalArticles) * 100) : 0;
 
     return {
       gridId,

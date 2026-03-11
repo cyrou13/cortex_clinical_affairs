@@ -40,10 +40,10 @@ export function ExtractionProgressPanel({ gridId, onFilterChange }: ExtractionPr
   const totalArticles = progress?.totalArticles ?? 0;
   const percentage = progress?.overallPercentage ?? 0;
   const counts = progress?.counts ?? {};
-  const extracted = counts.extracted ?? 0;
-  const reviewed = counts.reviewed ?? 0;
-  const flagged = counts.flagged ?? 0;
-  const pending = counts.pending ?? 0;
+  const extracted = counts.EXTRACTED ?? counts.extracted ?? 0;
+  const reviewed = counts.REVIEWED ?? counts.reviewed ?? 0;
+  const flagged = counts.FLAGGED ?? counts.flagged ?? 0;
+  const pending = counts.PENDING ?? counts.pending ?? 0;
 
   return (
     <div
