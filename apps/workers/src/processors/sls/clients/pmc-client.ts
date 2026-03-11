@@ -137,7 +137,7 @@ export class PmcClient implements DatabaseClient {
       const contribGroup = block.match(/<contrib-group>([\s\S]*?)<\/contrib-group>/);
       if (contribGroup?.[1]) {
         const nameRegex =
-          /<name>[\s\S]*?<surname>([\s\S]*?)<\/surname>[\s\S]*?<given-names>([\s\S]*?)<\/given-names>[\s\S]*?<\/name>/g;
+          /<name[^>]*>[\s\S]*?<surname>([\s\S]*?)<\/surname>[\s\S]*?<given-names[^>]*>([\s\S]*?)<\/given-names>[\s\S]*?<\/name>/g;
         let nameMatch: RegExpExecArray | null;
         while ((nameMatch = nameRegex.exec(contribGroup[1])) !== null) {
           const surname = nameMatch[1]?.trim() ?? '';

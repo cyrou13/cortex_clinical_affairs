@@ -28,6 +28,7 @@ import { ImportXlsDataProcessor } from './processors/validation/import-xls-data.
 import { GeneratePmcfReportProcessor } from './processors/pms/generate-pmcf-report.js';
 import { GeneratePsurProcessor } from './processors/pms/generate-psur.js';
 import { CustomFilterScoreProcessor } from './processors/sls/custom-filter-score.js';
+import { EnrichAbstractsProcessor } from './processors/sls/enrich-abstracts.js';
 import { ImportSoaDocumentProcessor } from './processors/soa/import-soa-document.js';
 
 const log = {
@@ -145,7 +146,13 @@ const processors: Record<string, { process: (job: Job<TaskJobData>) => Promise<u
   },
   'pms.generate-pmcf-report': new GeneratePmcfReportProcessor(redis),
   'pms.generate-psur': new GeneratePsurProcessor(redis),
-  'sls.custom-filter-score': new CustomFilterScoreProcessor(redis),
+  'sls.custom-filter-score': (() => {
+    const p = new CustomFilterScoreProcessor(redis);
+    p.setLlmService(llmService);
+    p.setPrisma(prisma);
+    return p;
+  })(),
+  'sls.enrich-abstracts': new EnrichAbstractsProcessor(redis, prisma),
   'soa.import-document': new ImportSoaDocumentProcessor(redis, prisma, llmService),
 };
 

@@ -1,5 +1,5 @@
 import type { ArticleMetadata } from '@cortex/shared';
-import type { DatabaseClient, DatabaseSearchResult } from './database-client.js';
+import type { DatabaseClient, DatabaseSearchResult, DateRange } from './database-client.js';
 
 const SERPAPI_BASE = 'https://serpapi.com/search';
 const PAGE_SIZE = 20;
@@ -35,7 +35,7 @@ export class GoogleScholarClient implements DatabaseClient {
     this.apiKey = key;
   }
 
-  async search(query: string): Promise<DatabaseSearchResult> {
+  async search(query: string, dateRange?: DateRange): Promise<DatabaseSearchResult> {
     const allArticles: ArticleMetadata[] = [];
     let start = 0;
     let totalCount = 0;
@@ -49,6 +49,13 @@ export class GoogleScholarClient implements DatabaseClient {
         start: String(start),
         num: String(PAGE_SIZE),
       });
+
+      if (dateRange?.from) {
+        params.set('as_ylo', String(dateRange.from.getUTCFullYear()));
+      }
+      if (dateRange?.to) {
+        params.set('as_yhi', String(dateRange.to.getUTCFullYear()));
+      }
 
       const response = await fetch(`${SERPAPI_BASE}?${params.toString()}`);
 

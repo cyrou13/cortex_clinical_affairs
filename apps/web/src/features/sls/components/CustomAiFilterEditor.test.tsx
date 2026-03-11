@@ -271,7 +271,7 @@ describe('CustomAiFilterEditor', () => {
     fireEvent.click(screen.getByTestId('launch-scoring-f-1'));
 
     await screen.findByTestId('scoring-task-launched');
-    expect(screen.getByText(/task-123/)).toBeInTheDocument();
+    expect(screen.getByTestId('scoring-progress-bar')).toBeInTheDocument();
   });
 
   it('dismisses scoring task notification', async () => {

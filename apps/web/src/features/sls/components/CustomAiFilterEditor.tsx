@@ -9,6 +9,7 @@ import {
   DELETE_CUSTOM_AI_FILTER,
   LAUNCH_CUSTOM_FILTER_SCORING,
 } from '../graphql/mutations';
+import { useTaskPanelStore } from '../../../stores/task-panel-store';
 
 interface CustomAiFilter {
   id: string;
@@ -32,18 +33,13 @@ interface CustomAiFilterEditorProps {
   sessionId: string;
 }
 
-export function CustomAiFilterEditor({
-  sessionId,
-}: CustomAiFilterEditorProps) {
-  const { data, loading } = useQuery<CustomAiFiltersData>(
-    GET_CUSTOM_AI_FILTERS,
-    { variables: { sessionId } },
-  );
+export function CustomAiFilterEditor({ sessionId }: CustomAiFilterEditorProps) {
+  const { data, loading } = useQuery<CustomAiFiltersData>(GET_CUSTOM_AI_FILTERS, {
+    variables: { sessionId },
+  });
 
   const refetchConfig = {
-    refetchQueries: [
-      { query: GET_CUSTOM_AI_FILTERS, variables: { sessionId } },
-    ],
+    refetchQueries: [{ query: GET_CUSTOM_AI_FILTERS, variables: { sessionId } }],
   };
 
   const [createFilter] = useMutation(CREATE_CUSTOM_AI_FILTER, refetchConfig);
@@ -141,44 +137,21 @@ export function CustomAiFilterEditor({
 
   if (loading && !data) {
     return (
-      <div
-        data-testid="custom-ai-filter-editor"
-        className="rounded-lg bg-white p-4 shadow-sm"
-      >
-        <p className="text-sm text-[var(--cortex-text-muted)]">
-          Loading custom filters...
-        </p>
+      <div data-testid="custom-ai-filter-editor" className="rounded-lg bg-white p-4 shadow-sm">
+        <p className="text-sm text-[var(--cortex-text-muted)]">Loading custom filters...</p>
       </div>
     );
   }
 
   return (
-    <div
-      data-testid="custom-ai-filter-editor"
-      className="rounded-lg bg-white p-4 shadow-sm"
-    >
+    <div data-testid="custom-ai-filter-editor" className="rounded-lg bg-white p-4 shadow-sm">
       <h3 className="mb-4 text-sm font-semibold text-[var(--cortex-text-primary)]">
         Custom AI Filters
       </h3>
 
-      {/* Scoring task ID display */}
+      {/* Scoring task progress */}
       {scoringTaskId && (
-        <div
-          data-testid="scoring-task-launched"
-          className="mb-4 rounded-md border border-emerald-300 bg-emerald-50 p-3"
-        >
-          <p className="text-sm text-emerald-800">
-            Filter scoring launched (task: {scoringTaskId})
-          </p>
-          <button
-            type="button"
-            data-testid="dismiss-scoring-task"
-            onClick={() => setScoringTaskId(null)}
-            className="mt-1 text-xs text-emerald-600 underline hover:no-underline"
-          >
-            Dismiss
-          </button>
-        </div>
+        <FilterScoringProgress taskId={scoringTaskId} onDismiss={() => setScoringTaskId(null)} />
       )}
 
       {/* Existing filters list */}
@@ -391,6 +364,93 @@ export function CustomAiFilterEditor({
           Add Filter
         </button>
       )}
+    </div>
+  );
+}
+
+function FilterScoringProgress({ taskId, onDismiss }: { taskId: string; onDismiss: () => void }) {
+  const task = useTaskPanelStore((s) => s.tasks.find((t) => t.taskId === taskId));
+  const completed = useTaskPanelStore((s) => s.history.find((t) => t.taskId === taskId));
+
+  const event = task ?? completed;
+  const isRunning = task != null;
+  const isDone = completed?.status === 'COMPLETED';
+  const isFailed = completed?.status === 'FAILED';
+
+  const progress = event?.progress ?? 0;
+  const message = event?.message ?? 'Starting...';
+
+  return (
+    <div
+      data-testid="scoring-task-launched"
+      className={cn(
+        'mb-4 rounded-md border p-3',
+        isFailed
+          ? 'border-red-300 bg-red-50'
+          : isDone
+            ? 'border-emerald-300 bg-emerald-50'
+            : 'border-blue-300 bg-blue-50',
+      )}
+    >
+      <div className="mb-2 flex items-center justify-between">
+        <p
+          className={cn(
+            'text-sm font-medium',
+            isFailed ? 'text-red-800' : isDone ? 'text-emerald-800' : 'text-blue-800',
+          )}
+        >
+          {isFailed
+            ? 'Filter scoring failed'
+            : isDone
+              ? 'Filter scoring complete'
+              : 'Filter scoring in progress...'}
+        </p>
+        {!isRunning && (
+          <button
+            type="button"
+            data-testid="dismiss-scoring-task"
+            onClick={onDismiss}
+            className={cn(
+              'text-xs underline hover:no-underline',
+              isFailed ? 'text-red-600' : 'text-emerald-600',
+            )}
+          >
+            Dismiss
+          </button>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      <div className="mb-1.5 h-2 w-full overflow-hidden rounded-full bg-black/10">
+        <div
+          data-testid="scoring-progress-bar"
+          className={cn(
+            'h-full rounded-full transition-all duration-500 ease-out',
+            isFailed ? 'bg-red-500' : isDone ? 'bg-emerald-500' : 'bg-blue-500',
+            isRunning && 'animate-pulse',
+          )}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      <div className="flex items-center justify-between">
+        <p
+          className={cn(
+            'text-xs',
+            isFailed ? 'text-red-600' : isDone ? 'text-emerald-600' : 'text-blue-600',
+          )}
+        >
+          {message}
+        </p>
+        <span
+          className={cn(
+            'text-xs font-medium',
+            isFailed ? 'text-red-700' : isDone ? 'text-emerald-700' : 'text-blue-700',
+          )}
+        >
+          {progress}%
+        </span>
+      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import {
   ChevronUp,
   ChevronDown,
   Search,
+  Filter,
   FileText,
   FileX,
   FileQuestion,
@@ -30,6 +31,7 @@ interface Article {
   relevanceScore: number | null;
   aiCategory: string | null;
   aiExclusionCode: string | null;
+  customFilterScore: number | null;
 }
 
 interface ArticlesResponse {
@@ -45,6 +47,7 @@ export interface ArticleFilter {
   search?: string;
   status?: string;
   pdfStatus?: string;
+  customFilterPassed?: boolean;
   sortBy?: string;
   sortOrder?: 'ASC' | 'DESC';
 }
@@ -96,11 +99,22 @@ const databaseLabels: Record<string, string> = {
   CLINICAL_TRIALS: 'ClinicalTrials.gov',
 };
 
+/** Convert relevanceScore (0.0–1.0 from LLM) to display percentage */
+const toPercent = (score: number): number =>
+  score <= 1 ? Math.round(score * 100) : Math.round(score);
+
 const scoreBadgeStyles = (score: number | null): string => {
   if (score === null) return '';
-  if (score >= 75) return 'bg-emerald-100 text-emerald-700';
-  if (score >= 40) return 'bg-orange-100 text-orange-700';
+  const pct = toPercent(score);
+  if (pct >= 75) return 'bg-emerald-100 text-emerald-700';
+  if (pct >= 40) return 'bg-orange-100 text-orange-700';
   return 'bg-red-100 text-red-700';
+};
+
+const filterScoreBadge = (score: number | null): { label: string; style: string } => {
+  if (score === null) return { label: '—', style: '' };
+  if (score >= 50) return { label: 'Pass', style: 'bg-emerald-100 text-emerald-700' };
+  return { label: 'Fail', style: 'bg-red-100 text-red-700' };
 };
 
 const categoryLabels: Record<string, string> = {
@@ -154,9 +168,10 @@ export function ArticleTable({
     variables: {
       sessionId,
       filter: {
-        search: filter.search,
+        searchText: filter.search,
         status: filter.status,
         pdfStatus: filter.pdfStatus,
+        customFilterPassed: filter.customFilterPassed,
       },
       offset: 0,
       limit: PAGE_SIZE,
@@ -177,9 +192,10 @@ export function ArticleTable({
         variables: {
           sessionId,
           filter: {
-            search: filter.search,
+            searchText: filter.search,
             status: filter.status,
             pdfStatus: filter.pdfStatus,
+            customFilterPassed: filter.customFilterPassed,
           },
           offset: articles.length,
           limit: PAGE_SIZE,
@@ -262,6 +278,7 @@ export function ArticleTable({
   ];
 
   const hasAiScores = articles.some((a) => a.relevanceScore !== null);
+  const hasCustomFilterScores = articles.some((a) => a.customFilterScore !== null);
 
   return (
     <div data-testid="article-table" className="flex flex-col">
@@ -284,6 +301,30 @@ export function ArticleTable({
             data-testid="article-search-input"
           />
         </div>
+        {hasCustomFilterScores && (
+          <select
+            value={
+              filter.customFilterPassed === undefined
+                ? ''
+                : filter.customFilterPassed
+                  ? 'pass'
+                  : 'fail'
+            }
+            onChange={(e) => {
+              const val = e.target.value;
+              onFilterChange({
+                ...filter,
+                customFilterPassed: val === '' ? undefined : val === 'pass',
+              });
+            }}
+            className="rounded-md border border-[var(--cortex-border)] bg-white px-3 py-2 text-sm text-[var(--cortex-text-primary)] focus:border-[var(--cortex-blue-500)] focus:outline-none"
+            data-testid="custom-filter-select"
+          >
+            <option value="">AI Filter: All</option>
+            <option value="pass">AI Filter: Pass</option>
+            <option value="fail">AI Filter: Fail</option>
+          </select>
+        )}
       </div>
 
       {/* Selection count */}
@@ -356,13 +397,24 @@ export function ArticleTable({
                   </th>
                 </>
               )}
+              {hasCustomFilterScores && (
+                <th
+                  className="px-3 py-3 text-xs font-medium uppercase tracking-wider text-[var(--cortex-text-muted)]"
+                  data-testid="column-header-customFilter"
+                >
+                  <div className="flex items-center gap-1">
+                    <Filter size={12} aria-hidden="true" />
+                    AI Filter
+                  </div>
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 bg-white">
             {loading && articles.length === 0 && (
               <tr>
                 <td
-                  colSpan={hasAiScores ? 10 : 7}
+                  colSpan={7 + (hasAiScores ? 3 : 0) + (hasCustomFilterScores ? 1 : 0)}
                   className="px-3 py-8 text-center text-sm text-[var(--cortex-text-muted)]"
                 >
                   Loading articles...
@@ -373,7 +425,7 @@ export function ArticleTable({
             {!loading && articles.length === 0 && (
               <tr>
                 <td
-                  colSpan={hasAiScores ? 10 : 7}
+                  colSpan={7 + (hasAiScores ? 3 : 0) + (hasCustomFilterScores ? 1 : 0)}
                   className="px-3 py-8 text-center text-sm text-[var(--cortex-text-muted)]"
                   data-testid="empty-articles"
                 >
@@ -480,7 +532,7 @@ export function ArticleTable({
                             )}
                             data-testid={`ai-score-badge-${article.id}`}
                           >
-                            {Math.round(article.relevanceScore)}
+                            {toPercent(article.relevanceScore)}%
                           </span>
                         )}
                       </td>
@@ -506,6 +558,30 @@ export function ArticleTable({
                       </td>
                     </>
                   )}
+                  {hasCustomFilterScores && (
+                    <td className="px-3 py-3">
+                      {(() => {
+                        const badge = filterScoreBadge(article.customFilterScore);
+                        if (!badge.style) return <span className="text-xs text-gray-400">—</span>;
+                        return (
+                          <span
+                            className={cn(
+                              'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium',
+                              badge.style,
+                            )}
+                            data-testid={`custom-filter-badge-${article.id}`}
+                            title={
+                              article.customFilterScore !== null
+                                ? `Score: ${article.customFilterScore}`
+                                : ''
+                            }
+                          >
+                            {badge.label}
+                          </span>
+                        );
+                      })()}
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -513,7 +589,7 @@ export function ArticleTable({
             {loading && articles.length > 0 && (
               <tr>
                 <td
-                  colSpan={hasAiScores ? 10 : 7}
+                  colSpan={7 + (hasAiScores ? 3 : 0) + (hasCustomFilterScores ? 1 : 0)}
                   className="px-3 py-4 text-center text-sm text-[var(--cortex-text-muted)]"
                   data-testid="loading-more"
                 >

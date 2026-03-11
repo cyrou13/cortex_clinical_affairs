@@ -1,5 +1,5 @@
 import type { ArticleMetadata } from '@cortex/shared';
-import type { DatabaseClient, DatabaseSearchResult } from './database-client.js';
+import type { DatabaseClient, DatabaseSearchResult, DateRange } from './database-client.js';
 
 const API_BASE = 'https://clinicaltrials.gov/api/v2/studies';
 const PAGE_SIZE = 100;
@@ -35,7 +35,7 @@ interface ClinicalTrialsResponse {
 }
 
 export class ClinicalTrialsClient implements DatabaseClient {
-  async search(query: string): Promise<DatabaseSearchResult> {
+  async search(query: string, dateRange?: DateRange): Promise<DatabaseSearchResult> {
     const allArticles: ArticleMetadata[] = [];
     let pageToken: string | undefined;
     let totalCount = 0;
@@ -47,6 +47,20 @@ export class ClinicalTrialsClient implements DatabaseClient {
         pageSize: String(PAGE_SIZE),
         format: 'json',
       });
+
+      // ClinicalTrials.gov v2 API supports filter.advanced for date ranges
+      const dateFilters: string[] = [];
+      if (dateRange?.from) {
+        const d = dateRange.from;
+        dateFilters.push(`AREA[StudyFirstPostDate]RANGE[${formatCtDate(d)}, MAX]`);
+      }
+      if (dateRange?.to) {
+        const d = dateRange.to;
+        dateFilters.push(`AREA[StudyFirstPostDate]RANGE[MIN, ${formatCtDate(d)}]`);
+      }
+      if (dateFilters.length > 0) {
+        params.set('filter.advanced', dateFilters.join(' AND '));
+      }
 
       if (pageToken) {
         params.set('pageToken', pageToken);
@@ -120,4 +134,11 @@ export class ClinicalTrialsClient implements DatabaseClient {
 
     return article;
   }
+}
+
+function formatCtDate(d: Date): string {
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }

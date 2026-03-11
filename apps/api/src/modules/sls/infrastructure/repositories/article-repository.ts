@@ -31,6 +31,11 @@ export class ArticleRepository {
           where.pdfStatus = filter.pdfStatus;
         }
       }
+      if (filter.customFilterPassed === true) {
+        where.customFilterScore = { gte: 50 };
+      } else if (filter.customFilterPassed === false) {
+        where.customFilterScore = { lt: 50 };
+      }
       if (filter.searchText) {
         // Use AND to combine with potential pdfStatus OR clause
         const textFilter = [

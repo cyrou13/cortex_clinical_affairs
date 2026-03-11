@@ -71,6 +71,67 @@ export async function buildServer(options?: BuildServerOptions | PrismaClient) {
     timestamp: new Date().toISOString(),
   }));
 
+  // REST endpoint to proxy PDFs from MinIO (avoids CORS issues with signed URLs)
+  app.get<{ Params: { articleId: string } }>(
+    '/api/articles/:articleId/pdf',
+    {
+      onSend: async (_request, reply, payload) => {
+        // Remove X-Frame-Options so PDF can be embedded in iframes
+        reply.raw.removeHeader('X-Frame-Options');
+        reply.raw.removeHeader('x-frame-options');
+        return payload;
+      },
+    },
+    async (request, reply) => {
+      const { articleId } = request.params;
+      const userId = request.currentUser?.id;
+      if (!userId) {
+        return reply.status(401).send({ error: 'Unauthorized' });
+      }
+
+      const article = await prisma.article.findUnique({ where: { id: articleId } });
+      if (
+        !article ||
+        !article.pdfStorageKey ||
+        !['FOUND', 'VERIFIED'].includes(article.pdfStatus ?? '')
+      ) {
+        return reply.status(404).send({ error: 'PDF not found' });
+      }
+
+      try {
+        const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3');
+        const endpoint = process.env['MINIO_ENDPOINT'] ?? 'localhost';
+        const port = process.env['MINIO_PORT'] ?? '9000';
+        const s3 = new S3Client({
+          endpoint: `http://${endpoint}:${port}`,
+          region: 'us-east-1',
+          credentials: {
+            accessKeyId: process.env['MINIO_ACCESS_KEY'] ?? 'cortex_minio',
+            secretAccessKey: process.env['MINIO_SECRET_KEY'] ?? 'cortex_minio_secret',
+          },
+          forcePathStyle: true,
+        });
+
+        const result = await s3.send(
+          new GetObjectCommand({
+            Bucket: process.env['MINIO_BUCKET'] ?? 'cortex-documents',
+            Key: article.pdfStorageKey,
+          }),
+        );
+
+        void reply.header('content-type', 'application/pdf');
+        void reply.header('content-disposition', `inline; filename="${articleId}.pdf"`);
+        if (result.ContentLength) {
+          void reply.header('Content-Length', result.ContentLength);
+        }
+
+        return reply.send(result.Body);
+      } catch {
+        return reply.status(500).send({ error: 'Failed to retrieve PDF' });
+      }
+    },
+  );
+
   // FIX #2: Integrate auth middleware to populate request.currentUser
   if (!opts.skipAuth && config.JWT_SECRET && config.JWT_REFRESH_SECRET && config.REDIS_URL) {
     const redis = new Redis(config.REDIS_URL);

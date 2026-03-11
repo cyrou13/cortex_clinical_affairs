@@ -302,6 +302,7 @@ export const ArticleFilterInput = builder.inputType('ArticleFilterInput', {
     sourceDatabase: t.string({ required: false }),
     searchText: t.string({ required: false }),
     pdfStatus: t.string({ required: false }),
+    customFilterPassed: t.boolean({ required: false }),
   }),
 });
 
@@ -741,6 +742,44 @@ builder.objectType(PdfRetrievalStatsType, {
     mismatches: t.exposeInt('mismatches'),
     verified: t.exposeInt('verified'),
     retrieving: t.exposeInt('retrieving'),
+  }),
+});
+
+// --- Abstract Enrichment Stats type ---
+
+export const AbstractEnrichmentStatsType = builder.objectRef<{
+  totalArticles: number;
+  withFullAbstract: number;
+  withShortAbstract: number;
+  withoutAbstract: number;
+  needsEnrichment: number;
+}>('AbstractEnrichmentStats');
+
+builder.objectType(AbstractEnrichmentStatsType, {
+  fields: (t) => ({
+    totalArticles: t.exposeInt('totalArticles'),
+    withFullAbstract: t.exposeInt('withFullAbstract'),
+    withShortAbstract: t.exposeInt('withShortAbstract'),
+    withoutAbstract: t.exposeInt('withoutAbstract'),
+    needsEnrichment: t.exposeInt('needsEnrichment'),
+  }),
+});
+
+// --- Enrich Article Abstract Result type ---
+
+export const EnrichArticleResultType = builder.objectRef<{
+  articleId: string;
+  abstract: string | null;
+  source: string | null;
+  enriched: boolean;
+}>('EnrichArticleResult');
+
+builder.objectType(EnrichArticleResultType, {
+  fields: (t) => ({
+    articleId: t.exposeString('articleId'),
+    abstract: t.exposeString('abstract', { nullable: true }),
+    source: t.exposeString('source', { nullable: true }),
+    enriched: t.exposeBoolean('enriched'),
   }),
 });
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useMutation, useQuery } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 import { Download, Loader2, FileText, FileX, AlertTriangle } from 'lucide-react';
@@ -35,14 +35,37 @@ export function PdfRetrievalPanel({ sessionId, onFilterByPdfStatus }: PdfRetriev
   const [taskId, setTaskId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<string | undefined>(undefined);
 
-  const { data: statsData } = useQuery<any>(GET_PDF_RETRIEVAL_STATS, {
+  const {
+    data: statsData,
+    startPolling,
+    stopPolling,
+  } = useQuery<any>(GET_PDF_RETRIEVAL_STATS, {
     variables: { sessionId },
+    fetchPolicy: 'network-only',
   });
 
   const [launchRetrieval, { loading: launching }] = useMutation<any>(LAUNCH_PDF_RETRIEVAL);
 
   const stats = statsData?.pdfRetrievalStats;
-  const isRetrieving = stats?.retrieving > 0 || !!taskId;
+  const retrievingCount = stats?.retrieving ?? 0;
+  const isRetrieving = retrievingCount > 0 || !!taskId;
+
+  // Poll while task is active
+  useEffect(() => {
+    if (isRetrieving) {
+      startPolling(3000);
+    } else {
+      stopPolling();
+    }
+  }, [isRetrieving, startPolling, stopPolling]);
+
+  // Clear taskId when retrieving drops to 0
+  useEffect(() => {
+    if (taskId && stats && retrievingCount === 0) {
+      setTaskId(null);
+    }
+  }, [taskId, stats, retrievingCount]);
+
   const percentFound =
     stats?.totalIncluded > 0 ? Math.round((stats.pdfFound / stats.totalIncluded) * 100) : 0;
 

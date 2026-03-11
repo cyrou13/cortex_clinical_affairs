@@ -328,6 +328,15 @@ export const LOCK_SLS_DATASET = gql`
   }
 `;
 
+export const LAUNCH_ABSTRACT_ENRICHMENT = gql`
+  mutation LaunchAbstractEnrichment($sessionId: String!) {
+    launchAbstractEnrichment(sessionId: $sessionId) {
+      taskId
+      articleCount
+    }
+  }
+`;
+
 export const LAUNCH_PDF_RETRIEVAL = gql`
   mutation LaunchPdfRetrieval($sessionId: String!) {
     launchPdfRetrieval(sessionId: $sessionId) {
@@ -417,6 +426,17 @@ export const GENERATE_QUERY_FROM_TEXT = gql`
       queryString
       suggestedDateFrom
       suggestedDateTo
+    }
+  }
+`;
+
+export const ENRICH_ARTICLE_ABSTRACT = gql`
+  mutation EnrichArticleAbstract($articleId: String!) {
+    enrichArticleAbstract(articleId: $articleId) {
+      articleId
+      abstract
+      source
+      enriched
     }
   }
 `;

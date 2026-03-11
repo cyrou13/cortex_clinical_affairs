@@ -95,7 +95,12 @@ describe('RetrievePdfsUseCase', () => {
       where: {
         sessionId: SESSION_ID,
         status: { in: ['INCLUDED', 'FINAL_INCLUDED'] },
-        OR: [{ pdfStatus: 'NONE' }, { pdfStatus: null }, { pdfStatus: 'RETRIEVING' }],
+        OR: [
+          { pdfStatus: 'NONE' },
+          { pdfStatus: null },
+          { pdfStatus: 'RETRIEVING' },
+          { pdfStatus: 'NOT_FOUND' },
+        ],
       },
       select: { id: true },
     });

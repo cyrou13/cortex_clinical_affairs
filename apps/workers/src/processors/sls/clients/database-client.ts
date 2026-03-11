@@ -1,5 +1,10 @@
 import type { ArticleMetadata } from '@cortex/shared';
 
+export interface DateRange {
+  from?: Date;
+  to?: Date;
+}
+
 export interface DatabaseSearchResult {
   articles: ArticleMetadata[];
   totalCount: number;
@@ -7,5 +12,5 @@ export interface DatabaseSearchResult {
 }
 
 export interface DatabaseClient {
-  search(query: string): Promise<DatabaseSearchResult>;
+  search(query: string, dateRange?: DateRange): Promise<DatabaseSearchResult>;
 }

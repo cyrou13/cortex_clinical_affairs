@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useQuery } from '@apollo/client/react';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation } from '@apollo/client/react';
 import {
   FileText,
   Copy,
@@ -7,10 +7,18 @@ import {
   CheckCircle,
   XCircle,
   BarChart3,
+  BookOpen,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '../../../shared/utils/cn';
-import { GET_ARTICLE_COUNT_BY_STATUS } from '../graphql/queries';
+import {
+  GET_ARTICLE_COUNT_BY_STATUS,
+  GET_ARTICLES,
+  GET_ABSTRACT_ENRICHMENT_STATS,
+} from '../graphql/queries';
+import { LAUNCH_ABSTRACT_ENRICHMENT } from '../graphql/mutations';
 import { ArticleTable, type ArticleFilter } from './ArticleTable';
+import { ArticleDetailPanel } from './ArticleDetailPanel';
 
 interface StatusCount {
   status: string;
@@ -35,10 +43,7 @@ const filterTabs: { key: FilterTab; label: string; icon: React.ReactNode }[] = [
   { key: 'EXCLUDED', label: 'Excluded', icon: <XCircle size={14} /> },
 ];
 
-function getCountForStatus(
-  statusCounts: StatusCount[],
-  status: string,
-): number {
+function getCountForStatus(statusCounts: StatusCount[], status: string): number {
   return statusCounts.find((s) => s.status === status)?.count ?? 0;
 }
 
@@ -55,10 +60,7 @@ interface MetricCardProps {
 
 function MetricCard({ icon, label, value, testId }: MetricCardProps) {
   return (
-    <div
-      className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-      data-testid={testId}
-    >
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm" data-testid={testId}>
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--cortex-blue-50)] text-[var(--cortex-blue-500)]">
           {icon}
@@ -74,15 +76,90 @@ function MetricCard({ icon, label, value, testId }: MetricCardProps) {
   );
 }
 
+interface ArticleItem {
+  id: string;
+}
+
+interface ArticlesResponse {
+  articles: {
+    items: ArticleItem[];
+    total: number;
+  };
+}
+
 export function ArticlePoolDashboard({ sessionId }: ArticlePoolDashboardProps) {
   const [activeTab, setActiveTab] = useState<FilterTab>('ALL');
   const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
   const [filter, setFilter] = useState<ArticleFilter>({});
 
-  const { data, loading } = useQuery<ArticleCountByStatusResponse>(
-    GET_ARTICLE_COUNT_BY_STATUS,
-    { variables: { sessionId } },
-  );
+  const { data, loading } = useQuery<ArticleCountByStatusResponse>(GET_ARTICLE_COUNT_BY_STATUS, {
+    variables: { sessionId },
+  });
+
+  const { data: articlesData } = useQuery<ArticlesResponse>(GET_ARTICLES, {
+    variables: {
+      sessionId,
+      filter: {
+        searchText: filter.search,
+        status: filter.status,
+        pdfStatus: filter.pdfStatus,
+        customFilterPassed: filter.customFilterPassed,
+      },
+      offset: 0,
+      limit: 500,
+    },
+  });
+
+  const articleIds = articlesData?.articles?.items?.map((a) => a.id) ?? [];
+
+  const {
+    data: enrichStats,
+    startPolling: startEnrichPolling,
+    stopPolling: stopEnrichPolling,
+  } = useQuery<{
+    abstractEnrichmentStats: {
+      totalArticles: number;
+      withFullAbstract: number;
+      withShortAbstract: number;
+      withoutAbstract: number;
+      needsEnrichment: number;
+    };
+  }>(GET_ABSTRACT_ENRICHMENT_STATS, {
+    variables: { sessionId },
+    fetchPolicy: 'network-only',
+  });
+
+  const [launchEnrichment, { loading: launching }] = useMutation(LAUNCH_ABSTRACT_ENRICHMENT);
+  const [enrichTaskId, setEnrichTaskId] = useState<string | null>(null);
+
+  const enrichmentStats = enrichStats?.abstractEnrichmentStats;
+  const isEnriching = !!enrichTaskId;
+
+  useEffect(() => {
+    if (isEnriching) {
+      startEnrichPolling(5000);
+    } else {
+      stopEnrichPolling();
+    }
+  }, [isEnriching, startEnrichPolling, stopEnrichPolling]);
+
+  // Clear enrichTaskId when enrichment completes (needsEnrichment drops)
+  useEffect(() => {
+    if (enrichTaskId && enrichmentStats && enrichmentStats.needsEnrichment === 0) {
+      setEnrichTaskId(null);
+    }
+  }, [enrichTaskId, enrichmentStats]);
+
+  const handleLaunchEnrichment = async () => {
+    try {
+      const result = await launchEnrichment({ variables: { sessionId } });
+      if (result.data?.launchAbstractEnrichment?.taskId) {
+        setEnrichTaskId(result.data.launchAbstractEnrichment.taskId);
+      }
+    } catch {
+      // Error handled by Apollo
+    }
+  };
 
   const statusCounts = data?.articleCountByStatus ?? [];
   const total = getTotalArticles(statusCounts);
@@ -120,7 +197,10 @@ export function ArticlePoolDashboard({ sessionId }: ArticlePoolDashboardProps) {
   return (
     <div className="space-y-6" data-testid="article-pool-dashboard">
       {/* Metrics row */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6" data-testid="metrics-row">
+      <div
+        className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6"
+        data-testid="metrics-row"
+      >
         <MetricCard
           icon={<FileText size={20} />}
           label="Total Articles"
@@ -159,12 +239,40 @@ export function ArticlePoolDashboard({ sessionId }: ArticlePoolDashboardProps) {
         />
       </div>
 
+      {/* Abstract enrichment banner */}
+      {enrichmentStats && enrichmentStats.needsEnrichment > 0 && (
+        <div
+          className="flex items-center justify-between rounded-lg border border-orange-200 bg-orange-50 px-4 py-3"
+          data-testid="abstract-enrichment-banner"
+        >
+          <div className="flex items-center gap-3">
+            <BookOpen size={18} className="text-orange-600" />
+            <div>
+              <span className="text-sm font-medium text-orange-800">
+                {enrichmentStats.needsEnrichment} article
+                {enrichmentStats.needsEnrichment > 1 ? 's' : ''} with missing or truncated abstracts
+              </span>
+              <span className="ml-2 text-xs text-orange-600">
+                ({enrichmentStats.withoutAbstract} missing, {enrichmentStats.withShortAbstract}{' '}
+                truncated)
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={handleLaunchEnrichment}
+            disabled={launching || isEnriching}
+            className="inline-flex items-center gap-2 rounded bg-orange-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-orange-700 disabled:cursor-not-allowed disabled:opacity-50"
+            data-testid="launch-enrichment-btn"
+          >
+            {isEnriching ? <Loader2 size={14} className="animate-spin" /> : <BookOpen size={14} />}
+            {isEnriching ? 'Enriching...' : 'Enrich All Abstracts'}
+          </button>
+        </div>
+      )}
+
       {/* Filter tabs */}
-      <div
-        className="flex gap-1 border-b border-gray-200"
-        role="tablist"
-        data-testid="filter-tabs"
-      >
+      <div className="flex gap-1 border-b border-gray-200" role="tablist" data-testid="filter-tabs">
         {filterTabs.map((tab) => {
           const count = getTabCount(tab.key);
           const isActive = activeTab === tab.key;
@@ -208,6 +316,17 @@ export function ArticlePoolDashboard({ sessionId }: ArticlePoolDashboardProps) {
         filter={filter}
         onFilterChange={setFilter}
       />
+
+      {/* Article detail modal */}
+      {selectedArticleId && (
+        <ArticleDetailPanel
+          articleId={selectedArticleId}
+          onClose={() => setSelectedArticleId(null)}
+          articleIds={articleIds}
+          onNavigate={setSelectedArticleId}
+          sessionId={sessionId}
+        />
+      )}
     </div>
   );
 }

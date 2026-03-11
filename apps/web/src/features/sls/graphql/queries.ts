@@ -92,6 +92,7 @@ export const GET_ARTICLES = gql`
         relevanceScore
         aiCategory
         aiExclusionCode
+        customFilterScore
       }
       total
       offset
@@ -113,6 +114,7 @@ export const GET_ARTICLE = gql`
       journal
       sourceDatabase
       status
+      pdfStatus
       relevanceScore
       aiReasoning
       aiCategory
@@ -120,6 +122,12 @@ export const GET_ARTICLE = gql`
       scoredAt
       createdAt
     }
+  }
+`;
+
+export const GET_ARTICLE_PDF_URL = gql`
+  query GetArticlePdfUrl($articleId: String!) {
+    articlePdfUrl(articleId: $articleId)
   }
 `;
 
@@ -304,6 +312,18 @@ export const GET_LOCK_PREFLIGHT = gql`
 export const GET_PRISMA_STATISTICS = gql`
   query GetPrismaStatistics($sessionId: String!) {
     prismaStatistics(sessionId: $sessionId)
+  }
+`;
+
+export const GET_ABSTRACT_ENRICHMENT_STATS = gql`
+  query GetAbstractEnrichmentStats($sessionId: String!) {
+    abstractEnrichmentStats(sessionId: $sessionId) {
+      totalArticles
+      withFullAbstract
+      withShortAbstract
+      withoutAbstract
+      needsEnrichment
+    }
   }
 `;
 

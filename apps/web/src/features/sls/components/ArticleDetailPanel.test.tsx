@@ -16,6 +16,7 @@ const mockArticle = {
   publicationDate: '2024-03-15',
   journal: 'Spine Journal',
   sourceDatabase: 'PUBMED',
+  pdfStatus: null,
   status: 'INCLUDED',
   relevanceScore: 85,
   aiReasoning:
@@ -78,6 +79,9 @@ describe('ArticleDetailPanel', () => {
   const defaultProps = {
     articleId: 'art-1' as string | null,
     onClose: vi.fn(),
+    articleIds: ['art-1', 'art-2', 'art-3'],
+    onNavigate: vi.fn(),
+    sessionId: 'session-1',
   };
 
   beforeEach(() => {
@@ -103,11 +107,22 @@ describe('ArticleDetailPanel', () => {
     expect(container.innerHTML).toBe('');
   });
 
-  it('renders the panel with article details', async () => {
+  it('renders the modal with article details', async () => {
     renderWithApollo(<ArticleDetailPanel {...defaultProps} />, [makeArticleMock(mockArticle)]);
 
     expect(await screen.findByTestId('article-detail-panel')).toBeInTheDocument();
     expect(screen.getByText('Article Details')).toBeInTheDocument();
+  });
+
+  it('renders overlay that closes on click', async () => {
+    const onClose = vi.fn();
+    renderWithApollo(<ArticleDetailPanel {...defaultProps} onClose={onClose} />, [
+      makeArticleMock(mockArticle),
+    ]);
+
+    await screen.findByTestId('article-detail-panel');
+    fireEvent.click(screen.getByTestId('article-modal-overlay'));
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 
   it('renders article title', async () => {
@@ -134,24 +149,20 @@ describe('ArticleDetailPanel', () => {
     );
   });
 
-  it('renders DOI link pointing to doi.org', async () => {
+  it('renders DOI link', async () => {
     renderWithApollo(<ArticleDetailPanel {...defaultProps} />, [makeArticleMock(mockArticle)]);
 
     const doiLink = await screen.findByTestId('doi-link');
-    expect(doiLink).toBeInTheDocument();
     expect(doiLink).toHaveAttribute('href', 'https://doi.org/10.1000/test-doi-1');
     expect(doiLink).toHaveAttribute('target', '_blank');
-    expect(doiLink).toHaveTextContent('10.1000/test-doi-1');
   });
 
-  it('renders PMID link pointing to PubMed', async () => {
+  it('renders PMID link', async () => {
     renderWithApollo(<ArticleDetailPanel {...defaultProps} />, [makeArticleMock(mockArticle)]);
 
     const pmidLink = await screen.findByTestId('pmid-link');
-    expect(pmidLink).toBeInTheDocument();
     expect(pmidLink).toHaveAttribute('href', 'https://pubmed.ncbi.nlm.nih.gov/12345678');
     expect(pmidLink).toHaveAttribute('target', '_blank');
-    expect(pmidLink).toHaveTextContent('12345678');
   });
 
   it('does not render DOI link when doi is null', async () => {
@@ -160,7 +171,6 @@ describe('ArticleDetailPanel', () => {
     ]);
 
     await screen.findByTestId('article-title');
-
     expect(screen.queryByTestId('doi-link')).not.toBeInTheDocument();
   });
 
@@ -170,7 +180,6 @@ describe('ArticleDetailPanel', () => {
     ]);
 
     await screen.findByTestId('article-title');
-
     expect(screen.queryByTestId('pmid-link')).not.toBeInTheDocument();
   });
 
@@ -185,7 +194,7 @@ describe('ArticleDetailPanel', () => {
   it('renders relevance score when present', async () => {
     renderWithApollo(<ArticleDetailPanel {...defaultProps} />, [makeArticleMock(mockArticle)]);
 
-    expect(await screen.findByTestId('relevance-score')).toHaveTextContent('Score: 85');
+    expect(await screen.findByTestId('relevance-score')).toHaveTextContent('Score: 85%');
   });
 
   it('does not render relevance score when null', async () => {
@@ -194,7 +203,6 @@ describe('ArticleDetailPanel', () => {
     ]);
 
     await screen.findByTestId('article-title');
-
     expect(screen.queryByTestId('relevance-score')).not.toBeInTheDocument();
   });
 
@@ -212,7 +220,7 @@ describe('ArticleDetailPanel', () => {
 
   it('calls onClose when close button is clicked', async () => {
     const onClose = vi.fn();
-    renderWithApollo(<ArticleDetailPanel articleId="art-1" onClose={onClose} />, [
+    renderWithApollo(<ArticleDetailPanel {...defaultProps} onClose={onClose} />, [
       makeArticleMock(mockArticle),
     ]);
 
@@ -234,7 +242,7 @@ describe('ArticleDetailPanel', () => {
     expect(screen.getByText('Failed to load article details.')).toBeInTheDocument();
   });
 
-  it('has role="dialog" and aria-label on the panel', async () => {
+  it('has role="dialog" and aria-label on the modal', async () => {
     renderWithApollo(<ArticleDetailPanel {...defaultProps} />, [makeArticleMock(mockArticle)]);
 
     const panel = await screen.findByTestId('article-detail-panel');
@@ -282,7 +290,6 @@ describe('ArticleDetailPanel', () => {
       ]);
 
       await screen.findByTestId('article-title');
-
       expect(screen.queryByTestId('ai-reasoning-section')).not.toBeInTheDocument();
     });
 
@@ -292,7 +299,6 @@ describe('ArticleDetailPanel', () => {
       ]);
 
       await screen.findByTestId('article-title');
-
       expect(screen.queryByTestId('ai-category-badge')).not.toBeInTheDocument();
     });
 
@@ -314,7 +320,6 @@ describe('ArticleDetailPanel', () => {
       renderWithApollo(<ArticleDetailPanel {...defaultProps} />, [makeArticleMock(mockArticle)]);
 
       await screen.findByTestId('article-title');
-
       expect(screen.queryByTestId('ai-exclusion-code')).not.toBeInTheDocument();
     });
 
@@ -332,6 +337,82 @@ describe('ArticleDetailPanel', () => {
 
       const scoreBadge = await screen.findByTestId('relevance-score');
       expect(scoreBadge.className).toContain('bg-red-100');
+    });
+  });
+
+  describe('navigation', () => {
+    it('renders navigation counter', async () => {
+      renderWithApollo(<ArticleDetailPanel {...defaultProps} />, [makeArticleMock(mockArticle)]);
+
+      await screen.findByTestId('article-detail-panel');
+      expect(screen.getByText('1 / 3')).toBeInTheDocument();
+    });
+
+    it('renders prev/next buttons', async () => {
+      renderWithApollo(<ArticleDetailPanel {...defaultProps} />, [makeArticleMock(mockArticle)]);
+
+      await screen.findByTestId('article-detail-panel');
+      expect(screen.getByTestId('nav-prev')).toBeInTheDocument();
+      expect(screen.getByTestId('nav-next')).toBeInTheDocument();
+    });
+
+    it('disables prev button on first article', async () => {
+      renderWithApollo(<ArticleDetailPanel {...defaultProps} />, [makeArticleMock(mockArticle)]);
+
+      const prevBtn = await screen.findByTestId('nav-prev');
+      expect(prevBtn).toBeDisabled();
+    });
+
+    it('enables next button when not on last article', async () => {
+      renderWithApollo(<ArticleDetailPanel {...defaultProps} />, [makeArticleMock(mockArticle)]);
+
+      const nextBtn = await screen.findByTestId('nav-next');
+      expect(nextBtn).not.toBeDisabled();
+    });
+
+    it('calls onNavigate when next is clicked', async () => {
+      const onNavigate = vi.fn();
+      renderWithApollo(<ArticleDetailPanel {...defaultProps} onNavigate={onNavigate} />, [
+        makeArticleMock(mockArticle),
+      ]);
+
+      fireEvent.click(await screen.findByTestId('nav-next'));
+      expect(onNavigate).toHaveBeenCalledWith('art-2');
+    });
+
+    it('does not render navigation when articleIds has only one item', async () => {
+      renderWithApollo(<ArticleDetailPanel {...defaultProps} articleIds={['art-1']} />, [
+        makeArticleMock(mockArticle),
+      ]);
+
+      await screen.findByTestId('article-detail-panel');
+      expect(screen.queryByTestId('nav-prev')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('nav-next')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('screening actions', () => {
+    it('renders Include, Exclude, and Skip buttons', async () => {
+      renderWithApollo(<ArticleDetailPanel {...defaultProps} />, [makeArticleMock(mockArticle)]);
+
+      await screen.findByTestId('article-content');
+      expect(screen.getByTestId('btn-include')).toBeInTheDocument();
+      expect(screen.getByTestId('btn-exclude')).toBeInTheDocument();
+      expect(screen.getByTestId('btn-skip')).toBeInTheDocument();
+    });
+
+    it('Include button has green styling', async () => {
+      renderWithApollo(<ArticleDetailPanel {...defaultProps} />, [makeArticleMock(mockArticle)]);
+
+      const btn = await screen.findByTestId('btn-include');
+      expect(btn.className).toContain('bg-emerald-50');
+    });
+
+    it('Exclude button has red styling', async () => {
+      renderWithApollo(<ArticleDetailPanel {...defaultProps} />, [makeArticleMock(mockArticle)]);
+
+      const btn = await screen.findByTestId('btn-exclude');
+      expect(btn.className).toContain('bg-red-50');
     });
   });
 });

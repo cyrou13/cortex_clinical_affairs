@@ -20,6 +20,7 @@ import {
   MineReferencesResultType,
   ApproveReferenceResultType,
   BulkApproveResultType,
+  EnrichArticleResultType,
 } from './types.js';
 import {
   checkPermission,
@@ -53,6 +54,7 @@ import { AddManualArticleUseCase } from '../application/use-cases/add-manual-art
 import { MineReferencesUseCase } from '../application/use-cases/mine-references.js';
 import { ApproveMinedReferenceUseCase } from '../application/use-cases/approve-mined-reference.js';
 import { GenerateQueryFromTextUseCase } from '../application/use-cases/generate-query-from-text.js';
+import { EnrichAbstractsUseCase } from '../application/use-cases/enrich-abstracts.js';
 
 builder.mutationField('createSlsSession', (t) =>
   t.field({
@@ -1346,6 +1348,365 @@ builder.mutationField('bulkApproveMinedReferences', (t) =>
       return {
         approvedCount,
         totalRequested: args.referenceIds.length,
+      } as any;
+    },
+  }),
+);
+
+// --- Enrich All Abstracts (bulk) ---
+
+builder.mutationField('launchAbstractEnrichment', (t) =>
+  t.field({
+    type: PdfRetrievalResultType, // Reuse: { taskId, articleCount }
+    args: {
+      sessionId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'sls', 'write');
+
+      const session = await ctx.prisma.slsSession.findUnique({
+        where: { id: args.sessionId },
+      });
+      if (!session) throw new NotFoundError('SlsSession', args.sessionId);
+      await checkProjectMembership(ctx, session.projectId);
+
+      const redis = getRedis();
+      const enqueueJob = async (queue: string, data: Record<string, unknown>) => {
+        await redis.publish(
+          'task:enqueued',
+          JSON.stringify({
+            taskId: data.taskId,
+            type: queue,
+            status: 'PENDING',
+            metadata: data,
+            createdBy: data.userId,
+          }),
+        );
+        return data.taskId as string;
+      };
+
+      const useCase = new EnrichAbstractsUseCase(ctx.prisma, enqueueJob);
+      return useCase.execute({
+        sessionId: args.sessionId,
+        userId: ctx.user!.id,
+      }) as any;
+    },
+  }),
+);
+
+// --- Enrich Article Abstract (single) ---
+
+builder.mutationField('enrichArticleAbstract', (t) =>
+  t.field({
+    type: EnrichArticleResultType,
+    args: {
+      articleId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'sls', 'write');
+
+      const article = await ctx.prisma.article.findUnique({
+        where: { id: args.articleId },
+      });
+
+      if (!article) {
+        throw new NotFoundError('Article', args.articleId);
+      }
+
+      const session = await ctx.prisma.slsSession.findUnique({
+        where: { id: article.sessionId },
+      });
+      if (!session) throw new NotFoundError('SlsSession', article.sessionId);
+      await checkProjectMembership(ctx, session.projectId);
+
+      const fetchWithTimeout = async (url: string, options?: RequestInit) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 10_000);
+        try {
+          return await fetch(url, { ...options, signal: controller.signal });
+        } finally {
+          clearTimeout(timer);
+        }
+      };
+
+      const normalizeTitle = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const normalizedTarget = normalizeTitle(article.title);
+      const currentAbstractLen = article.abstract?.length ?? 0;
+
+      const titleMatchesFuzzy = (foundTitle: string): boolean => {
+        const n = normalizeTitle(foundTitle);
+        if (n.length < 10 || normalizedTarget.length < 10) return false;
+        return (
+          n === normalizedTarget || normalizedTarget.includes(n) || n.includes(normalizedTarget)
+        );
+      };
+
+      const succeed = async (abstract: string, source: string, extra?: Record<string, unknown>) => {
+        const updateData: Record<string, unknown> = { abstract, ...extra };
+        await ctx.prisma.article.update({ where: { id: article.id }, data: updateData });
+        return { articleId: article.id, abstract, source, enriched: true } as any;
+      };
+
+      // --- Step 0: Enrich DOI via CrossRef title search if missing ---
+      let doi = article.doi;
+      if (!doi) {
+        try {
+          const cleanTitle = article.title.replace(/[[\]{}():"]/g, '').slice(0, 200);
+          const contactEmail = process.env['CONTACT_EMAIL'] ?? 'admin@cortex-clinical.com';
+          const url = `https://api.crossref.org/works?query.title=${encodeURIComponent(cleanTitle)}&rows=3&mailto=${encodeURIComponent(contactEmail)}`;
+          const res = await fetchWithTimeout(url);
+          if (res.ok) {
+            const data = (await res.json()) as {
+              message?: { items?: Array<{ DOI?: string; title?: string[] }> };
+            };
+            for (const item of data.message?.items ?? []) {
+              for (const t of item.title ?? []) {
+                if (titleMatchesFuzzy(t) && item.DOI) {
+                  doi = item.DOI;
+                  await ctx.prisma.article.update({ where: { id: article.id }, data: { doi } });
+                  break;
+                }
+              }
+              if (doi) break;
+            }
+          }
+        } catch {
+          /* best-effort */
+        }
+      }
+
+      // --- Source 1: Semantic Scholar (by DOI or title search) ---
+      try {
+        let s2Url: string;
+        if (doi) {
+          s2Url = `https://api.semanticscholar.org/graph/v1/paper/DOI:${encodeURIComponent(doi)}?fields=abstract,title`;
+        } else {
+          const cleanTitle = encodeURIComponent(article.title.slice(0, 200));
+          s2Url = `https://api.semanticscholar.org/graph/v1/paper/search?query=${cleanTitle}&limit=3&fields=abstract,title`;
+        }
+        const res = await fetchWithTimeout(s2Url);
+        if (res.ok) {
+          const raw = (await res.json()) as any;
+          // DOI lookup returns a single paper; title search returns { data: [...] }
+          const papers = raw.data
+            ? (raw.data as Array<{ abstract?: string; title?: string }>)
+            : [raw];
+          for (const paper of papers) {
+            if (paper.abstract && paper.abstract.length > currentAbstractLen) {
+              if (!doi || titleMatchesFuzzy(paper.title ?? '')) {
+                return succeed(paper.abstract, 'Semantic Scholar');
+              }
+            }
+          }
+        }
+      } catch {
+        /* continue */
+      }
+
+      // --- Source 2: PubMed (by PMID or title search, two attempts) ---
+      try {
+        const apiKey = process.env['PUBMED_API_KEY'];
+        let pmids: string[] = [];
+
+        if (article.pmid) {
+          pmids = [article.pmid];
+        } else {
+          // Attempt 1: keyword title search (no field tag = broader)
+          const cleanTitle = article.title.replace(/[[\]{}():"]/g, '').slice(0, 200);
+          for (const term of [cleanTitle, `${cleanTitle}[Title]`]) {
+            const params = new URLSearchParams({
+              db: 'pubmed',
+              term,
+              retmode: 'json',
+              retmax: '5',
+            });
+            if (apiKey) params.set('api_key', apiKey);
+            const searchRes = await fetchWithTimeout(
+              `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?${params.toString()}`,
+            );
+            if (searchRes.ok) {
+              const data = (await searchRes.json()) as { esearchresult?: { idlist?: string[] } };
+              pmids = data.esearchresult?.idlist ?? [];
+              if (pmids.length > 0) break;
+            }
+          }
+        }
+
+        if (pmids.length > 0) {
+          const fetchParams = new URLSearchParams({
+            db: 'pubmed',
+            id: pmids.join(','),
+            retmode: 'xml',
+            rettype: 'abstract',
+          });
+          if (apiKey) fetchParams.set('api_key', apiKey);
+          const fetchRes = await fetchWithTimeout(
+            `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?${fetchParams.toString()}`,
+          );
+          if (fetchRes.ok) {
+            const xml = await fetchRes.text();
+            const pubmedArticles = xml.split('<PubmedArticle>').slice(1);
+            for (const artXml of pubmedArticles) {
+              const abstractMatch = artXml.match(/<AbstractText[^>]*>([\s\S]*?)<\/AbstractText>/g);
+              if (!abstractMatch) continue;
+              const fullAbstract = abstractMatch
+                .map((m: string) => m.replace(/<[^>]+>/g, '').trim())
+                .join(' ');
+              if (fullAbstract.length <= currentAbstractLen) continue;
+
+              const titleMatch = artXml.match(/<ArticleTitle>([\s\S]*?)<\/ArticleTitle>/);
+              const foundTitle = titleMatch?.[1]?.replace(/<[^>]+>/g, '').trim() ?? '';
+              if (titleMatchesFuzzy(foundTitle)) {
+                const pmidMatch = artXml.match(/<PMID[^>]*>(\d+)<\/PMID>/);
+                const extra: Record<string, unknown> = {};
+                if (!article.pmid && pmidMatch?.[1]) extra.pmid = pmidMatch[1];
+                return succeed(fullAbstract, 'PubMed', extra);
+              }
+            }
+          }
+        }
+      } catch {
+        /* continue */
+      }
+
+      // --- Source 3: CrossRef (by DOI — abstract from metadata) ---
+      if (doi) {
+        try {
+          const url = `https://api.crossref.org/works/${encodeURIComponent(doi)}`;
+          const res = await fetchWithTimeout(url);
+          if (res.ok) {
+            const data = (await res.json()) as { message?: { abstract?: string } };
+            const abstract = data.message?.abstract?.replace(/<[^>]+>/g, '').trim();
+            if (abstract && abstract.length > currentAbstractLen) {
+              return succeed(abstract, 'CrossRef');
+            }
+          }
+        } catch {
+          /* continue */
+        }
+      }
+
+      // --- Source 4: Europe PMC (by DOI, PMID, or title search) ---
+      try {
+        const queries: string[] = [];
+        if (doi) queries.push(`DOI:${encodeURIComponent(doi)}`);
+        if (article.pmid) queries.push(`EXT_ID:${article.pmid}`);
+        // Title search as last resort
+        const cleanTitle = article.title.replace(/[[\]{}():"]/g, '').slice(0, 150);
+        queries.push(`TITLE:"${encodeURIComponent(cleanTitle)}"`);
+
+        for (const query of queries) {
+          const url = `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${query}&format=json&resultType=core&pageSize=3`;
+          const res = await fetchWithTimeout(url);
+          if (!res.ok) continue;
+          const data = (await res.json()) as {
+            resultList?: { result?: Array<{ abstractText?: string; title?: string }> };
+          };
+          for (const result of data.resultList?.result ?? []) {
+            if (result.abstractText && result.abstractText.length > currentAbstractLen) {
+              if (titleMatchesFuzzy(result.title ?? '')) {
+                return succeed(result.abstractText, 'Europe PMC');
+              }
+            }
+          }
+        }
+      } catch {
+        /* continue */
+      }
+
+      // --- Source 5: OpenAlex (by DOI or title search) ---
+      try {
+        const openAlexUrl = doi
+          ? `https://api.openalex.org/works/doi:${encodeURIComponent(doi)}`
+          : `https://api.openalex.org/works?search=${encodeURIComponent(article.title.slice(0, 200))}&per_page=3`;
+        const res = await fetchWithTimeout(openAlexUrl);
+        if (res.ok) {
+          const raw = (await res.json()) as any;
+          const works: any[] = raw.results ? raw.results : [raw];
+          for (const work of works) {
+            const invertedIndex = work.abstract_inverted_index;
+            if (!invertedIndex || typeof invertedIndex !== 'object') continue;
+            // Reconstruct abstract from inverted index
+            const wordPositions: Array<[number, string]> = [];
+            for (const [word, positions] of Object.entries(invertedIndex)) {
+              for (const pos of positions as number[]) {
+                wordPositions.push([pos, word]);
+              }
+            }
+            wordPositions.sort((a, b) => a[0] - b[0]);
+            const abstract = wordPositions.map(([, w]) => w).join(' ');
+            if (abstract.length <= currentAbstractLen) continue;
+            const workTitle = work.title ?? '';
+            if (doi || titleMatchesFuzzy(workTitle)) {
+              return succeed(abstract, 'OpenAlex');
+            }
+          }
+        }
+      } catch {
+        /* continue */
+      }
+
+      // --- Source 6: DOI landing page scraping (meta tags + abstract section) ---
+      if (doi) {
+        try {
+          const doiUrl = `https://doi.org/${encodeURIComponent(doi)}`;
+          const res = await fetchWithTimeout(doiUrl, { redirect: 'follow' });
+          if (res.ok) {
+            const html = await res.text();
+            let bestAbstract = '';
+
+            // Try abstract section in HTML body (Springer, Elsevier, etc.)
+            const bodyPatterns = [
+              /id="Abs1-content"[^>]*>([\s\S]*?)<\/div>/i,
+              /class="[^"]*abstract[^"]*"[^>]*>[\s\S]*?<p>([\s\S]*?)<\/p>/i,
+              /<section[^>]*class="[^"]*Abstract[^"]*"[^>]*>([\s\S]*?)<\/section>/i,
+            ];
+            for (const pattern of bodyPatterns) {
+              const match = html.match(pattern);
+              if (match?.[1]) {
+                const text = match[1]
+                  .replace(/<[^>]+>/g, '')
+                  .replace(/&#160;/g, ' ')
+                  .replace(/&amp;/g, '&')
+                  .trim();
+                if (text.length > bestAbstract.length) bestAbstract = text;
+              }
+            }
+
+            // Try meta tags as fallback
+            if (bestAbstract.length < 300) {
+              const metaPatterns = [
+                /name="citation_abstract"[^>]*content="([\s\S]*?)"/i,
+                /name="dc\.description"[^>]*content="([\s\S]*?)"/i,
+                /name="description"[^>]*content="([\s\S]*?)"/i,
+              ];
+              for (const pattern of metaPatterns) {
+                const match = html.match(pattern);
+                if (match?.[1]) {
+                  const text = match[1]
+                    .replace(/&#160;/g, ' ')
+                    .replace(/&amp;/g, '&')
+                    .replace(/<[^>]+>/g, '')
+                    .trim();
+                  if (text.length > bestAbstract.length) bestAbstract = text;
+                }
+              }
+            }
+
+            if (bestAbstract.length > currentAbstractLen) {
+              return succeed(bestAbstract, 'DOI Page');
+            }
+          }
+        } catch {
+          /* exhausted */
+        }
+      }
+
+      return {
+        articleId: article.id,
+        abstract: article.abstract,
+        source: null,
+        enriched: false,
       } as any;
     },
   }),

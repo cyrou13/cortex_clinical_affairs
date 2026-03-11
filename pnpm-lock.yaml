@@ -255,6 +255,12 @@ importers:
 
   apps/workers:
     dependencies:
+      '@aws-sdk/client-s3':
+        specifier: ^3.990.0
+        version: 3.990.0
+      '@aws-sdk/s3-request-presigner':
+        specifier: ^3.990.0
+        version: 3.990.0
       '@cortex/shared':
         specifier: workspace:*
         version: link:../../packages/shared

@@ -24,6 +24,7 @@ export const ArticleFilter = z.object({
   sourceDatabase: z.string().optional(),
   searchText: z.string().optional(),
   pdfStatus: z.string().optional(),
+  customFilterPassed: z.boolean().optional(),
 });
 export type ArticleFilter = z.infer<typeof ArticleFilter>;
 

@@ -21,7 +21,8 @@ import { QueryExecutionHistory } from './QueryExecutionHistory';
 
 // Article tab components
 import { ArticlePoolDashboard } from './ArticlePoolDashboard';
-import { ArticleTable } from './ArticleTable';
+import { ArticleTable, type ArticleFilter } from './ArticleTable';
+import { ArticleDetailPanel } from './ArticleDetailPanel';
 
 // AI Scoring tab components
 import { LaunchAiScreeningButton } from './LaunchAiScreeningButton';
@@ -118,8 +119,8 @@ const tabs: TabDef[] = [
   { key: 'articles', label: 'Articles', icon: <FileText size={16} /> },
   { key: 'ai-scoring', label: 'AI Scoring', icon: <Brain size={16} /> },
   { key: 'screening', label: 'Screening', icon: <ListChecks size={16} /> },
-  { key: 'review-lock', label: 'Review & Lock', icon: <Lock size={16} /> },
   { key: 'pdfs-refs', label: 'PDFs & References', icon: <Download size={16} /> },
+  { key: 'review-lock', label: 'Review & Lock', icon: <Lock size={16} /> },
 ];
 
 function mapStatusToVariant(status: string): StatusVariant {
@@ -435,10 +436,18 @@ function ReviewLockTab({ sessionId }: { sessionId: string }) {
 
 function PdfsRefsTab({ sessionId }: { sessionId: string }) {
   const [pdfFilter, setPdfFilter] = useState<string | undefined>(undefined);
+  const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
+  const [articleFilter, setArticleFilter] = useState<ArticleFilter>({ status: 'INCLUDED' });
+
+  // Keep pdfStatus in sync with panel filter
+  const handlePdfFilterChange = (pdfStatus: string | undefined) => {
+    setPdfFilter(pdfStatus);
+    setArticleFilter((prev) => ({ ...prev, pdfStatus }));
+  };
 
   return (
     <div className="space-y-6" data-testid="pdfs-refs-tab">
-      <PdfRetrievalPanel sessionId={sessionId} onFilterByPdfStatus={setPdfFilter} />
+      <PdfRetrievalPanel sessionId={sessionId} onFilterByPdfStatus={handlePdfFilterChange} />
       {pdfFilter && (
         <div data-testid="pdf-filtered-articles">
           <h4 className="mb-2 text-sm font-medium text-[var(--cortex-text-primary)]">
@@ -446,15 +455,25 @@ function PdfsRefsTab({ sessionId }: { sessionId: string }) {
           </h4>
           <ArticleTable
             sessionId={sessionId}
-            onArticleSelect={() => {}}
-            filter={{ status: 'INCLUDED', pdfStatus: pdfFilter }}
-            onFilterChange={() => {}}
+            onArticleSelect={setSelectedArticleId}
+            filter={articleFilter}
+            onFilterChange={setArticleFilter}
           />
         </div>
       )}
       <PdfMismatchReview sessionId={sessionId} />
       <MinedReferenceReview sessionId={sessionId} />
       <ManualArticleAddForm sessionId={sessionId} />
+
+      {selectedArticleId && (
+        <ArticleDetailPanel
+          articleId={selectedArticleId}
+          onClose={() => setSelectedArticleId(null)}
+          articleIds={[]}
+          onNavigate={setSelectedArticleId}
+          sessionId={sessionId}
+        />
+      )}
     </div>
   );
 }
@@ -609,8 +628,8 @@ export function SessionDashboard({ sessionId, projectId }: SessionDashboardProps
         {activeTab === 'articles' && <ArticlesTab sessionId={sessionId} />}
         {activeTab === 'ai-scoring' && <AiScoringTab sessionId={sessionId} isLocked={isLocked} />}
         {activeTab === 'screening' && <ScreeningTab sessionId={sessionId} />}
-        {activeTab === 'review-lock' && <ReviewLockTab sessionId={sessionId} />}
         {activeTab === 'pdfs-refs' && <PdfsRefsTab sessionId={sessionId} />}
+        {activeTab === 'review-lock' && <ReviewLockTab sessionId={sessionId} />}
       </div>
     </div>
   );

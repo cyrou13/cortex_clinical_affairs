@@ -46,10 +46,14 @@ const statusBorderColors: Record<string, string> = {
   SKIPPED: 'border-l-yellow-400',
 };
 
+const toPercent = (score: number): number =>
+  score <= 1 ? Math.round(score * 100) : Math.round(score);
+
 const scoreBadgeColors = (score: number | null): string => {
   if (score === null) return 'bg-gray-100 text-gray-600';
-  if (score >= 75) return 'bg-emerald-100 text-emerald-700';
-  if (score >= 40) return 'bg-orange-100 text-orange-700';
+  const pct = toPercent(score);
+  if (pct >= 75) return 'bg-emerald-100 text-emerald-700';
+  if (pct >= 40) return 'bg-orange-100 text-orange-700';
   return 'bg-red-100 text-red-700';
 };
 
@@ -162,6 +166,7 @@ export function ScreeningPanel({ sessionId }: ScreeningPanelProps) {
 
   const handleRowClick = (articleId: string) => {
     setSelectedArticleId(articleId);
+    setDetailArticleId(articleId);
   };
 
   const toggleSelection = (articleId: string) => {
@@ -292,7 +297,7 @@ export function ScreeningPanel({ sessionId }: ScreeningPanelProps) {
                           )}
                           data-testid={`score-badge-${article.id}`}
                         >
-                          {Math.round(article.relevanceScore)}%
+                          {toPercent(article.relevanceScore)}%
                         </span>
                       )}
                     </td>
@@ -370,7 +375,16 @@ export function ScreeningPanel({ sessionId }: ScreeningPanelProps) {
 
       {/* Detail panel */}
       {detailArticleId && (
-        <ArticleDetailPanel articleId={detailArticleId} onClose={() => setDetailArticleId(null)} />
+        <ArticleDetailPanel
+          articleId={detailArticleId}
+          onClose={() => setDetailArticleId(null)}
+          articleIds={articles.map((a) => a.id)}
+          onNavigate={(id) => {
+            setDetailArticleId(id);
+            setSelectedArticleId(id);
+          }}
+          sessionId={sessionId}
+        />
       )}
     </div>
   );

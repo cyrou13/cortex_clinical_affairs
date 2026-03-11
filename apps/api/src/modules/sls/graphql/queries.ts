@@ -18,6 +18,7 @@ import {
   ScreeningAuditEntryType,
   LockPreflightCheckType,
   PdfRetrievalStatsType,
+  AbstractEnrichmentStatsType,
   MinedReferenceObjectType,
 } from './types.js';
 import {
@@ -28,6 +29,7 @@ import { GetSlsSessionsUseCase } from '../application/use-cases/get-sessions.js'
 import { GetSlsSessionDetailUseCase } from '../application/use-cases/get-session-detail.js';
 import { NotFoundError } from '../../../shared/errors/index.js';
 import { ArticleRepository } from '../infrastructure/repositories/article-repository.js';
+import { MinioStorageService } from '../infrastructure/services/minio-storage-service.js';
 import { ConfigureThresholdsUseCase } from '../application/use-cases/configure-thresholds.js';
 import { ValidateReviewGatesUseCase } from '../application/use-cases/validate-review-gates.js';
 import { SpotCheckSamplingService } from '../infrastructure/services/spot-check-sampling.js';
@@ -267,6 +269,53 @@ builder.queryField('article', (t) =>
       await checkProjectMembership(ctx, session.projectId);
 
       return article as any;
+    },
+  }),
+);
+
+builder.queryField('articlePdfUrl', (t) =>
+  t.field({
+    type: 'String',
+    nullable: true,
+    args: {
+      articleId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'sls', 'read');
+
+      const article = await ctx.prisma.article.findUnique({
+        where: { id: args.articleId },
+      });
+
+      if (!article) {
+        throw new NotFoundError('Article', args.articleId);
+      }
+
+      if (!article.pdfStorageKey || !['FOUND', 'VERIFIED'].includes(article.pdfStatus ?? '')) {
+        return null;
+      }
+
+      // Check project membership via session
+      const session = await ctx.prisma.slsSession.findUnique({
+        where: { id: article.sessionId },
+      });
+
+      if (!session) {
+        throw new NotFoundError('SlsSession', article.sessionId);
+      }
+
+      await checkProjectMembership(ctx, session.projectId);
+
+      const storage = new MinioStorageService({
+        endpoint: process.env['MINIO_ENDPOINT'] ?? 'localhost',
+        port: parseInt(process.env['MINIO_PORT'] ?? '9000', 10),
+        accessKey: process.env['MINIO_ACCESS_KEY'] ?? 'cortex_minio',
+        secretKey: process.env['MINIO_SECRET_KEY'] ?? 'cortex_minio_secret',
+        bucket: process.env['MINIO_BUCKET'] ?? 'cortex-documents',
+        useSSL: process.env['MINIO_USE_SSL'] === 'true',
+      });
+
+      return storage.getPdfUrl(article.pdfStorageKey);
     },
   }),
 );
@@ -884,6 +933,54 @@ builder.queryField('pdfRetrievalStats', (t) =>
         mismatches,
         verified,
         retrieving,
+      } as any;
+    },
+  }),
+);
+
+// --- Abstract Enrichment Stats query ---
+
+builder.queryField('abstractEnrichmentStats', (t) =>
+  t.field({
+    type: AbstractEnrichmentStatsType,
+    args: {
+      sessionId: t.arg.string({ required: true }),
+    },
+    resolve: async (_parent, args, ctx) => {
+      checkPermission(ctx, 'sls', 'read');
+
+      const session = await ctx.prisma.slsSession.findUnique({
+        where: { id: args.sessionId },
+      });
+      if (!session) throw new NotFoundError('SlsSession', args.sessionId);
+      await checkProjectMembership(ctx, session.projectId);
+
+      const articles = await ctx.prisma.article.findMany({
+        where: { sessionId: args.sessionId },
+        select: { abstract: true },
+      });
+
+      const totalArticles = articles.length;
+      let withFullAbstract = 0;
+      let withShortAbstract = 0;
+      let withoutAbstract = 0;
+
+      for (const a of articles) {
+        if (!a.abstract || a.abstract.length === 0) {
+          withoutAbstract++;
+        } else if (a.abstract.length < 300) {
+          withShortAbstract++;
+        } else {
+          withFullAbstract++;
+        }
+      }
+
+      return {
+        totalArticles,
+        withFullAbstract,
+        withShortAbstract,
+        withoutAbstract,
+        needsEnrichment: withShortAbstract + withoutAbstract,
       } as any;
     },
   }),

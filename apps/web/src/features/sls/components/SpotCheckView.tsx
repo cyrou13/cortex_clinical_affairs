@@ -200,7 +200,11 @@ export function SpotCheckView({ sessionId, category, sampleSize }: SpotCheckView
             </p>
             {currentArticle.relevanceScore !== null && (
               <div className="mt-1 text-xs text-[var(--cortex-text-muted)]">
-                Score: {Math.round(currentArticle.relevanceScore)}% — {currentArticle.aiCategory}
+                Score:{' '}
+                {currentArticle.relevanceScore <= 1
+                  ? Math.round(currentArticle.relevanceScore * 100)
+                  : Math.round(currentArticle.relevanceScore)}
+                % — {currentArticle.aiCategory}
               </div>
             )}
           </div>

@@ -92,7 +92,14 @@ export class ExecuteQueryProcessor extends BaseProcessor {
       try {
         const client = this.createClient(database);
         const enrichedQuery = enrichQueryWithDateFilter(queryString, database, dateFrom, dateTo);
-        const searchResult = await client.search(enrichedQuery);
+        const dateRange =
+          dateFrom || dateTo
+            ? {
+                from: dateFrom ? new Date(dateFrom) : undefined,
+                to: dateTo ? new Date(dateTo) : undefined,
+              }
+            : undefined;
+        const searchResult = await client.search(enrichedQuery, dateRange);
 
         // Deduplicate
         const uniqueArticles = searchResult.articles.filter(
@@ -192,6 +199,9 @@ export class ExecuteQueryProcessor extends BaseProcessor {
       }
     }
 
+    // Enrich short abstracts (Google Scholar snippets, etc.) via PubMed
+    await this.enrichShortAbstracts(sessionId, job);
+
     // Report final progress and completion
     const successCount = results.filter((r) => r.status === 'SUCCESS').length;
     const totalArticles = results.reduce((sum, r) => sum + r.articlesFound, 0);
@@ -211,6 +221,137 @@ export class ExecuteQueryProcessor extends BaseProcessor {
     });
 
     await this.redis.publish(`task:progress:${job.data.createdBy}`, completionEvent);
+  }
+
+  /**
+   * Enrich articles with short/missing abstracts by looking them up on PubMed via title search.
+   */
+  private async enrichShortAbstracts(sessionId: string, job: Job<TaskJobData>): Promise<void> {
+    const SHORT_ABSTRACT_THRESHOLD = 300;
+
+    try {
+      const articlesToEnrich = (await (this.prisma as any).article.findMany({
+        where: {
+          sessionId,
+          OR: [{ abstract: null }, { abstract: '' }],
+        },
+        select: { id: true, title: true, doi: true, abstract: true },
+        take: 100,
+      })) as Array<{ id: string; title: string; doi: string | null; abstract: string | null }>;
+
+      // Also get articles with short abstracts (snippets)
+      const allArticles = (await (this.prisma as any).article.findMany({
+        where: { sessionId },
+        select: { id: true, title: true, doi: true, abstract: true },
+      })) as Array<{ id: string; title: string; doi: string | null; abstract: string | null }>;
+
+      const shortAbstractArticles = allArticles.filter(
+        (a) => a.abstract && a.abstract.length > 0 && a.abstract.length < SHORT_ABSTRACT_THRESHOLD,
+      );
+
+      const toEnrich = [...articlesToEnrich, ...shortAbstractArticles];
+
+      if (toEnrich.length === 0) return;
+
+      await this.reportProgress(job, 95, {
+        message: `Enriching ${toEnrich.length} article abstract(s) via PubMed...`,
+      });
+
+      const pubmedClient = new PubMedClient(process.env['PUBMED_API_KEY']);
+      let enriched = 0;
+
+      // Process in batches of 5 to respect rate limits
+      for (let i = 0; i < toEnrich.length; i += 5) {
+        const batch = toEnrich.slice(i, i + 5);
+
+        await Promise.all(
+          batch.map(async (article) => {
+            try {
+              // Search PubMed by title
+              const cleanTitle = article.title.replace(/[[\]{}():"]/g, '').slice(0, 200);
+              const searchQuery = `${cleanTitle}[Title]`;
+
+              const params = new URLSearchParams({
+                db: 'pubmed',
+                term: searchQuery,
+                retmode: 'json',
+                retmax: '3',
+              });
+              const apiKey = process.env['PUBMED_API_KEY'];
+              if (apiKey) params.set('api_key', apiKey);
+
+              const searchRes = await fetch(
+                `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?${params.toString()}`,
+              );
+              if (!searchRes.ok) return;
+
+              const searchData = (await searchRes.json()) as {
+                esearchresult?: { idlist?: string[] };
+              };
+              const pmids = searchData.esearchresult?.idlist ?? [];
+              if (pmids.length === 0) return;
+
+              // Fetch the article details
+              const fetchParams = new URLSearchParams({
+                db: 'pubmed',
+                id: pmids.join(','),
+                retmode: 'xml',
+                rettype: 'abstract',
+              });
+              if (apiKey) fetchParams.set('api_key', apiKey);
+
+              const fetchRes = await fetch(
+                `https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?${fetchParams.toString()}`,
+              );
+              if (!fetchRes.ok) return;
+
+              const xml = await fetchRes.text();
+              const fetched = pubmedClient.parseEfetchXml(xml);
+
+              // Find best match by title similarity
+              const normalizeTitle = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, '');
+              const normalizedTarget = normalizeTitle(article.title);
+
+              const match = fetched.find((f) => {
+                const normalizedFound = normalizeTitle(f.title);
+                return (
+                  normalizedFound === normalizedTarget ||
+                  normalizedTarget.includes(normalizedFound) ||
+                  normalizedFound.includes(normalizedTarget)
+                );
+              });
+
+              if (match?.abstract && match.abstract.length > (article.abstract?.length ?? 0)) {
+                const updateData: Record<string, unknown> = { abstract: match.abstract };
+                // Also backfill PMID/DOI if missing
+                if (!article.doi && match.doi) updateData.doi = match.doi;
+
+                await (this.prisma as any).article.update({
+                  where: { id: article.id },
+                  data: updateData,
+                });
+                enriched++;
+              }
+            } catch {
+              // Skip individual article failures
+            }
+          }),
+        );
+
+        // Small delay between batches for rate limiting
+        if (i + 5 < toEnrich.length) {
+          await new Promise((resolve) => setTimeout(resolve, 400));
+        }
+      }
+
+      if (enriched > 0) {
+        await this.reportProgress(job, 98, {
+          message: `Enriched ${enriched} abstract(s) from PubMed`,
+        });
+      }
+    } catch {
+      // Non-fatal: enrichment is best-effort
+    }
   }
 
   private createClient(database: string): DatabaseClient {
@@ -253,21 +394,10 @@ function enrichQueryWithDateFilter(
       const to = toDate ? `"${formatPubmed(toDate)}"[PDAT]` : '"3000/12/31"[PDAT]';
       return `(${queryString}) AND (${from}:${to})`;
     }
-    case 'GOOGLE_SCHOLAR': {
-      const params: string[] = [];
-      if (fromDate) params.push(`as_ylo=${fromDate.getUTCFullYear()}`);
-      if (toDate) params.push(`as_yhi=${toDate.getUTCFullYear()}`);
-      // For Google Scholar, date params are URL params handled by the client,
-      // so we encode them in a special format the client can parse
-      return params.length > 0 ? `${queryString} {{DATE_PARAMS:${params.join('&')}}}` : queryString;
-    }
-    case 'CLINICAL_TRIALS': {
-      const parts: string[] = [];
-      if (fromDate) parts.push(`StudyFirstPostDate>=${formatPubmed(fromDate).replace(/\//g, '-')}`);
-      if (toDate) parts.push(`StudyFirstPostDate<=${formatPubmed(toDate).replace(/\//g, '-')}`);
-      // ClinicalTrials.gov uses filter syntax
-      return parts.length > 0 ? `${queryString} {{DATE_PARAMS:${parts.join('&')}}}` : queryString;
-    }
+    case 'GOOGLE_SCHOLAR':
+    case 'CLINICAL_TRIALS':
+      // Date filtering is handled natively by the client via dateRange parameter
+      return queryString;
     default:
       return queryString;
   }

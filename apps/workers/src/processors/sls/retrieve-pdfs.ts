@@ -2,6 +2,7 @@ import type { Job } from 'bullmq';
 import type { PrismaClient } from '@prisma/client';
 import type { Redis } from 'ioredis';
 import type { Prisma } from '@prisma/client';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { BaseProcessor, type TaskJobData } from '../../shared/base-processor.js';
 import { PdfRetrievalService } from './clients/pdf-retrieval-service.js';
 
@@ -32,6 +33,76 @@ export class RetrievePdfsProcessor extends BaseProcessor {
 
   setPrisma(prisma: PrismaClient): void {
     this.prisma = prisma;
+  }
+
+  private createS3Client(): S3Client {
+    const endpoint = process.env['MINIO_ENDPOINT'] ?? 'localhost';
+    const port = process.env['MINIO_PORT'] ?? '9000';
+    const useSSL = process.env['MINIO_USE_SSL'] === 'true';
+    return new S3Client({
+      endpoint: `${useSSL ? 'https' : 'http'}://${endpoint}:${port}`,
+      region: 'us-east-1',
+      credentials: {
+        accessKeyId: process.env['MINIO_ACCESS_KEY'] ?? 'cortex_minio',
+        secretAccessKey: process.env['MINIO_SECRET_KEY'] ?? 'cortex_minio_secret',
+      },
+      forcePathStyle: true,
+    });
+  }
+
+  private async uploadToMinio(key: string, buffer: Buffer): Promise<void> {
+    const bucket = process.env['MINIO_BUCKET'] ?? 'cortex-documents';
+    const s3 = this.createS3Client();
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: 'application/pdf',
+      }),
+    );
+  }
+
+  /**
+   * Look up a DOI via CrossRef works API using title search.
+   */
+  private async lookupDoiViaCrossRef(title: string, email: string): Promise<string | null> {
+    const cleanTitle = title.replace(/[[\]{}():"]/g, '').slice(0, 200);
+    const url = `https://api.crossref.org/works?query.title=${encodeURIComponent(cleanTitle)}&rows=3&mailto=${encodeURIComponent(email)}`;
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10_000);
+
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      if (!res.ok) return null;
+
+      const data: any = await res.json();
+      const items = data.message?.items ?? [];
+
+      // Find best title match
+      const normalizeTitle = (t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const normalizedTarget = normalizeTitle(title);
+
+      for (const item of items) {
+        const itemTitles: string[] = item.title ?? [];
+        for (const t of itemTitles) {
+          const normalized = normalizeTitle(t);
+          if (
+            normalized === normalizedTarget ||
+            normalizedTarget.includes(normalized) ||
+            normalized.includes(normalizedTarget)
+          ) {
+            return item.DOI ?? null;
+          }
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   private async persistProgress(taskId: string, progress: number, total: number): Promise<void> {
@@ -67,6 +138,35 @@ export class RetrievePdfsProcessor extends BaseProcessor {
         session: { select: { projectId: true } },
       },
     });
+
+    // Enrich missing DOIs via CrossRef title search
+    const missingDoi = articles.filter((a) => !a.doi);
+    if (missingDoi.length > 0) {
+      await this.reportProgress(job, 0, {
+        message: `Enriching DOIs for ${missingDoi.length} articles via CrossRef...`,
+      });
+      let enriched = 0;
+      for (const article of missingDoi) {
+        try {
+          const doi = await this.lookupDoiViaCrossRef(article.title, contactEmail);
+          if (doi) {
+            article.doi = doi;
+            await (this.prisma as any).article.update({
+              where: { id: article.id },
+              data: { doi },
+            });
+            enriched++;
+          }
+        } catch {
+          // Best-effort
+        }
+        // Rate limit: CrossRef polite pool ~50 req/s with email
+        if (enriched % 10 === 0) await new Promise((r) => setTimeout(r, 200));
+      }
+      if (enriched > 0) {
+        process.stdout.write(`[INFO] Enriched ${enriched} DOIs via CrossRef\n`);
+      }
+    }
 
     const total = articles.length;
     let processed = 0;
@@ -104,13 +204,16 @@ export class RetrievePdfsProcessor extends BaseProcessor {
           try {
             const result = await pdfService.retrieve({
               doi: article.doi,
-              pmcId: null, // PMC ID not stored separately; could be derived from pmid
+              pmcId: null,
               pmid: article.pmid,
             });
 
             if (result.found && result.pdfBuffer) {
-              // Store the PDF key (in production, upload to MinIO/S3)
-              const storageKey = `sessions/${sessionId}/articles/${article.id}/fulltext.pdf`;
+              const projectId = article.session?.projectId ?? 'unknown';
+              const storageKey = `projects/${projectId}/sessions/${sessionId}/articles/${article.id}/fulltext.pdf`;
+
+              // Upload PDF to MinIO
+              await this.uploadToMinio(storageKey, result.pdfBuffer);
 
               await (this.prisma as any).article.update({
                 where: { id: article.id },

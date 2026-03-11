@@ -19,6 +19,8 @@ const mockArticles = [
     relevanceScore: 85,
     aiCategory: 'likely_relevant',
     aiExclusionCode: null,
+    customFilterScore: null,
+    pdfStatus: null,
   },
   {
     id: 'art-2',
@@ -33,6 +35,8 @@ const mockArticles = [
     relevanceScore: 30,
     aiCategory: 'likely_irrelevant',
     aiExclusionCode: 'E1',
+    customFilterScore: null,
+    pdfStatus: null,
   },
   {
     id: 'art-3',
@@ -47,6 +51,8 @@ const mockArticles = [
     relevanceScore: null,
     aiCategory: null,
     aiExclusionCode: null,
+    customFilterScore: null,
+    pdfStatus: null,
   },
   {
     id: 'art-4',
@@ -61,6 +67,8 @@ const mockArticles = [
     relevanceScore: 55,
     aiCategory: 'uncertain',
     aiExclusionCode: null,
+    customFilterScore: null,
+    pdfStatus: null,
   },
 ];
 
