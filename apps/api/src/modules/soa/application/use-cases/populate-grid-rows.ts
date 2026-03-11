@@ -23,7 +23,7 @@ function getArticleValue(article: ArticleRow, columnName: string): string | null
       const authors = article.authors as string[] | null;
       if (!authors || authors.length === 0) return null;
       // First author et al. format
-      return authors.length === 1 ? authors[0] : `${authors[0]} et al.`;
+      return authors.length === 1 ? (authors[0] ?? null) : `${authors[0]} et al.`;
     }
     case 'year': {
       if (!article.publicationDate) return null;

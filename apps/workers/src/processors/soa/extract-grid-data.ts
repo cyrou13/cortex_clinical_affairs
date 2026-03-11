@@ -1,5 +1,6 @@
 import type { Job } from 'bullmq';
 import type { PrismaClient } from '@prisma/client';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import type { TaskJobData } from '../../shared/base-processor.js';
 import { BaseProcessor } from '../../shared/base-processor.js';
 import type { LlmService } from '../../shared/llm/llm-abstraction.js';
@@ -57,7 +58,7 @@ export class ExtractGridDataProcessor extends BaseProcessor {
       }
 
       try {
-        // Get article with PDF text
+        // Get article metadata and PDF storage key
         const article = await (this.prisma as any).article.findUnique({
           where: { id: articleId },
           select: {
@@ -65,19 +66,32 @@ export class ExtractGridDataProcessor extends BaseProcessor {
             title: true,
             authors: true,
             publicationYear: true,
-            pdfTextContent: true,
+            abstract: true,
+            pdfStorageKey: true,
           },
         });
 
-        if (!article || !article.pdfTextContent) {
-          // Skip articles without PDF text
+        if (!article) {
           failed++;
           continue;
         }
 
+        // Extract text from PDF stored in MinIO
+        let pdfTextContent: string | null = null;
+        if (article.pdfStorageKey) {
+          pdfTextContent = await this.extractPdfText(article.pdfStorageKey);
+        }
+
+        // Fall back to abstract if no PDF text available
+        if (!pdfTextContent && !article.abstract) {
+          failed++;
+          continue;
+        }
+        const articleText = pdfTextContent || article.abstract || '';
+
         // Build extraction prompt
         const systemPrompt = this.buildSystemPrompt(columnDefinitions);
-        const userPrompt = this.buildUserPrompt(article, columnDefinitions);
+        const userPrompt = this.buildUserPrompt({ ...article, articleText }, columnDefinitions);
 
         // Call LLM
         const response = await this.llmService.complete('extraction', userPrompt, {
@@ -102,7 +116,6 @@ export class ExtractGridDataProcessor extends BaseProcessor {
           message: `Extracting data from article: ${article.title}`,
         });
       } catch (error: any) {
-        // Log error but continue with next article
         console.error(`Failed to extract data for article ${articleId}:`, error.message);
         failed++;
       }
@@ -145,7 +158,7 @@ If a field cannot be extracted, omit it from the response or set confidence to 0
       title: string;
       authors: string | null;
       publicationYear: number | null;
-      pdfTextContent: string;
+      articleText: string;
     },
     columnDefinitions: ExtractGridDataJobMetadata['columnDefinitions'],
   ): string {
@@ -155,9 +168,44 @@ Authors: ${article.authors || 'Unknown'}
 Year: ${article.publicationYear || 'Unknown'}
 
 Article content:
-${article.pdfTextContent.substring(0, 10000)}
+${article.articleText.substring(0, 10000)}
 
 Extract data for columns: ${columnDefinitions.map((c) => c.displayName).join(', ')}`;
+  }
+
+  private createS3Client(): S3Client {
+    const endpoint = process.env['MINIO_ENDPOINT'] ?? 'localhost';
+    const port = process.env['MINIO_PORT'] ?? '9000';
+    const useSSL = process.env['MINIO_USE_SSL'] === 'true';
+    return new S3Client({
+      endpoint: `${useSSL ? 'https' : 'http'}://${endpoint}:${port}`,
+      region: 'us-east-1',
+      credentials: {
+        accessKeyId: process.env['MINIO_ACCESS_KEY'] ?? 'cortex_minio',
+        secretAccessKey: process.env['MINIO_SECRET_KEY'] ?? 'cortex_minio_secret',
+      },
+      forcePathStyle: true,
+    });
+  }
+
+  private async extractPdfText(storageKey: string): Promise<string | null> {
+    try {
+      const s3 = this.createS3Client();
+      const bucket = process.env['MINIO_BUCKET'] ?? 'cortex-documents';
+      const result = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: storageKey }));
+      if (!result.Body) return null;
+      const chunks: Uint8Array[] = [];
+      for await (const chunk of result.Body as AsyncIterable<Uint8Array>) {
+        chunks.push(chunk);
+      }
+      const buffer = Buffer.concat(chunks);
+      const pdfParse = (await import('pdf-parse')).default;
+      const pdf = await pdfParse(buffer);
+      return pdf.text || null;
+    } catch (err) {
+      console.error(`Failed to extract PDF text from ${storageKey}:`, err);
+      return null;
+    }
   }
 
   private parseExtractionResult(content: string): ExtractionResult {
@@ -180,43 +228,45 @@ Extract data for columns: ${columnDefinitions.map((c) => c.displayName).join(', 
       const extracted = extractionResult.columns[columnDef.name];
       if (!extracted) continue;
 
-      // Map confidence score to level
       const confidenceLevel = this.mapConfidenceLevel(extracted.confidence);
 
-      // Upsert cell
-      await this.prisma.gridCell.upsert({
+      const strValue = extracted.value != null ? String(extracted.value) : null;
+      const cellData = {
+        value: strValue,
+        aiExtractedValue: strValue,
+        confidenceLevel,
+        confidenceScore: extracted.confidence,
+        sourceQuote: extracted.sourceQuote || null,
+        sourcePageNumber: extracted.pageNumber || null,
+        pdfLocationData: extracted.pageNumber ? { page: extracted.pageNumber } : null,
+        validationStatus: 'PENDING' as const,
+      };
+
+      // Find existing cell
+      const existing = await (this.prisma as any).gridCell.findFirst({
         where: {
-          extractionGridId_articleId_gridColumnId: {
-            extractionGridId: gridId,
-            articleId,
-            gridColumnId: columnDef.id,
-          },
-        } as any,
-        create: {
-          id: crypto.randomUUID(),
           extractionGridId: gridId,
           articleId,
           gridColumnId: columnDef.id,
-          value: extracted.value || null,
-          aiExtractedValue: extracted.value || null,
-          confidenceLevel,
-          confidenceScore: extracted.confidence,
-          sourceQuote: extracted.sourceQuote || null,
-          sourcePageNumber: extracted.pageNumber || null,
-          pdfLocationData: extracted.pageNumber ? { page: extracted.pageNumber } : null,
-          validationStatus: 'PENDING',
-        } as any,
-        update: {
-          aiExtractedValue: extracted.value || null,
-          value: extracted.value || null,
-          confidenceLevel,
-          confidenceScore: extracted.confidence,
-          sourceQuote: extracted.sourceQuote || null,
-          sourcePageNumber: extracted.pageNumber || null,
-          pdfLocationData: extracted.pageNumber ? { page: extracted.pageNumber } : null,
-          validationStatus: 'PENDING',
-        } as any,
+        },
       });
+
+      if (existing) {
+        await (this.prisma as any).gridCell.update({
+          where: { id: existing.id },
+          data: cellData,
+        });
+      } else {
+        await (this.prisma as any).gridCell.create({
+          data: {
+            id: crypto.randomUUID(),
+            extractionGridId: gridId,
+            articleId,
+            gridColumnId: columnDef.id,
+            ...cellData,
+          },
+        });
+      }
     }
   }
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { Table, Download, Sparkles, RefreshCw } from 'lucide-react';
 import { GET_GRID_COLUMNS, GET_GRID_CELLS } from '../graphql/queries';
-import { UPDATE_GRID_CELL, POPULATE_GRID_ROWS } from '../graphql/mutations';
+import { UPDATE_GRID_CELL, POPULATE_GRID_ROWS, EXTRACT_GRID_DATA } from '../graphql/mutations';
 
 interface Column {
   id: string;
@@ -41,6 +41,10 @@ export function ExtractionGridPage({ gridId, soaStatus }: ExtractionGridPageProp
 
   const [updateCell] = useMutation(UPDATE_GRID_CELL);
   const [populateRows, { loading: populating }] = useMutation(POPULATE_GRID_ROWS, {
+    variables: { gridId },
+    refetchQueries: [{ query: GET_GRID_CELLS, variables: { gridId } }],
+  });
+  const [extractGridData, { loading: extracting }] = useMutation(EXTRACT_GRID_DATA, {
     variables: { gridId },
     refetchQueries: [{ query: GET_GRID_CELLS, variables: { gridId } }],
   });
@@ -127,11 +131,13 @@ export function ExtractionGridPage({ gridId, soaStatus }: ExtractionGridPageProp
           </button>
           <button
             type="button"
-            disabled
-            className="inline-flex items-center gap-1 rounded border px-3 py-1.5 text-xs opacity-50"
+            onClick={() => extractGridData()}
+            disabled={extracting || totalArticles === 0}
+            className="inline-flex items-center gap-1 rounded border border-purple-300 bg-purple-50 px-3 py-1.5 text-xs text-purple-700 hover:bg-purple-100 disabled:opacity-50"
             data-testid="ai-prefill-btn"
           >
-            <Sparkles size={12} /> AI Pre-fill
+            <Sparkles size={12} className={extracting ? 'animate-spin' : ''} />
+            {extracting ? 'Extracting...' : 'AI Pre-fill'}
           </button>
           <button
             type="button"

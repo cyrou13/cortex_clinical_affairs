@@ -284,9 +284,18 @@ builder.mutationField('extractGridData', (t) =>
       checkPermission(ctx, 'soa', 'write');
 
       const redis = getRedis();
-      const enqueueJob = async (queue: string, data: unknown): Promise<string> => {
-        await redis.publish('task:enqueued', JSON.stringify(data));
-        return (data as Record<string, string>).taskId ?? '';
+      const enqueueJob = async (queue: string, data: Record<string, unknown>): Promise<string> => {
+        await redis.publish(
+          'task:enqueued',
+          JSON.stringify({
+            taskId: data.taskId,
+            type: queue,
+            status: 'PENDING',
+            metadata: data,
+            createdBy: ctx.user!.id,
+          }),
+        );
+        return data.taskId as string;
       };
 
       const useCase = new ExtractGridDataUseCase(ctx.prisma, enqueueJob);
@@ -485,9 +494,18 @@ builder.mutationField('draftNarrative', (t) =>
       await checkProjectMembership(ctx, soa.projectId);
 
       const redis = getRedis();
-      const enqueueJob = async (queue: string, data: unknown): Promise<string> => {
-        await redis.publish('task:enqueued', JSON.stringify(data));
-        return (data as Record<string, string>).taskId ?? '';
+      const enqueueJob = async (queue: string, data: Record<string, unknown>): Promise<string> => {
+        await redis.publish(
+          'task:enqueued',
+          JSON.stringify({
+            taskId: data.taskId,
+            type: queue,
+            status: 'PENDING',
+            metadata: data,
+            createdBy: ctx.user!.id,
+          }),
+        );
+        return data.taskId as string;
       };
 
       const useCase = new DraftNarrativeUseCase(ctx.prisma, enqueueJob);
@@ -823,9 +841,18 @@ builder.mutationField('importSoaDocument', (t) =>
       await checkProjectMembership(ctx, args.projectId);
 
       const redis = getRedis();
-      const enqueueJob = async (_queue: string, data: unknown): Promise<string> => {
-        await redis.publish('task:enqueued', JSON.stringify(data));
-        return (data as Record<string, string>).taskId ?? '';
+      const enqueueJob = async (queue: string, data: Record<string, unknown>): Promise<string> => {
+        await redis.publish(
+          'task:enqueued',
+          JSON.stringify({
+            taskId: data.taskId,
+            type: queue,
+            status: 'PENDING',
+            metadata: data,
+            createdBy: ctx.user!.id,
+          }),
+        );
+        return data.taskId as string;
       };
 
       const useCase = new ImportSoaDocumentUseCase(ctx.prisma, enqueueJob);

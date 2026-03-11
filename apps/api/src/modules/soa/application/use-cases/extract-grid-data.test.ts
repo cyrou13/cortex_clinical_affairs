@@ -62,7 +62,8 @@ describe('ExtractGridDataUseCase', () => {
     expect(mockEnqueue).toHaveBeenCalledWith(
       'soa.extract-grid-data',
       expect.objectContaining({
-        extractionGridId: 'grid-1',
+        gridId: 'grid-1',
+        columnDefinitions: expect.any(Array),
       }),
     );
   });

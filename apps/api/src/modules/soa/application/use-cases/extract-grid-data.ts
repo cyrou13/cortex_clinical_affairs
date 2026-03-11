@@ -86,9 +86,9 @@ export class ExtractGridDataUseCase {
     await this.enqueueJob('soa.extract-grid-data', {
       taskId: task.id,
       soaAnalysisId: grid.soaAnalysis.id,
-      extractionGridId: input.gridId,
+      gridId: input.gridId,
       articleIds: articles.map((a: { id: string }) => a.id),
-      gridColumns: columns,
+      columnDefinitions: columns,
     });
 
     return {
