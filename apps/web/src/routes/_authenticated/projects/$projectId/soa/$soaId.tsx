@@ -202,28 +202,22 @@ export default function SoaDetailPage() {
         )}
 
         {activeTab === 'grid' && (
-          <div className="mx-auto max-w-6xl space-y-6">
+          <div className="space-y-4">
             {activeGridId ? (
               <>
                 <ExtractionProgressPanel gridId={activeGridId} />
-                <div className="grid grid-cols-[1fr_280px] gap-6">
-                  <div>
-                    <ExtractionGridPage gridId={activeGridId} soaStatus={soa.status} />
-                  </div>
-                  <div>
-                    <GridConfigurator
-                      soaAnalysisId={soaId}
-                      soaType={soa.type}
-                      gridId={activeGridId}
-                      columns={[]}
-                      onGridCreated={(gridId) => {
-                        setSelectedGridId(gridId);
-                        refetchGrids();
-                      }}
-                      onColumnChanged={() => refetchGrids()}
-                    />
-                  </div>
-                </div>
+                <ExtractionGridPage gridId={activeGridId} soaStatus={soa.status} />
+                <GridConfigurator
+                  soaAnalysisId={soaId}
+                  soaType={soa.type}
+                  gridId={activeGridId}
+                  columns={[]}
+                  onGridCreated={(gridId) => {
+                    setSelectedGridId(gridId);
+                    refetchGrids();
+                  }}
+                  onColumnChanged={() => refetchGrids()}
+                />
               </>
             ) : (
               <GridConfigurator
