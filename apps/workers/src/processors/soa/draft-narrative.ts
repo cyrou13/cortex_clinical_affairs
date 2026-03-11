@@ -44,13 +44,12 @@ export class DraftNarrativeProcessor extends BaseProcessor {
       message: 'Loading section data...',
     });
 
-    // Load section and grid data
+    // Load section data
     const section = await (this.prisma as any).thematicSection.findUnique({
       where: { id: sectionId },
       select: {
         title: true,
         sectionKey: true,
-        description: true,
       },
     });
 
@@ -63,24 +62,14 @@ export class DraftNarrativeProcessor extends BaseProcessor {
       message: 'Loading analysis data...',
     });
 
-    // Load SOA analysis and related articles
+    // Load SOA analysis
     const soaAnalysis = await (this.prisma as any).soaAnalysis.findUnique({
       where: { id: soaAnalysisId },
       select: {
         id: true,
-        scopeDefinition: true,
-        extractionGrid: {
-          select: {
-            id: true,
-            columns: {
-              select: {
-                name: true,
-                displayName: true,
-                dataType: true,
-              },
-            },
-          },
-        },
+        name: true,
+        type: true,
+        description: true,
       },
     });
 
@@ -88,11 +77,35 @@ export class DraftNarrativeProcessor extends BaseProcessor {
       throw new Error('SOA analysis not found');
     }
 
-    // Load articles with extracted data and quality assessments
+    // Load extraction grids with columns
+    const grids = await (this.prisma as any).extractionGrid.findMany({
+      where: { soaAnalysisId },
+      select: {
+        id: true,
+        columns: {
+          select: {
+            id: true,
+            name: true,
+            displayName: true,
+            dataType: true,
+          },
+        },
+      },
+    });
+
+    const gridId = grids[0]?.id;
+
+    // Load articles via SoaSlsLink → sessions
+    const links = await (this.prisma as any).soaSlsLink.findMany({
+      where: { soaAnalysisId },
+      select: { slsSessionId: true },
+    });
+    const sessionIds = links.map((l: { slsSessionId: string }) => l.slsSessionId);
+
     const articles = await (this.prisma as any).article.findMany({
       where: {
-        soaAnalysisId,
-        status: 'INCLUDED',
+        sessionId: { in: sessionIds },
+        status: { in: ['INCLUDED', 'FINAL_INCLUDED'] },
       },
       select: {
         id: true,
@@ -101,35 +114,50 @@ export class DraftNarrativeProcessor extends BaseProcessor {
         journal: true,
         publicationYear: true,
         abstract: true,
-        gridCells: {
-          where: {
-            extractionGridId: soaAnalysis.extractionGrid?.id,
-          },
-          select: {
-            gridColumn: {
-              select: {
-                name: true,
-                displayName: true,
-              },
-            },
-            value: true,
-            confidenceScore: true,
-          },
-        },
-        qualityAssessments: {
-          where: {
-            extractionGridId: soaAnalysis.extractionGrid?.id,
-          },
-          select: {
-            overallQuality: true,
-            overallScore: true,
-            strengths: true,
-            weaknesses: true,
-          },
-        },
       },
-      take: 50, // Limit to prevent prompt overflow
+      take: 50,
     });
+
+    // Load grid cells for these articles
+    let articleCellsMap: Map<
+      string,
+      Array<{ columnName: string; displayName: string; value: string | null }>
+    > = new Map();
+    if (gridId) {
+      const articleIds = articles.map((a: { id: string }) => a.id);
+      const cells = await (this.prisma as any).gridCell.findMany({
+        where: {
+          extractionGridId: gridId,
+          articleId: { in: articleIds },
+        },
+        select: {
+          articleId: true,
+          value: true,
+          aiExtractedValue: true,
+          gridColumn: {
+            select: {
+              name: true,
+              displayName: true,
+            },
+          },
+        },
+      });
+
+      for (const cell of cells as Array<{
+        articleId: string;
+        value: string | null;
+        aiExtractedValue: string | null;
+        gridColumn: { name: string; displayName: string };
+      }>) {
+        const existing = articleCellsMap.get(cell.articleId) ?? [];
+        existing.push({
+          columnName: cell.gridColumn.name,
+          displayName: cell.gridColumn.displayName,
+          value: cell.value ?? cell.aiExtractedValue ?? null,
+        });
+        articleCellsMap.set(cell.articleId, existing);
+      }
+    }
 
     // Update progress
     await this.reportProgress(job, 40, {
@@ -138,7 +166,7 @@ export class DraftNarrativeProcessor extends BaseProcessor {
 
     // Build prompt for LLM
     const systemPrompt = this.buildSystemPrompt();
-    const userPrompt = this.buildUserPrompt(section, soaAnalysis, articles);
+    const userPrompt = this.buildUserPrompt(section, soaAnalysis, articles, articleCellsMap);
 
     try {
       // Call LLM to generate narrative
@@ -170,7 +198,6 @@ export class DraftNarrativeProcessor extends BaseProcessor {
         where: { id: sectionId },
         data: {
           narrativeAiDraft: aiDraft,
-          updatedAt: new Date(),
         },
       });
 
@@ -213,52 +240,40 @@ Return your response as JSON with this structure:
   }
 
   private buildUserPrompt(
-    section: { title: string; sectionKey: string; description: string | null },
-    soaAnalysis: {
-      scopeDefinition: any;
-      extractionGrid: {
-        columns: Array<{ name: string; displayName: string; dataType: string }>;
-      } | null;
-    },
+    section: { title: string; sectionKey: string },
+    soaAnalysis: { name: string; type: string; description: string | null },
     articles: Array<{
       id: string;
       title: string;
-      authors: string | null;
+      authors: any;
       journal: string | null;
       publicationYear: number | null;
       abstract: string | null;
-      gridCells: Array<{
-        gridColumn: { name: string; displayName: string };
-        value: string | null;
-        confidenceScore: number | null;
-      }>;
-      qualityAssessments: Array<{
-        overallQuality: string;
-        overallScore: number;
-        strengths: any;
-        weaknesses: any;
-      }>;
     }>,
+    articleCellsMap: Map<
+      string,
+      Array<{ columnName: string; displayName: string; value: string | null }>
+    >,
   ): string {
     const articlesData = articles
       .map((article, idx) => {
-        const extractedData = article.gridCells
-          .map((cell) => `  - ${cell.gridColumn.displayName}: ${cell.value || 'N/A'}`)
+        const cells = articleCellsMap.get(article.id) ?? [];
+        const extractedData = cells
+          .filter((c) => c.value)
+          .map((cell) => `  - ${cell.displayName}: ${cell.value}`)
           .join('\n');
 
-        const quality = article.qualityAssessments[0];
-        const qualityInfo = quality
-          ? `  Quality: ${quality.overallQuality} (Score: ${quality.overallScore}/100)`
-          : '  Quality: Not assessed';
+        const authorStr = Array.isArray(article.authors)
+          ? article.authors.join(', ')
+          : article.authors || 'Unknown';
 
         return `
 Article ${idx + 1}:
   Title: ${article.title}
-  Authors: ${article.authors || 'Unknown'}
+  Authors: ${authorStr}
   Journal: ${article.journal || 'Unknown'}
   Year: ${article.publicationYear || 'Unknown'}
-  Abstract: ${article.abstract || 'No abstract available'}
-${qualityInfo}
+  Abstract: ${(article.abstract || 'No abstract available').substring(0, 500)}
   Extracted Data:
 ${extractedData || '  None'}
 `;
@@ -268,10 +283,9 @@ ${extractedData || '  None'}
     return `Section to Draft:
 Title: ${section.title}
 Section Key: ${section.sectionKey}
-Description: ${section.description || 'No description provided'}
 
-Scope Definition:
-${JSON.stringify(soaAnalysis.scopeDefinition, null, 2)}
+SOA Analysis: ${soaAnalysis.name} (${soaAnalysis.type})
+${soaAnalysis.description ? `Description: ${soaAnalysis.description}` : ''}
 
 Evidence Base (${articles.length} articles):
 ${articlesData || 'No articles available'}

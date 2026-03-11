@@ -68,7 +68,7 @@ export const ThematicSectionObjectType = builder.objectRef<{
   sectionKey: string;
   title: string;
   narrativeContent: string | null;
-  narrativeAiDraft: string | null;
+  narrativeAiDraft: unknown;
   status: string;
   orderIndex: number;
   createdAt: Date;
@@ -82,7 +82,7 @@ builder.objectType(ThematicSectionObjectType, {
     sectionKey: t.exposeString('sectionKey'),
     title: t.exposeString('title'),
     narrativeContent: t.exposeString('narrativeContent', { nullable: true }),
-    narrativeAiDraft: t.exposeString('narrativeAiDraft', { nullable: true }),
+    narrativeAiDraft: t.expose('narrativeAiDraft', { type: 'JSON', nullable: true }),
     status: t.exposeString('status'),
     orderIndex: t.exposeInt('orderIndex'),
     createdAt: t.expose('createdAt', { type: 'DateTime' }),

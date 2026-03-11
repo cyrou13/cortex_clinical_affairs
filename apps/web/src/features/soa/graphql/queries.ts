@@ -57,6 +57,7 @@ export const GET_SOA_SECTIONS = gql`
       status
       orderIndex
       narrativeContent
+      narrativeAiDraft
       createdAt
       updatedAt
     }

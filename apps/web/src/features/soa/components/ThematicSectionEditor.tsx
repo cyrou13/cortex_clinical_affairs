@@ -49,6 +49,29 @@ function CompletionIcon({ status }: { status: string }) {
   }
 }
 
+function extractTextFromTipTap(doc: any): string {
+  if (!doc?.content) return '';
+  const lines: string[] = [];
+  for (const node of doc.content) {
+    if (node.type === 'heading' && node.content) {
+      const text = node.content.map((c: any) => c.text || '').join('');
+      lines.push(text, '');
+    } else if (node.type === 'paragraph' && node.content) {
+      const text = node.content.map((c: any) => c.text || '').join('');
+      lines.push(text, '');
+    } else if (node.type === 'bulletList' && node.content) {
+      for (const item of node.content) {
+        const text = item.content
+          ?.flatMap((p: any) => p.content?.map((c: any) => c.text || '') ?? [])
+          .join('');
+        lines.push(`• ${text}`);
+      }
+      lines.push('');
+    }
+  }
+  return lines.join('\n').trim();
+}
+
 export function ThematicSectionEditor({
   sectionId,
   soaAnalysisId,
@@ -71,9 +94,25 @@ export function ThematicSectionEditor({
   const section = allSections.find((s: any) => s.id === sectionId);
 
   useEffect(() => {
-    if (!contentInitialized && section?.narrativeContent) {
-      setContent(section.narrativeContent);
-      setContentInitialized(true);
+    if (!contentInitialized && section) {
+      if (section.narrativeContent) {
+        setContent(section.narrativeContent);
+        setContentInitialized(true);
+      } else if (section.narrativeAiDraft) {
+        // Extract plain text from TipTap JSON or plain string
+        const draft = section.narrativeAiDraft;
+        if (typeof draft === 'string') {
+          try {
+            const parsed = JSON.parse(draft);
+            setContent(extractTextFromTipTap(parsed));
+          } catch {
+            setContent(draft);
+          }
+        } else if (typeof draft === 'object') {
+          setContent(extractTextFromTipTap(draft));
+        }
+        setContentInitialized(true);
+      }
     }
   }, [section, contentInitialized]);
 
