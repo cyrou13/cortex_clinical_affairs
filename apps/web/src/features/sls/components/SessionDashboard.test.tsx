@@ -184,7 +184,7 @@ describe('SessionDashboard', () => {
     expect(screen.queryByTestId('scope-fields-card')).not.toBeInTheDocument();
   });
 
-  it('shows creation date', async () => {
+  it('shows session type label', async () => {
     renderWithApollo(
       <SessionDashboard sessionId="sess-1" projectId="proj-1" />,
       makeDefaultMocks(),
@@ -192,6 +192,6 @@ describe('SessionDashboard', () => {
 
     await screen.findByText('CSpine Clinical Review');
 
-    expect(screen.getByText(/created/i)).toBeInTheDocument();
+    expect(screen.getByText(/SOA Clinical/i)).toBeInTheDocument();
   });
 });

@@ -1,6 +1,15 @@
 import { useState, useCallback } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { FileText, Search, BarChart3, ListChecks, Brain, Lock, Download } from 'lucide-react';
+import {
+  FileText,
+  Search,
+  BarChart3,
+  ListChecks,
+  Brain,
+  Lock,
+  Download,
+  ArrowLeft,
+} from 'lucide-react';
 import { cn } from '../../../shared/utils/cn';
 import { StatusBadge, type StatusVariant } from '../../../shared/components/StatusBadge';
 import {
@@ -539,16 +548,31 @@ export function SessionDashboard({ sessionId, projectId }: SessionDashboardProps
     <div className="space-y-6" data-testid="session-dashboard">
       {/* Header */}
       <div>
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-semibold text-[var(--cortex-text-primary)]">
-            {session.name}
-          </h1>
-          <StatusBadge variant={mapStatusToVariant(session.status)} />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                window.location.href = `/projects/${projectId}/sls`;
+              }}
+              className="rounded p-1 text-[var(--cortex-text-muted)] hover:bg-gray-50 hover:text-[var(--cortex-text-primary)]"
+              data-testid="back-btn"
+              aria-label="Back to SLS list"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <Search size={20} className="text-[var(--cortex-blue-500)]" />
+            <div>
+              <h1 className="text-2xl font-semibold text-[var(--cortex-text-primary)]">
+                {session.name}
+              </h1>
+              <p className="text-sm text-[var(--cortex-text-secondary)]">
+                {typeLabels[session.type] ?? session.type}
+              </p>
+            </div>
+            <StatusBadge variant={mapStatusToVariant(session.status)} />
+          </div>
         </div>
-        <p className="mt-1 text-sm text-[var(--cortex-text-secondary)]">
-          {typeLabels[session.type] ?? session.type} — Created{' '}
-          {new Date(session.createdAt).toLocaleDateString()}
-        </p>
       </div>
 
       {/* Metrics */}
