@@ -33,6 +33,7 @@ import '../modules/cer/graphql/mutations.js';
 import '../modules/pms/graphql/types.js';
 import '../modules/pms/graphql/queries.js';
 import '../modules/pms/graphql/mutations.js';
+import '../modules/settings/graphql/index.js';
 
 export { builder } from './builder.js';
 export const schema = builder.toSchema();

@@ -79,3 +79,17 @@ model LlmCostRecord {
   @@index([projectId, taskType])
   @@index([createdAt])
 }
+
+model AppSetting {
+  id        String   @id @default(uuid())
+  category  String   // general, sls, soa, cer, pms, validation, api_keys
+  key       String
+  value     String   // JSON string for complex values
+  encrypted Boolean  @default(false)
+  updatedBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([category, key])
+  @@index([category])
+}

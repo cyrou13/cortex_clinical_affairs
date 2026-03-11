@@ -40,3 +40,9 @@ export const CHECK_PROVIDER_HEALTH = gql`
     }
   }
 `;
+
+export const UPSERT_APP_SETTINGS = gql`
+  mutation UpsertAppSettings($settings: [AppSettingInput!]!) {
+    upsertAppSettings(settings: $settings)
+  }
+`;

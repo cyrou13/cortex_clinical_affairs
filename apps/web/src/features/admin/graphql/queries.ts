@@ -58,3 +58,16 @@ export const GET_PROVIDER_HEALTH = gql`
     }
   }
 `;
+
+export const GET_APP_SETTINGS = gql`
+  query GetAppSettings($category: String) {
+    appSettings(category: $category) {
+      id
+      category
+      key
+      value
+      encrypted
+      updatedAt
+    }
+  }
+`;

@@ -1,105 +1,88 @@
-import { useState, useCallback } from 'react';
-import type { Settings } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useMutation } from '@apollo/client/react';
 import {
+  Settings,
   Search,
   BarChart3,
   FileText,
   Activity,
   FlaskConical,
   Cpu,
-  Users,
-  ExternalLink,
-  Check,
+  KeyRound,
   Globe,
+  Check,
+  Eye,
+  EyeOff,
+  CheckCircle2,
 } from 'lucide-react';
-import { navigate } from '../../../router';
+import { GET_APP_SETTINGS } from '../../../features/admin/graphql/queries';
+import { UPSERT_APP_SETTINGS } from '../../../features/admin/graphql/mutations';
+import { LlmConfigPanel } from '../../../features/admin/components/LlmConfigPanel';
 
-// --- Section definitions ---
+// --- Tab definitions ---
 
-interface SectionDef {
-  id: string;
+type TabKey = 'general' | 'sls' | 'soa' | 'cer' | 'pms' | 'validation' | 'ai_models' | 'api_keys';
+
+interface TabDef {
+  key: TabKey;
   label: string;
-  description: string;
   icon: typeof Settings;
-  href?: string;
+  category: string;
 }
 
-const SECTIONS: SectionDef[] = [
-  {
-    id: 'general',
-    label: 'General',
-    description: 'Application defaults and display preferences',
-    icon: Globe,
-  },
-  { id: 'sls', label: 'SLS', description: 'Systematic Literature Search defaults', icon: Search },
-  { id: 'soa', label: 'SOA', description: 'State of the Art analysis presets', icon: BarChart3 },
-  {
-    id: 'cer',
-    label: 'CER',
-    description: 'Clinical Evaluation Report configuration',
-    icon: FileText,
-  },
-  { id: 'pms', label: 'PMS', description: 'Post-Market Surveillance defaults', icon: Activity },
-  {
-    id: 'validation',
-    label: 'Validation',
-    description: 'Validation study presets',
-    icon: FlaskConical,
-  },
-  {
-    id: 'llm',
-    label: 'LLM Configuration',
-    description: 'AI model configuration',
-    icon: Cpu,
-    href: '/admin/llm-config',
-  },
-  {
-    id: 'users',
-    label: 'Users & Permissions',
-    description: 'User management and roles',
-    icon: Users,
-    href: '/admin/users',
-  },
+const TABS: TabDef[] = [
+  { key: 'general', label: 'General', icon: Globe, category: 'general' },
+  { key: 'sls', label: 'SLS', icon: Search, category: 'sls' },
+  { key: 'soa', label: 'SOA', icon: BarChart3, category: 'soa' },
+  { key: 'cer', label: 'CER', icon: FileText, category: 'cer' },
+  { key: 'pms', label: 'PMS', icon: Activity, category: 'pms' },
+  { key: 'validation', label: 'Validation', icon: FlaskConical, category: 'validation' },
+  { key: 'ai_models', label: 'AI Models', icon: Cpu, category: 'llm' },
+  { key: 'api_keys', label: 'API Keys', icon: KeyRound, category: 'api_keys' },
 ];
 
-// --- Settings state types ---
+// --- Custom hook ---
 
-interface GeneralSettings {
-  organizationName: string;
-  defaultLanguage: string;
-  dateFormat: string;
-  timezone: string;
+interface AppSettingEntry {
+  id: string;
+  category: string;
+  key: string;
+  value: string;
+  encrypted: boolean;
+  updatedAt: string;
 }
 
-interface SlsSettings {
-  defaultDatabases: string[];
-  relevanceThreshold: number;
-  aiScoringModel: string;
-  maxArticlesPerQuery: number;
+interface SaveEntry {
+  category: string;
+  key: string;
+  value: string;
+  encrypted: boolean;
 }
 
-interface SoaSettings {
-  defaultGridTemplate: string;
-  extractionModel: string;
-  autoExtractOnCreate: boolean;
-}
+function useSettingsSection(category: string) {
+  const { data, loading, refetch } = useQuery<{ appSettings: AppSettingEntry[] }>(
+    GET_APP_SETTINGS,
+    { variables: { category }, fetchPolicy: 'cache-and-network' },
+  );
 
-interface CerSettings {
-  defaultRegulatoryContext: string;
-  defaultTemplateVersion: string;
-  includeExecutiveSummary: boolean;
-}
+  const [upsert] = useMutation(UPSERT_APP_SETTINGS);
+  const [saved, setSaved] = useState(false);
 
-interface PmsSettings {
-  defaultPsurCycle: string;
-  enableEmailNotifications: boolean;
-  autoGeneratePmcf: boolean;
-}
+  const settings: Map<string, string> = new Map(
+    (data?.appSettings ?? []).map((s) => [s.key, s.value]),
+  );
 
-interface ValidationSettings {
-  defaultStudyType: string;
-  confidenceInterval: number;
-  minimumSampleSize: number;
+  const save = useCallback(
+    async (entries: SaveEntry[]) => {
+      await upsert({ variables: { settings: entries } });
+      await refetch();
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    },
+    [upsert, refetch],
+  );
+
+  return { settings, loading, save, saved };
 }
 
 // --- Reusable form primitives ---
@@ -121,15 +104,17 @@ function TextInput({
   onChange,
   placeholder,
   testId,
+  type = 'text',
 }: {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   testId?: string;
+  type?: string;
 }) {
   return (
     <input
-      type="text"
+      type={type}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
@@ -236,7 +221,7 @@ function CheckboxGroup({
       {options.map((o) => (
         <label
           key={o.value}
-          className="inline-flex cursor-pointer items-center gap-2 text-sm text-[var(--cortex-text-primary)]"
+          className="flex cursor-pointer items-center gap-2 text-sm text-[var(--cortex-text-primary)]"
         >
           <input
             type="checkbox"
@@ -283,25 +268,46 @@ function SaveButton({ onClick, saved }: { onClick: () => void; saved: boolean })
   );
 }
 
-function useSaveAction() {
-  const [saved, setSaved] = useState(false);
-  const save = useCallback(() => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }, []);
-  return { saved, save };
-}
-
 // --- Section components ---
 
 function GeneralSection() {
-  const [settings, setSettings] = useState<GeneralSettings>({
+  const { settings, loading, save, saved } = useSettingsSection('general');
+
+  const [form, setForm] = useState({
     organizationName: 'Cortex Clinical Affairs',
     defaultLanguage: 'en',
     dateFormat: 'DD/MM/YYYY',
     timezone: 'Europe/Paris',
   });
-  const { saved, save } = useSaveAction();
+
+  useEffect(() => {
+    if (loading) return;
+    setForm({
+      organizationName: settings.get('organizationName') ?? 'Cortex Clinical Affairs',
+      defaultLanguage: settings.get('defaultLanguage') ?? 'en',
+      dateFormat: settings.get('dateFormat') ?? 'DD/MM/YYYY',
+      timezone: settings.get('timezone') ?? 'Europe/Paris',
+    });
+  }, [loading]);
+
+  const handleSave = () => {
+    save([
+      {
+        category: 'general',
+        key: 'organizationName',
+        value: form.organizationName,
+        encrypted: false,
+      },
+      {
+        category: 'general',
+        key: 'defaultLanguage',
+        value: form.defaultLanguage,
+        encrypted: false,
+      },
+      { category: 'general', key: 'dateFormat', value: form.dateFormat, encrypted: false },
+      { category: 'general', key: 'timezone', value: form.timezone, encrypted: false },
+    ]);
+  };
 
   return (
     <div>
@@ -313,8 +319,8 @@ function GeneralSection() {
         <div>
           <FieldLabel>Organization Name</FieldLabel>
           <TextInput
-            value={settings.organizationName}
-            onChange={(v) => setSettings({ ...settings, organizationName: v })}
+            value={form.organizationName}
+            onChange={(v) => setForm({ ...form, organizationName: v })}
             testId="setting-org-name"
           />
           <FieldHint>Displayed in headers and exported documents.</FieldHint>
@@ -322,8 +328,8 @@ function GeneralSection() {
         <div>
           <FieldLabel>Default Language</FieldLabel>
           <SelectInput
-            value={settings.defaultLanguage}
-            onChange={(v) => setSettings({ ...settings, defaultLanguage: v })}
+            value={form.defaultLanguage}
+            onChange={(v) => setForm({ ...form, defaultLanguage: v })}
             options={[
               { value: 'en', label: 'English' },
               { value: 'fr', label: 'French' },
@@ -335,8 +341,8 @@ function GeneralSection() {
         <div>
           <FieldLabel>Date Format</FieldLabel>
           <SelectInput
-            value={settings.dateFormat}
-            onChange={(v) => setSettings({ ...settings, dateFormat: v })}
+            value={form.dateFormat}
+            onChange={(v) => setForm({ ...form, dateFormat: v })}
             options={[
               { value: 'DD/MM/YYYY', label: 'DD/MM/YYYY' },
               { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
@@ -348,8 +354,8 @@ function GeneralSection() {
         <div>
           <FieldLabel>Timezone</FieldLabel>
           <SelectInput
-            value={settings.timezone}
-            onChange={(v) => setSettings({ ...settings, timezone: v })}
+            value={form.timezone}
+            onChange={(v) => setForm({ ...form, timezone: v })}
             options={[
               { value: 'Europe/Paris', label: 'Europe/Paris (CET)' },
               { value: 'Europe/London', label: 'Europe/London (GMT)' },
@@ -361,7 +367,7 @@ function GeneralSection() {
           />
         </div>
         <div className="pt-2">
-          <SaveButton onClick={save} saved={saved} />
+          <SaveButton onClick={handleSave} saved={saved} />
         </div>
       </div>
     </div>
@@ -369,13 +375,46 @@ function GeneralSection() {
 }
 
 function SlsSection() {
-  const [settings, setSettings] = useState<SlsSettings>({
-    defaultDatabases: ['pubmed', 'embase'],
+  const { settings, loading, save, saved } = useSettingsSection('sls');
+
+  const [form, setForm] = useState({
+    defaultDatabases: ['pubmed', 'embase'] as string[],
     relevanceThreshold: 70,
-    aiScoringModel: 'claude-sonnet',
     maxArticlesPerQuery: 500,
   });
-  const { saved, save } = useSaveAction();
+
+  useEffect(() => {
+    if (loading) return;
+    const raw = settings.get('defaultDatabases');
+    setForm({
+      defaultDatabases: raw ? (JSON.parse(raw) as string[]) : ['pubmed', 'embase'],
+      relevanceThreshold: Number(settings.get('relevanceThreshold') ?? 70),
+      maxArticlesPerQuery: Number(settings.get('maxArticlesPerQuery') ?? 500),
+    });
+  }, [loading]);
+
+  const handleSave = () => {
+    save([
+      {
+        category: 'sls',
+        key: 'defaultDatabases',
+        value: JSON.stringify(form.defaultDatabases),
+        encrypted: false,
+      },
+      {
+        category: 'sls',
+        key: 'relevanceThreshold',
+        value: String(form.relevanceThreshold),
+        encrypted: false,
+      },
+      {
+        category: 'sls',
+        key: 'maxArticlesPerQuery',
+        value: String(form.maxArticlesPerQuery),
+        encrypted: false,
+      },
+    ]);
+  };
 
   return (
     <div>
@@ -394,8 +433,8 @@ function SlsSection() {
               { value: 'wos', label: 'Web of Science' },
               { value: 'scopus', label: 'Scopus' },
             ]}
-            selected={settings.defaultDatabases}
-            onChange={(v) => setSettings({ ...settings, defaultDatabases: v })}
+            selected={form.defaultDatabases}
+            onChange={(v) => setForm({ ...form, defaultDatabases: v })}
             testId="setting-sls-databases"
           />
           <FieldHint>Pre-selected databases when creating a new SLS session.</FieldHint>
@@ -403,8 +442,8 @@ function SlsSection() {
         <div>
           <FieldLabel>Relevance Threshold (%)</FieldLabel>
           <NumberInput
-            value={settings.relevanceThreshold}
-            onChange={(v) => setSettings({ ...settings, relevanceThreshold: v })}
+            value={form.relevanceThreshold}
+            onChange={(v) => setForm({ ...form, relevanceThreshold: v })}
             min={0}
             max={100}
             testId="setting-sls-threshold"
@@ -414,30 +453,17 @@ function SlsSection() {
           </FieldHint>
         </div>
         <div>
-          <FieldLabel>AI Scoring Model</FieldLabel>
-          <SelectInput
-            value={settings.aiScoringModel}
-            onChange={(v) => setSettings({ ...settings, aiScoringModel: v })}
-            options={[
-              { value: 'claude-sonnet', label: 'Claude Sonnet 4' },
-              { value: 'claude-haiku', label: 'Claude Haiku 4.5' },
-              { value: 'gpt-4o', label: 'GPT-4o' },
-            ]}
-            testId="setting-sls-model"
-          />
-        </div>
-        <div>
           <FieldLabel>Max Articles per Query</FieldLabel>
           <NumberInput
-            value={settings.maxArticlesPerQuery}
-            onChange={(v) => setSettings({ ...settings, maxArticlesPerQuery: v })}
+            value={form.maxArticlesPerQuery}
+            onChange={(v) => setForm({ ...form, maxArticlesPerQuery: v })}
             min={1}
             max={5000}
             testId="setting-sls-max-articles"
           />
         </div>
         <div className="pt-2">
-          <SaveButton onClick={save} saved={saved} />
+          <SaveButton onClick={handleSave} saved={saved} />
         </div>
       </div>
     </div>
@@ -445,12 +471,37 @@ function SlsSection() {
 }
 
 function SoaSection() {
-  const [settings, setSettings] = useState<SoaSettings>({
+  const { settings, loading, save, saved } = useSettingsSection('soa');
+
+  const [form, setForm] = useState({
     defaultGridTemplate: 'tpl-clinical-default',
-    extractionModel: 'claude-sonnet',
     autoExtractOnCreate: false,
   });
-  const { saved, save } = useSaveAction();
+
+  useEffect(() => {
+    if (loading) return;
+    setForm({
+      defaultGridTemplate: settings.get('defaultGridTemplate') ?? 'tpl-clinical-default',
+      autoExtractOnCreate: settings.get('autoExtractOnCreate') === 'true',
+    });
+  }, [loading]);
+
+  const handleSave = () => {
+    save([
+      {
+        category: 'soa',
+        key: 'defaultGridTemplate',
+        value: form.defaultGridTemplate,
+        encrypted: false,
+      },
+      {
+        category: 'soa',
+        key: 'autoExtractOnCreate',
+        value: String(form.autoExtractOnCreate),
+        encrypted: false,
+      },
+    ]);
+  };
 
   return (
     <div>
@@ -462,11 +513,11 @@ function SoaSection() {
         <div>
           <FieldLabel>Default Grid Template</FieldLabel>
           <SelectInput
-            value={settings.defaultGridTemplate}
-            onChange={(v) => setSettings({ ...settings, defaultGridTemplate: v })}
+            value={form.defaultGridTemplate}
+            onChange={(v) => setForm({ ...form, defaultGridTemplate: v })}
             options={[
-              { value: 'tpl-clinical-default', label: 'Clinical SOA -- Default' },
-              { value: 'tpl-device-default', label: 'Device SOA -- Default' },
+              { value: 'tpl-clinical-default', label: 'Clinical SOA — Default' },
+              { value: 'tpl-device-default', label: 'Device SOA — Default' },
               { value: 'tpl-similar-device', label: 'Similar Device Comparison' },
             ]}
             testId="setting-soa-template"
@@ -474,28 +525,15 @@ function SoaSection() {
           <FieldHint>Template pre-selected when creating a new extraction grid.</FieldHint>
         </div>
         <div>
-          <FieldLabel>Extraction AI Model</FieldLabel>
-          <SelectInput
-            value={settings.extractionModel}
-            onChange={(v) => setSettings({ ...settings, extractionModel: v })}
-            options={[
-              { value: 'claude-sonnet', label: 'Claude Sonnet 4' },
-              { value: 'claude-haiku', label: 'Claude Haiku 4.5' },
-              { value: 'gpt-4o', label: 'GPT-4o' },
-            ]}
-            testId="setting-soa-model"
-          />
-        </div>
-        <div>
           <Checkbox
-            checked={settings.autoExtractOnCreate}
-            onChange={(v) => setSettings({ ...settings, autoExtractOnCreate: v })}
+            checked={form.autoExtractOnCreate}
+            onChange={(v) => setForm({ ...form, autoExtractOnCreate: v })}
             label="Automatically start AI extraction when grid is created"
             testId="setting-soa-auto-extract"
           />
         </div>
         <div className="pt-2">
-          <SaveButton onClick={save} saved={saved} />
+          <SaveButton onClick={handleSave} saved={saved} />
         </div>
       </div>
     </div>
@@ -503,12 +541,45 @@ function SoaSection() {
 }
 
 function CerSection() {
-  const [settings, setSettings] = useState<CerSettings>({
+  const { settings, loading, save, saved } = useSettingsSection('cer');
+
+  const [form, setForm] = useState({
     defaultRegulatoryContext: 'CE_MDR',
     defaultTemplateVersion: 'v2.0',
     includeExecutiveSummary: true,
   });
-  const { saved, save } = useSaveAction();
+
+  useEffect(() => {
+    if (loading) return;
+    setForm({
+      defaultRegulatoryContext: settings.get('defaultRegulatoryContext') ?? 'CE_MDR',
+      defaultTemplateVersion: settings.get('defaultTemplateVersion') ?? 'v2.0',
+      includeExecutiveSummary: (settings.get('includeExecutiveSummary') ?? 'true') !== 'false',
+    });
+  }, [loading]);
+
+  const handleSave = () => {
+    save([
+      {
+        category: 'cer',
+        key: 'defaultRegulatoryContext',
+        value: form.defaultRegulatoryContext,
+        encrypted: false,
+      },
+      {
+        category: 'cer',
+        key: 'defaultTemplateVersion',
+        value: form.defaultTemplateVersion,
+        encrypted: false,
+      },
+      {
+        category: 'cer',
+        key: 'includeExecutiveSummary',
+        value: String(form.includeExecutiveSummary),
+        encrypted: false,
+      },
+    ]);
+  };
 
   return (
     <div>
@@ -520,8 +591,8 @@ function CerSection() {
         <div>
           <FieldLabel>Default Regulatory Context</FieldLabel>
           <SelectInput
-            value={settings.defaultRegulatoryContext}
-            onChange={(v) => setSettings({ ...settings, defaultRegulatoryContext: v })}
+            value={form.defaultRegulatoryContext}
+            onChange={(v) => setForm({ ...form, defaultRegulatoryContext: v })}
             options={[
               { value: 'CE_MDR', label: 'CE-MDR (EU MDR 2017/745)' },
               { value: 'FDA_510K', label: 'FDA 510(k)' },
@@ -534,8 +605,8 @@ function CerSection() {
         <div>
           <FieldLabel>Default Template Version</FieldLabel>
           <SelectInput
-            value={settings.defaultTemplateVersion}
-            onChange={(v) => setSettings({ ...settings, defaultTemplateVersion: v })}
+            value={form.defaultTemplateVersion}
+            onChange={(v) => setForm({ ...form, defaultTemplateVersion: v })}
             options={[
               { value: 'v1.0', label: 'v1.0 — MEDDEV 2.7/1 Rev. 4' },
               { value: 'v2.0', label: 'v2.0 — MDR Annex XIV' },
@@ -545,14 +616,14 @@ function CerSection() {
         </div>
         <div>
           <Checkbox
-            checked={settings.includeExecutiveSummary}
-            onChange={(v) => setSettings({ ...settings, includeExecutiveSummary: v })}
+            checked={form.includeExecutiveSummary}
+            onChange={(v) => setForm({ ...form, includeExecutiveSummary: v })}
             label="Include executive summary section by default"
             testId="setting-cer-exec-summary"
           />
         </div>
         <div className="pt-2">
-          <SaveButton onClick={save} saved={saved} />
+          <SaveButton onClick={handleSave} saved={saved} />
         </div>
       </div>
     </div>
@@ -560,12 +631,40 @@ function CerSection() {
 }
 
 function PmsSection() {
-  const [settings, setSettings] = useState<PmsSettings>({
+  const { settings, loading, save, saved } = useSettingsSection('pms');
+
+  const [form, setForm] = useState({
     defaultPsurCycle: '1_year',
     enableEmailNotifications: true,
     autoGeneratePmcf: false,
   });
-  const { saved, save } = useSaveAction();
+
+  useEffect(() => {
+    if (loading) return;
+    setForm({
+      defaultPsurCycle: settings.get('defaultPsurCycle') ?? '1_year',
+      enableEmailNotifications: (settings.get('enableEmailNotifications') ?? 'true') !== 'false',
+      autoGeneratePmcf: settings.get('autoGeneratePmcf') === 'true',
+    });
+  }, [loading]);
+
+  const handleSave = () => {
+    save([
+      { category: 'pms', key: 'defaultPsurCycle', value: form.defaultPsurCycle, encrypted: false },
+      {
+        category: 'pms',
+        key: 'enableEmailNotifications',
+        value: String(form.enableEmailNotifications),
+        encrypted: false,
+      },
+      {
+        category: 'pms',
+        key: 'autoGeneratePmcf',
+        value: String(form.autoGeneratePmcf),
+        encrypted: false,
+      },
+    ]);
+  };
 
   return (
     <div>
@@ -577,8 +676,8 @@ function PmsSection() {
         <div>
           <FieldLabel>Default PSUR Cycle Period</FieldLabel>
           <SelectInput
-            value={settings.defaultPsurCycle}
-            onChange={(v) => setSettings({ ...settings, defaultPsurCycle: v })}
+            value={form.defaultPsurCycle}
+            onChange={(v) => setForm({ ...form, defaultPsurCycle: v })}
             options={[
               { value: '1_year', label: '1 Year (Class III / implantable)' },
               { value: '2_years', label: '2 Years' },
@@ -590,22 +689,22 @@ function PmsSection() {
         </div>
         <div>
           <Checkbox
-            checked={settings.enableEmailNotifications}
-            onChange={(v) => setSettings({ ...settings, enableEmailNotifications: v })}
+            checked={form.enableEmailNotifications}
+            onChange={(v) => setForm({ ...form, enableEmailNotifications: v })}
             label="Send email notifications for cycle deadlines"
             testId="setting-pms-email"
           />
         </div>
         <div>
           <Checkbox
-            checked={settings.autoGeneratePmcf}
-            onChange={(v) => setSettings({ ...settings, autoGeneratePmcf: v })}
+            checked={form.autoGeneratePmcf}
+            onChange={(v) => setForm({ ...form, autoGeneratePmcf: v })}
             label="Auto-generate PMCF survey templates"
             testId="setting-pms-pmcf"
           />
         </div>
         <div className="pt-2">
-          <SaveButton onClick={save} saved={saved} />
+          <SaveButton onClick={handleSave} saved={saved} />
         </div>
       </div>
     </div>
@@ -613,12 +712,45 @@ function PmsSection() {
 }
 
 function ValidationSection() {
-  const [settings, setSettings] = useState<ValidationSettings>({
+  const { settings, loading, save, saved } = useSettingsSection('validation');
+
+  const [form, setForm] = useState({
     defaultStudyType: 'STANDALONE',
     confidenceInterval: 95,
     minimumSampleSize: 30,
   });
-  const { saved, save } = useSaveAction();
+
+  useEffect(() => {
+    if (loading) return;
+    setForm({
+      defaultStudyType: settings.get('defaultStudyType') ?? 'STANDALONE',
+      confidenceInterval: Number(settings.get('confidenceInterval') ?? 95),
+      minimumSampleSize: Number(settings.get('minimumSampleSize') ?? 30),
+    });
+  }, [loading]);
+
+  const handleSave = () => {
+    save([
+      {
+        category: 'validation',
+        key: 'defaultStudyType',
+        value: form.defaultStudyType,
+        encrypted: false,
+      },
+      {
+        category: 'validation',
+        key: 'confidenceInterval',
+        value: String(form.confidenceInterval),
+        encrypted: false,
+      },
+      {
+        category: 'validation',
+        key: 'minimumSampleSize',
+        value: String(form.minimumSampleSize),
+        encrypted: false,
+      },
+    ]);
+  };
 
   return (
     <div>
@@ -630,8 +762,8 @@ function ValidationSection() {
         <div>
           <FieldLabel>Default Study Type</FieldLabel>
           <SelectInput
-            value={settings.defaultStudyType}
-            onChange={(v) => setSettings({ ...settings, defaultStudyType: v })}
+            value={form.defaultStudyType}
+            onChange={(v) => setForm({ ...form, defaultStudyType: v })}
             options={[
               { value: 'STANDALONE', label: 'Standalone' },
               { value: 'EQUIVALENCE', label: 'Equivalence' },
@@ -646,8 +778,8 @@ function ValidationSection() {
         <div>
           <FieldLabel>Confidence Interval (%)</FieldLabel>
           <NumberInput
-            value={settings.confidenceInterval}
-            onChange={(v) => setSettings({ ...settings, confidenceInterval: v })}
+            value={form.confidenceInterval}
+            onChange={(v) => setForm({ ...form, confidenceInterval: v })}
             min={80}
             max={99}
             testId="setting-val-ci"
@@ -657,8 +789,8 @@ function ValidationSection() {
         <div>
           <FieldLabel>Minimum Sample Size</FieldLabel>
           <NumberInput
-            value={settings.minimumSampleSize}
-            onChange={(v) => setSettings({ ...settings, minimumSampleSize: v })}
+            value={form.minimumSampleSize}
+            onChange={(v) => setForm({ ...form, minimumSampleSize: v })}
             min={1}
             max={10000}
             testId="setting-val-sample"
@@ -666,7 +798,164 @@ function ValidationSection() {
           <FieldHint>Default minimum number of cases required for study validity.</FieldHint>
         </div>
         <div className="pt-2">
-          <SaveButton onClick={save} saved={saved} />
+          <SaveButton onClick={handleSave} saved={saved} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- API Key field ---
+
+function ApiKeyField({
+  label,
+  fieldKey,
+  hasValue,
+  value,
+  onChange,
+  testId,
+}: {
+  label: string;
+  fieldKey: string;
+  hasValue: boolean;
+  value: string;
+  onChange: (v: string) => void;
+  testId?: string;
+}) {
+  const [revealed, setRevealed] = useState(false);
+
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center gap-2">
+        <label className="text-xs font-medium text-[var(--cortex-text-secondary)]">{label}</label>
+        {hasValue && (
+          <span
+            className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700"
+            data-testid={`${testId}-badge`}
+          >
+            <CheckCircle2 size={10} />
+            Configured
+          </span>
+        )}
+      </div>
+      <div className="relative">
+        <input
+          type={revealed ? 'text' : 'password'}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={hasValue ? 'Enter new key to update' : `Enter ${label}`}
+          className="w-full rounded border border-[var(--cortex-border)] bg-white py-2 pl-3 pr-10 text-sm text-[var(--cortex-text-primary)] placeholder:text-[var(--cortex-text-muted)] focus:border-[var(--cortex-blue-500)] focus:outline-none focus:ring-1 focus:ring-[var(--cortex-blue-500)]"
+          data-testid={testId}
+          autoComplete="off"
+        />
+        <button
+          type="button"
+          onClick={() => setRevealed((r) => !r)}
+          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-[var(--cortex-text-muted)] hover:text-[var(--cortex-text-secondary)]"
+          aria-label={revealed ? 'Hide key' : 'Show key'}
+          tabIndex={-1}
+        >
+          {revealed ? <EyeOff size={14} /> : <Eye size={14} />}
+        </button>
+      </div>
+      <p className="mt-1 text-[11px] text-[var(--cortex-text-muted)]">
+        {fieldKey === 'ollamaBaseUrl'
+          ? 'Base URL for your local Ollama instance (e.g. http://localhost:11434).'
+          : hasValue
+            ? 'The current key is stored securely. Enter a new value only to replace it.'
+            : 'Stored encrypted at rest.'}
+      </p>
+    </div>
+  );
+}
+
+function ApiKeysSection() {
+  const { settings, loading, save, saved } = useSettingsSection('api_keys');
+
+  const [form, setForm] = useState({
+    anthropicApiKey: '',
+    openaiApiKey: '',
+    ollamaBaseUrl: '',
+  });
+
+  useEffect(() => {
+    if (loading) return;
+    setForm({
+      anthropicApiKey: '',
+      openaiApiKey: '',
+      ollamaBaseUrl: settings.get('ollamaBaseUrl') ?? '',
+    });
+  }, [loading]);
+
+  const hasAnthropicKey = !!(settings.get('anthropicApiKey') ?? '');
+  const hasOpenAiKey = !!(settings.get('openaiApiKey') ?? '');
+
+  const handleSave = () => {
+    const entries: { category: string; key: string; value: string; encrypted: boolean }[] = [];
+
+    if (form.anthropicApiKey.trim()) {
+      entries.push({
+        category: 'api_keys',
+        key: 'anthropicApiKey',
+        value: form.anthropicApiKey.trim(),
+        encrypted: true,
+      });
+    }
+    if (form.openaiApiKey.trim()) {
+      entries.push({
+        category: 'api_keys',
+        key: 'openaiApiKey',
+        value: form.openaiApiKey.trim(),
+        encrypted: true,
+      });
+    }
+    entries.push({
+      category: 'api_keys',
+      key: 'ollamaBaseUrl',
+      value: form.ollamaBaseUrl.trim(),
+      encrypted: false,
+    });
+
+    if (entries.length > 0) {
+      save(entries);
+    }
+    // Clear the sensitive fields after save
+    setForm((prev) => ({ ...prev, anthropicApiKey: '', openaiApiKey: '' }));
+  };
+
+  return (
+    <div>
+      <SectionHeader
+        title="API Keys"
+        description="Credentials for AI provider integrations. Keys are stored encrypted."
+      />
+      <div className="max-w-lg space-y-6">
+        <ApiKeyField
+          label="Anthropic API Key"
+          fieldKey="anthropicApiKey"
+          hasValue={hasAnthropicKey}
+          value={form.anthropicApiKey}
+          onChange={(v) => setForm({ ...form, anthropicApiKey: v })}
+          testId="setting-anthropic-key"
+        />
+        <ApiKeyField
+          label="OpenAI API Key"
+          fieldKey="openaiApiKey"
+          hasValue={hasOpenAiKey}
+          value={form.openaiApiKey}
+          onChange={(v) => setForm({ ...form, openaiApiKey: v })}
+          testId="setting-openai-key"
+        />
+        <ApiKeyField
+          label="Ollama Base URL"
+          fieldKey="ollamaBaseUrl"
+          hasValue={!!(form.ollamaBaseUrl || settings.get('ollamaBaseUrl'))}
+          value={form.ollamaBaseUrl}
+          onChange={(v) => setForm({ ...form, ollamaBaseUrl: v })}
+          testId="setting-ollama-url"
+        />
+        <div className="pt-2">
+          <SaveButton onClick={handleSave} saved={saved} />
         </div>
       </div>
     </div>
@@ -676,18 +965,10 @@ function ValidationSection() {
 // --- Main Settings Page ---
 
 export default function SettingsPage() {
-  const [activeSection, setActiveSection] = useState('general');
+  const [activeTab, setActiveTab] = useState<TabKey>('general');
 
-  const handleSectionClick = (section: SectionDef) => {
-    if (section.href) {
-      navigate(section.href);
-      return;
-    }
-    setActiveSection(section.id);
-  };
-
-  const renderSection = () => {
-    switch (activeSection) {
+  const renderContent = () => {
+    switch (activeTab) {
       case 'general':
         return <GeneralSection />;
       case 'sls':
@@ -700,50 +981,55 @@ export default function SettingsPage() {
         return <PmsSection />;
       case 'validation':
         return <ValidationSection />;
+      case 'ai_models':
+        return <LlmConfigPanel />;
+      case 'api_keys':
+        return <ApiKeysSection />;
       default:
         return <GeneralSection />;
     }
   };
 
   return (
-    <div className="flex h-full gap-0" data-testid="settings-page">
-      {/* Section nav */}
-      <div className="w-56 flex-shrink-0 border-r border-[var(--cortex-border)] pr-0">
-        <div className="sticky top-0 space-y-0.5 py-1 pr-3">
-          {SECTIONS.map((section) => {
-            const Icon = section.icon;
-            const isActive = activeSection === section.id && !section.href;
-            const isLink = !!section.href;
+    <div className="flex h-full flex-col" data-testid="settings-page">
+      {/* Header */}
+      <div className="border-b border-[var(--cortex-border)] bg-white px-6 py-4">
+        <div className="flex items-center gap-3">
+          <Settings size={20} className="text-[var(--cortex-blue-500)]" />
+          <h1 className="text-lg font-semibold text-[var(--cortex-text-primary)]">Settings</h1>
+        </div>
 
+        {/* Horizontal tabs */}
+        <div className="mt-4 flex gap-1" data-testid="settings-tabs">
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
             return (
               <button
-                key={section.id}
+                key={tab.key}
                 type="button"
-                onClick={() => handleSectionClick(section)}
-                className={`flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm transition-colors ${
+                onClick={() => setActiveTab(tab.key)}
+                className={`inline-flex items-center gap-1.5 rounded-t px-4 py-2 text-sm font-medium transition-colors ${
                   isActive
-                    ? 'bg-[var(--cortex-blue-50,#eff6ff)] font-medium text-[var(--cortex-blue-700)]'
-                    : 'text-[var(--cortex-text-secondary)] hover:bg-gray-50 hover:text-[var(--cortex-text-primary)]'
+                    ? 'border-b-2 border-[var(--cortex-blue-500)] bg-[var(--cortex-bg-secondary)] text-[var(--cortex-blue-500)]'
+                    : 'text-[var(--cortex-text-muted)] hover:bg-gray-50 hover:text-[var(--cortex-text-primary)]'
                 }`}
-                data-testid={`settings-nav-${section.id}`}
+                data-testid={`settings-tab-${tab.key}`}
               >
-                <Icon
-                  size={16}
-                  className={
-                    isActive ? 'text-[var(--cortex-blue-500)]' : 'text-[var(--cortex-text-muted)]'
-                  }
-                />
-                <span className="flex-1">{section.label}</span>
-                {isLink && <ExternalLink size={12} className="text-[var(--cortex-text-muted)]" />}
+                <Icon size={14} />
+                {tab.label}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Content area */}
-      <div className="flex-1 overflow-auto pl-8 py-1" data-testid="settings-content">
-        {renderSection()}
+      {/* Tab content */}
+      <div
+        className="flex-1 overflow-auto bg-[var(--cortex-bg-secondary)] p-6"
+        data-testid="settings-content"
+      >
+        <div className="mx-auto max-w-2xl">{renderContent()}</div>
       </div>
     </div>
   );
