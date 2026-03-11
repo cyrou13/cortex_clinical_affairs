@@ -27,23 +27,18 @@ export const GET_RESOLVED_LLM_CONFIG = gql`
 `;
 
 export const GET_LLM_COST_SUMMARY = gql`
-  query GetLlmCostSummary($projectId: String, $timeRange: String) {
-    llmCostSummary(projectId: $projectId, timeRange: $timeRange) {
-      totalCost
+  query GetLlmCostSummary($projectId: String, $startDate: String, $endDate: String) {
+    llmCostSummary(projectId: $projectId, startDate: $startDate, endDate: $endDate) {
+      totalCostUsd
       byProvider {
-        provider
-        cost
-        requests
+        key
+        costUsd
+        requestCount
       }
       byTaskType {
-        taskType
-        cost
-        requests
-      }
-      byModel {
-        model
-        cost
-        requests
+        key
+        costUsd
+        requestCount
       }
     }
   }

@@ -890,7 +890,7 @@ function ApiKeysSection() {
   const hasAnthropicKey = !!(settings.get('anthropicApiKey') ?? '');
   const hasOpenAiKey = !!(settings.get('openaiApiKey') ?? '');
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const entries: { category: string; key: string; value: string; encrypted: boolean }[] = [];
 
     if (form.anthropicApiKey.trim()) {
@@ -917,7 +917,7 @@ function ApiKeysSection() {
     });
 
     if (entries.length > 0) {
-      save(entries);
+      await save(entries);
     }
     // Clear the sensitive fields after save
     setForm((prev) => ({ ...prev, anthropicApiKey: '', openaiApiKey: '' }));

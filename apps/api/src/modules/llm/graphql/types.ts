@@ -1,5 +1,19 @@
 import { builder } from '../../../graphql/builder.js';
 
+export const ProviderHealthType = builder.objectRef<{
+  provider: string;
+  status: string;
+  lastCheckAt: string | null;
+}>('ProviderHealth');
+
+builder.objectType(ProviderHealthType, {
+  fields: (t) => ({
+    provider: t.exposeString('provider'),
+    status: t.exposeString('status'),
+    lastCheckAt: t.exposeString('lastCheckAt', { nullable: true }),
+  }),
+});
+
 export const LlmConfigObjectType = builder.objectRef<{
   id: string;
   level: string;

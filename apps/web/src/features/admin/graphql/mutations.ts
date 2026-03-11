@@ -1,8 +1,20 @@
 import { gql } from '@apollo/client';
 
 export const CREATE_LLM_CONFIG = gql`
-  mutation CreateLlmConfig($input: CreateLlmConfigInput!) {
-    createLlmConfig(input: $input) {
+  mutation CreateLlmConfig(
+    $level: String!
+    $projectId: String
+    $taskType: String
+    $provider: String!
+    $model: String!
+  ) {
+    createLlmConfig(
+      level: $level
+      projectId: $projectId
+      taskType: $taskType
+      provider: $provider
+      model: $model
+    ) {
       id
       level
       provider
@@ -12,8 +24,8 @@ export const CREATE_LLM_CONFIG = gql`
 `;
 
 export const UPDATE_LLM_CONFIG = gql`
-  mutation UpdateLlmConfig($id: String!, $input: UpdateLlmConfigInput!) {
-    updateLlmConfig(id: $id, input: $input) {
+  mutation UpdateLlmConfig($id: String!, $provider: String, $model: String, $isActive: Boolean) {
+    updateLlmConfig(id: $id, provider: $provider, model: $model, isActive: $isActive) {
       id
       level
       provider
@@ -26,7 +38,7 @@ export const UPDATE_LLM_CONFIG = gql`
 export const DELETE_LLM_CONFIG = gql`
   mutation DeleteLlmConfig($id: String!) {
     deleteLlmConfig(id: $id) {
-      success
+      id
     }
   }
 `;

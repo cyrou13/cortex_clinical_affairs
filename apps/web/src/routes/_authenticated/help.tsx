@@ -43,6 +43,9 @@ const toc: TocEntry[] = [
       { id: 'soa-creation', label: 'SOA Creation' },
       { id: 'soa-grid', label: 'Extraction Grid' },
       { id: 'soa-quality', label: 'Quality Assessment' },
+      { id: 'soa-narrative', label: 'Narrative Drafting' },
+      { id: 'soa-devices', label: 'Device Registry' },
+      { id: 'soa-claims', label: 'Claims Management' },
     ],
   },
   {
@@ -70,17 +73,50 @@ const toc: TocEntry[] = [
     ],
   },
   { id: 'user-management', label: 'User Management' },
+  {
+    id: 'architecture',
+    label: 'Architecture Overview',
+    children: [
+      { id: 'architecture-stack', label: 'Technology Stack' },
+      { id: 'architecture-llm', label: 'LLM Pipeline' },
+      { id: 'architecture-config', label: 'Config Resolution' },
+    ],
+  },
+  {
+    id: 'settings',
+    label: 'Settings & Configuration',
+    children: [
+      { id: 'settings-general', label: 'General Settings' },
+      { id: 'settings-modules', label: 'Module Settings' },
+      { id: 'settings-ai', label: 'AI Configuration' },
+      { id: 'settings-api-keys', label: 'API Keys' },
+    ],
+  },
 ];
 
 /* ------------------------------------------------------------------ */
 /*  Reusable sub-components                                            */
 /* ------------------------------------------------------------------ */
 
-function Badge({ variant, children }: { variant: 'fda' | 'cemdr'; children: React.ReactNode }) {
+function Badge({
+  variant,
+  children,
+}: {
+  variant: 'fda' | 'cemdr' | 'high' | 'medium' | 'low' | 'neutral';
+  children: React.ReactNode;
+}) {
   const cls =
     variant === 'fda'
       ? 'bg-blue-100 text-blue-800 border-blue-200'
-      : 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      : variant === 'cemdr'
+        ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+        : variant === 'high'
+          ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+          : variant === 'medium'
+            ? 'bg-amber-100 text-amber-800 border-amber-200'
+            : variant === 'low'
+              ? 'bg-red-100 text-red-800 border-red-200'
+              : 'bg-[var(--cortex-bg-secondary)] text-[var(--cortex-text-secondary)] border-[var(--cortex-border)]';
   return (
     <span className={`inline-block rounded-full border px-2 py-0.5 text-xs font-medium ${cls}`}>
       {children}
@@ -271,6 +307,37 @@ export default function HelpPage() {
             CE-MDR Class IIb regulatory pathways.
           </p>
         </div>
+
+        {/* Tutorial CTA */}
+        <a
+          href="/help/tutorial"
+          className="flex items-center gap-4 rounded-xl border border-[var(--cortex-blue-200)] bg-gradient-to-r from-[var(--cortex-blue-50)] to-white p-5 shadow-sm transition-shadow hover:shadow-md"
+        >
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[var(--cortex-blue-500)] text-white">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polygon points="5 3 19 12 5 21 5 3" />
+            </svg>
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-[var(--cortex-text-primary)]">
+              Getting Started Tutorial
+            </p>
+            <p className="mt-0.5 text-xs text-[var(--cortex-text-muted)]">
+              Step-by-step guide with screenshots, workflow diagrams, and hands-on examples to get
+              you up and running in minutes.
+            </p>
+          </div>
+          <ChevronRight size={20} className="shrink-0 text-[var(--cortex-blue-400)]" />
+        </a>
 
         {/* ============================================================ */}
         {/*  1. Introduction                                              */}
@@ -470,7 +537,10 @@ export default function HelpPage() {
           <SectionHeading id="sls">SLS — Systematic Literature Search</SectionHeading>
           <p className="text-sm text-[var(--cortex-text-secondary)]">
             SLS automates MEDLINE/PubMed searches following PRISMA guidelines. Each project can have
-            multiple search sessions covering different evidence categories.
+            multiple search sessions covering different evidence categories. The SLS module uses a
+            horizontal tab navigation — tabs are: Dashboard, Sessions, Query Builder, Articles,
+            Screening. The session dashboard presents metrics cards summarizing the scope fields and
+            real-time counts for queries, retrieved articles, and screened articles.
           </p>
 
           {/* Session Creation */}
@@ -478,7 +548,10 @@ export default function HelpPage() {
             <SubHeading id="sls-sessions">Session Creation</SubHeading>
             <p className="text-sm text-[var(--cortex-text-secondary)]">
               There are <strong>5 session types</strong>, each targeting a different evidence
-              category. The scope fields adapt based on the type selected.
+              category. The scope fields adapt based on the type selected. The session dashboard
+              displays a summary card with the session name, type badge, scope description, date
+              range, and real-time counts for queries built, articles retrieved, and articles
+              screened.
             </p>
             <div className="space-y-1">
               <FieldDoc
@@ -509,7 +582,7 @@ export default function HelpPage() {
                 name="Databases"
                 type="multi-select"
                 required
-                description="Target databases: PubMed, Embase, Cochrane, etc."
+                description="Target databases: PubMed, Embase, Cochrane, etc. Configurable per session; defaults come from Module Settings."
               />
             </div>
 
@@ -656,7 +729,7 @@ export default function HelpPage() {
                 name="Max Results"
                 type="number"
                 required
-                description="Maximum number of articles to retrieve. Recommended: 500–2000."
+                description="Maximum number of articles to retrieve. Recommended: 500–2000. Default comes from Module Settings (SLS section)."
               />
             </div>
             <ComparisonTable
@@ -683,7 +756,8 @@ export default function HelpPage() {
             <SubHeading id="sls-filters">AI Filters & Scoring</SubHeading>
             <p className="text-sm text-[var(--cortex-text-secondary)]">
               After query execution, Cortex uses AI to score article relevance. You can configure
-              custom filters to refine results.
+              custom filters to refine results. The relevance threshold default is set in Module
+              Settings (SLS section) and can be overridden per session.
             </p>
             <div className="space-y-1">
               <FieldDoc
@@ -780,7 +854,8 @@ export default function HelpPage() {
           <SectionHeading id="soa">SOA — State of the Art Analysis</SectionHeading>
           <p className="text-sm text-[var(--cortex-text-secondary)]">
             SOA synthesis turns your screened literature into structured evidence. Create an SOA
-            report, extract data into a grid, and assess study quality.
+            report, extract data into a grid, assess study quality, draft thematic narratives,
+            manage device comparisons, and generate regulatory claims.
           </p>
 
           {/* SOA Creation */}
@@ -836,7 +911,9 @@ export default function HelpPage() {
             <SubHeading id="soa-grid">Extraction Grid</SubHeading>
             <p className="text-sm text-[var(--cortex-text-secondary)]">
               The extraction grid is a structured table where each row is a study and columns
-              capture pre-defined data fields. Cortex AI can auto-extract data from PDFs.
+              capture pre-defined data fields. Cortex AI can auto-extract data from PDFs. The
+              default grid template is configurable in Module Settings (SOA section). Each row
+              surfaces an "Assess" button that triggers per-study quality assessment inline.
             </p>
             <div className="space-y-1">
               <FieldDoc
@@ -844,6 +921,12 @@ export default function HelpPage() {
                 type="column definitions"
                 required
                 description="Define what data to extract from each study. Common columns include Author, Year, Study Design, Population, Intervention, Comparator, Outcomes."
+              />
+              <FieldDoc
+                name="Auto-Extract"
+                type="boolean"
+                required={false}
+                description="When enabled, AI automatically extracts grid data from uploaded PDF full texts. Configurable in Module Settings (SOA section). Extracted values are editable."
               />
             </div>
             <ComparisonTable
@@ -870,6 +953,7 @@ export default function HelpPage() {
             <p className="text-sm text-[var(--cortex-text-secondary)]">
               Each study is assessed for methodological quality. Cortex supports standard appraisal
               tools (QUADAS-2, ROBINS-I, Newcastle-Ottawa) and generates risk-of-bias summaries.
+              Trigger quality assessment from the "Assess" button on any extraction grid row.
             </p>
             <div className="space-y-1">
               <FieldDoc
@@ -898,6 +982,266 @@ export default function HelpPage() {
                   fda: 'Patient selection bias, index test conduct, reference standard, flow and timing',
                   cemdr:
                     'Same QUADAS-2 domains + confounding, selection of participants, deviations from intended interventions (ROBINS-I) for non-diagnostic studies',
+                },
+              ]}
+            />
+          </div>
+
+          {/* Narrative Drafting */}
+          <div className="space-y-3">
+            <SubHeading id="soa-narrative">Narrative Drafting</SubHeading>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              The <strong>NarrativeDraftPanel</strong> generates AI-written narrative text for each
+              thematic section of the SOA (e.g., Diagnostic Accuracy, Comparator Devices, Safety
+              Profile, Benefit-Risk). The narrative synthesizes evidence from the extraction grid
+              and quality assessments.
+            </p>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              Each thematic section is drafted independently. The AI uses the extracted study data,
+              quality scores, and the SOA research questions as context. Drafting is triggered
+              per-section using the "Draft Narrative" button inside each section panel. Generation
+              runs asynchronously — a progress indicator shows while the BullMQ worker processes the
+              request.
+            </p>
+            <div className="space-y-1">
+              <FieldDoc
+                name="Thematic Section"
+                type="select"
+                required
+                description="The thematic grouping for this narrative block (e.g., DIAGNOSTIC_ACCURACY, COMPARATOR_ANALYSIS, SAFETY, BENEFIT_RISK, STATE_OF_ART_GAPS)."
+              />
+              <FieldDoc
+                name="Draft Text"
+                type="rich text (auto-generated)"
+                required={false}
+                description="AI-generated narrative. Includes inline citations referencing articles from the extraction grid. Fully editable after generation."
+              />
+              <FieldDoc
+                name="Status"
+                type="badge"
+                required={false}
+                description="PENDING, GENERATING, DRAFT, ACCEPTED, REJECTED. Only ACCEPTED narratives are included in CER export."
+              />
+            </div>
+            <div className="rounded-lg border border-[var(--cortex-border)] bg-[var(--cortex-bg-secondary)] p-4">
+              <p className="mb-2 text-sm font-semibold text-[var(--cortex-text-primary)]">
+                Accept / Reject Workflow
+              </p>
+              <ul className="list-inside list-disc space-y-1 text-sm text-[var(--cortex-text-secondary)]">
+                <li>
+                  After generation, the draft appears in the panel with an Accept and Reject button.
+                </li>
+                <li>
+                  <strong>Accept</strong> — marks the narrative as approved and locks it for CER
+                  inclusion. You can still edit after accepting (status reverts to DRAFT until
+                  re-accepted).
+                </li>
+                <li>
+                  <strong>Reject</strong> — discards the current draft. You can re-trigger
+                  generation at any time with an updated prompt or additional context.
+                </li>
+                <li>
+                  Rejected drafts are retained in history for audit trail but are not included in
+                  exports.
+                </li>
+              </ul>
+            </div>
+            <ComparisonTable
+              rows={[
+                {
+                  field: 'Key Sections (FDA)',
+                  fda: 'Predicate Comparison Narrative, Diagnostic Accuracy Summary, Adverse Event Analysis',
+                  cemdr: '—',
+                },
+                {
+                  field: 'Key Sections (MDR)',
+                  fda: '—',
+                  cemdr:
+                    'State of the Art Narrative, Diagnostic Accuracy, Comparator Device Analysis, Safety Profile, Benefit-Risk Synthesis, Evidence Gap Analysis',
+                },
+              ]}
+            />
+          </div>
+
+          {/* Device Registry */}
+          <div className="space-y-3">
+            <SubHeading id="soa-devices">Device Registry</SubHeading>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              The <strong>DeviceRegistryPanel</strong> provides a structured registry of devices
+              referenced in the SOA — including the subject device, predicate devices (for FDA
+              510(k)), and equivalent devices (for CE-MDR). Each entry captures technical
+              specifications for direct comparison.
+            </p>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              The "Discover Similar Devices" action uses AI to scan the extraction grid and
+              literature for mentions of comparable devices. Discovered devices are presented as
+              candidates that the user can accept (add to registry) or dismiss. This accelerates the
+              equivalence argument in the CER.
+            </p>
+            <div className="space-y-1">
+              <FieldDoc
+                name="Device Name"
+                type="text"
+                required
+                description="Commercial name of the referenced device."
+              />
+              <FieldDoc
+                name="Device Type"
+                type="select"
+                required
+                description="SUBJECT (the device under evaluation), PREDICATE (FDA 510(k) predicate), EQUIVALENT (CE-MDR equivalent device), COMPARATOR (clinical comparator only)."
+              />
+              <FieldDoc
+                name="Manufacturer"
+                type="text"
+                required
+                description="Name of the device manufacturer."
+              />
+              <FieldDoc
+                name="Regulatory Status"
+                type="text"
+                required={false}
+                description="Cleared/approved status: e.g., 510(k) K182234, CE Class IIb, De Novo, etc."
+              />
+              <FieldDoc
+                name="Technical Specs"
+                type="key-value pairs"
+                required={false}
+                description="Technical characteristics relevant to equivalence: intended use, principle of operation, software architecture, clinical indication."
+              />
+              <FieldDoc
+                name="Similarity Score"
+                type="auto-calculated"
+                required={false}
+                description="AI-computed similarity score (0–100) comparing technical, biological, and clinical characteristics to the subject device."
+              />
+            </div>
+            <ComparisonTable
+              rows={[
+                {
+                  field: 'Example — Subject Device',
+                  fda: 'CINA CSpine, SUBJECT, ACME Medical AI, —',
+                  cemdr: 'CINA CSpine, SUBJECT, ACME Medical AI, CE IIb pending',
+                },
+                {
+                  field: 'Example — Predicate/Equivalent',
+                  fda: 'Aidoc BriefCase, PREDICATE, Aidoc, K182234',
+                  cemdr: 'SpineAnalyzer Pro, EQUIVALENT, NeuralMed, CE IIb, Sim=87',
+                },
+              ]}
+            />
+          </div>
+
+          {/* Claims Management */}
+          <div className="space-y-3">
+            <SubHeading id="soa-claims">Claims Management</SubHeading>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              The <strong>ClaimsManagement</strong> component tracks regulatory and marketing claims
+              derived from the SOA evidence. Claims are grouped by thematic section (matching the
+              narrative sections) so reviewers can trace each claim back to its supporting narrative
+              and source articles.
+            </p>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              The <strong>"Generate from Narrative"</strong> button extracts claim candidates
+              automatically from an accepted narrative draft. The AI identifies factual assertions
+              that could serve as regulatory claims and proposes them with supporting evidence. Each
+              generated claim arrives in PENDING status for review.
+            </p>
+            <div className="space-y-1">
+              <FieldDoc
+                name="Claim Text"
+                type="textarea"
+                required
+                description="The claim statement. Should be specific, measurable, and directly supported by evidence."
+              />
+              <FieldDoc
+                name="Claim Type"
+                type="select"
+                required
+                description="SAFETY (absence of harm), PERFORMANCE (diagnostic accuracy), CLINICAL_BENEFIT (patient outcome improvement), EQUIVALENCE (comparison to predicate/equivalent device)."
+              />
+              <FieldDoc
+                name="Thematic Section"
+                type="select"
+                required
+                description="The narrative thematic section this claim belongs to. Used for grouping in the claims table and CER export."
+              />
+              <FieldDoc
+                name="Evidence Strength"
+                type="badge (HIGH / MEDIUM / LOW)"
+                required={false}
+                description="AI-assessed strength of supporting evidence. HIGH: consistent findings across multiple high-quality studies. MEDIUM: limited studies or moderate quality. LOW: single study, low quality, or indirect evidence."
+              />
+              <FieldDoc
+                name="Supporting Articles"
+                type="article links"
+                required={false}
+                description="Links to specific articles in the extraction grid that support this claim. Clicking an article link opens the article detail panel."
+              />
+              <FieldDoc
+                name="Status"
+                type="badge"
+                required={false}
+                description="PENDING (awaiting review), APPROVED (accepted by reviewer), REJECTED (dismissed)."
+              />
+            </div>
+
+            <div className="rounded-lg border border-[var(--cortex-border)] bg-[var(--cortex-bg-secondary)] p-4">
+              <p className="mb-2 text-sm font-semibold text-[var(--cortex-text-primary)]">
+                Evidence Strength Badges
+              </p>
+              <div className="flex flex-wrap gap-3 text-sm text-[var(--cortex-text-secondary)]">
+                <div className="flex items-center gap-2">
+                  <Badge variant="high">HIGH</Badge>
+                  <span>Consistent findings across multiple high-quality studies.</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="medium">MEDIUM</Badge>
+                  <span>Limited studies or moderate methodological quality.</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="low">LOW</Badge>
+                  <span>Single study, low quality, or indirect evidence only.</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-lg border border-[var(--cortex-border)] bg-[var(--cortex-bg-secondary)] p-4">
+              <p className="mb-2 text-sm font-semibold text-[var(--cortex-text-primary)]">
+                Approve / Reject Workflow
+              </p>
+              <ul className="list-inside list-disc space-y-1 text-sm text-[var(--cortex-text-secondary)]">
+                <li>
+                  Claims appear in a table grouped by thematic section. Each row shows the claim
+                  text, type, evidence strength badge, and supporting article links.
+                </li>
+                <li>
+                  <strong>Approve</strong> — marks the claim as validated. Approved claims are
+                  included in CER export and can be referenced in the regulatory submission.
+                </li>
+                <li>
+                  <strong>Reject</strong> — dismisses the claim. Rejected claims remain visible with
+                  REJECTED status for audit purposes but are excluded from exports.
+                </li>
+                <li>
+                  You can manually add claims at any time, independently of the "Generate from
+                  Narrative" workflow.
+                </li>
+              </ul>
+            </div>
+
+            <ComparisonTable
+              rows={[
+                {
+                  field: 'Example Claim (FDA)',
+                  fda: 'CINA CSpine demonstrates non-inferior sensitivity (96.1% vs 95.4%) compared to predicate K182234 in retrospective reader study (N=1200). Evidence: HIGH.',
+                  cemdr: '—',
+                },
+                {
+                  field: 'Example Claim (MDR)',
+                  fda: '—',
+                  cemdr:
+                    'CINA CSpine reduces time-to-diagnosis for cervical spine fractures by 38% compared to standard radiologist workflow in prospective study (N=800, p<0.001). Evidence: HIGH.',
                 },
               ]}
             />
@@ -932,7 +1276,7 @@ export default function HelpPage() {
                 name="CER Template"
                 type="select"
                 required
-                description="Document structure template: MEDDEV_2_7_1_REV4 (EU standard), FDA_510K_SUMMARY, CUSTOM."
+                description="Document structure template: MEDDEV_2_7_1_REV4 (EU standard), FDA_510K_SUMMARY, CUSTOM. Default template version is configurable in Module Settings (CER section)."
               />
               <FieldDoc
                 name="Evidence Sources"
@@ -1046,7 +1390,7 @@ export default function HelpPage() {
                 name="Study Type"
                 type="select"
                 required
-                description="RETROSPECTIVE, PROSPECTIVE, or READER_STUDY."
+                description="RETROSPECTIVE, PROSPECTIVE, or READER_STUDY. Default study type is configurable in Module Settings (Validation section)."
               />
               <FieldDoc
                 name="Primary Endpoint"
@@ -1058,7 +1402,7 @@ export default function HelpPage() {
                 name="Sample Size"
                 type="number"
                 required
-                description="Number of subjects/cases in the study."
+                description="Number of subjects/cases in the study. The Module Settings (Validation section) exposes a default minimum sample size for power calculations."
               />
               <FieldDoc
                 name="Reference Standard"
@@ -1119,7 +1463,7 @@ export default function HelpPage() {
                 name="Statistical Method"
                 type="select"
                 required
-                description="Analysis method: MCNEMAR (paired), CHI_SQUARE, EQUIVALENCE_TEST, NON_INFERIORITY."
+                description="Analysis method: MCNEMAR (paired), CHI_SQUARE, EQUIVALENCE_TEST, NON_INFERIORITY. The confidence interval width is configurable in Module Settings (Validation section)."
               />
             </div>
             <ComparisonTable
@@ -1164,7 +1508,7 @@ export default function HelpPage() {
                 name="Cycle Frequency"
                 type="select"
                 required
-                description="How often PMS cycles run: ANNUAL, SEMI_ANNUAL, QUARTERLY."
+                description="How often PMS cycles run: ANNUAL, SEMI_ANNUAL, QUARTERLY. Default configurable in Module Settings (PMS section)."
               />
               <FieldDoc
                 name="Data Sources"
@@ -1215,7 +1559,8 @@ export default function HelpPage() {
             <SubHeading id="pms-reports">PSUR & PMCF Reports</SubHeading>
             <p className="text-sm text-[var(--cortex-text-secondary)]">
               Generate periodic safety update reports (PSUR) and PMCF evaluation reports from your
-              PMS data.
+              PMS data. PSUR cycle defaults and notification settings are configurable in Module
+              Settings (PMS section).
             </p>
             <div className="space-y-1">
               <FieldDoc
@@ -1331,6 +1676,542 @@ export default function HelpPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </section>
+
+        {/* ============================================================ */}
+        {/*  9. Architecture Overview                                     */}
+        {/* ============================================================ */}
+        <section className="space-y-6">
+          <SectionHeading id="architecture">Architecture Overview</SectionHeading>
+          <p className="text-sm text-[var(--cortex-text-secondary)]">
+            This section describes the technical architecture of Cortex for advanced users,
+            integrators, and administrators who need to understand how the system processes requests
+            end-to-end.
+          </p>
+
+          {/* Technology Stack */}
+          <div className="space-y-3">
+            <SubHeading id="architecture-stack">Technology Stack</SubHeading>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              Cortex is a TypeScript-first monorepo. All packages share types via the{' '}
+              <code className="rounded bg-[var(--cortex-bg-secondary)] px-1 py-0.5 text-xs">
+                @cortex/shared
+              </code>{' '}
+              package.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--cortex-border)] bg-[var(--cortex-bg-secondary)]">
+                    <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-secondary)]">
+                      Layer
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-secondary)]">
+                      Technology
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-secondary)]">
+                      Role
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    {
+                      layer: 'Backend API',
+                      tech: 'Fastify 5 + Apollo Server 4 + Pothos v4',
+                      role: 'GraphQL API server. Pothos schema builder generates the GraphQL schema from TypeScript types. Fastify handles HTTP transport and plugins.',
+                    },
+                    {
+                      layer: 'ORM / Database',
+                      tech: 'Prisma ORM + PostgreSQL',
+                      role: 'Type-safe database access. Migrations managed with Prisma Migrate. PostgreSQL stores all entities including AppSetting for configuration.',
+                    },
+                    {
+                      layer: 'Frontend',
+                      tech: 'React 19 + Vite + Tailwind CSS 4 + Apollo Client 4',
+                      role: 'Single-page application. Apollo Client manages GraphQL state and caching. Zustand for local UI state. TanStack Router for file-based routing.',
+                    },
+                    {
+                      layer: 'Background Workers',
+                      tech: 'BullMQ 5 + ioredis',
+                      role: 'Asynchronous job processing. Each AI task (scoring, extraction, drafting, metadata extraction) runs as a BullMQ job dispatched to Redis queues.',
+                    },
+                    {
+                      layer: 'LLM Providers',
+                      tech: 'OpenAI, Anthropic, Ollama',
+                      role: 'Pluggable AI providers. Provider selection and model configuration is resolved at runtime per task using the config resolution chain.',
+                    },
+                  ].map((row, i) => (
+                    <tr
+                      key={i}
+                      className="border-b border-[var(--cortex-border)] hover:bg-[var(--cortex-bg-secondary)]/50"
+                    >
+                      <td className="px-3 py-2 font-medium text-[var(--cortex-text-primary)]">
+                        {row.layer}
+                      </td>
+                      <td className="px-3 py-2 font-mono text-xs text-[var(--cortex-text-secondary)]">
+                        {row.tech}
+                      </td>
+                      <td className="px-3 py-2 text-[var(--cortex-text-secondary)]">{row.role}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* LLM Pipeline */}
+          <div className="space-y-3">
+            <SubHeading id="architecture-llm">LLM Pipeline</SubHeading>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              All AI-powered features (relevance scoring, data extraction, narrative drafting,
+              metadata extraction) follow the same asynchronous pipeline. Understanding this flow
+              helps diagnose slow jobs and configure the system correctly.
+            </p>
+            <ol className="list-inside list-decimal space-y-2 text-sm text-[var(--cortex-text-secondary)]">
+              <li>
+                <strong>Mutation trigger</strong> — the frontend calls a GraphQL mutation (e.g.,{' '}
+                <code className="rounded bg-[var(--cortex-bg-secondary)] px-1 py-0.5 text-xs">
+                  startNarrativeDraft
+                </code>
+                ,{' '}
+                <code className="rounded bg-[var(--cortex-bg-secondary)] px-1 py-0.5 text-xs">
+                  scoreArticles
+                </code>
+                ). The resolver validates the request and creates a job record in the database with
+                status PENDING.
+              </li>
+              <li>
+                <strong>Redis dispatch</strong> — the resolver publishes the job ID to a BullMQ
+                queue via Redis pub/sub. The job payload includes entity IDs and the resolved LLM
+                configuration (provider, model, temperature).
+              </li>
+              <li>
+                <strong>Worker processing</strong> — a BullMQ worker picks up the job. It loads the
+                required entity data from the database using Prisma, constructs the prompt, and
+                calls the LLM provider API. Workers read API keys from the database at startup (not
+                from environment variables).
+              </li>
+              <li>
+                <strong>Result persistence</strong> — the worker writes the LLM output back to the
+                database (narrative text, extraction values, scores, etc.) and updates the job
+                status to COMPLETED. On failure, status is set to FAILED with an error message.
+              </li>
+              <li>
+                <strong>Frontend polling / subscription</strong> — the frontend polls or subscribes
+                to job status. On COMPLETED, it refetches the relevant query to display the result.
+              </li>
+            </ol>
+          </div>
+
+          {/* Config Resolution */}
+          <div className="space-y-3">
+            <SubHeading id="architecture-config">Config Resolution Chain</SubHeading>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              When a worker starts an LLM call, it resolves which provider and model to use by
+              walking a four-level precedence chain. The first level that has a complete
+              configuration wins.
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--cortex-border)] bg-[var(--cortex-bg-secondary)]">
+                    <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-secondary)]">
+                      Priority
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-secondary)]">
+                      Level
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-secondary)]">
+                      Description
+                    </th>
+                    <th className="px-3 py-2 text-left font-medium text-[var(--cortex-text-secondary)]">
+                      Where to set
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    {
+                      priority: '1 (highest)',
+                      level: 'TASK',
+                      desc: 'Per-task-type override (e.g., use GPT-4o for narrative drafting only).',
+                      where: 'Settings > AI Configuration > System Defaults (per task type)',
+                    },
+                    {
+                      priority: '2',
+                      level: 'PROJECT',
+                      desc: 'Per-project override — all tasks within this project use a specific model.',
+                      where: 'Settings > AI Configuration > Project Overrides',
+                    },
+                    {
+                      priority: '3',
+                      level: 'SYSTEM',
+                      desc: 'Organization-wide default applied to all projects and tasks unless overridden.',
+                      where: 'Settings > AI Configuration > System Defaults (global)',
+                    },
+                    {
+                      priority: '4 (fallback)',
+                      level: 'FIRST AVAILABLE',
+                      desc: 'If no explicit config exists, the worker uses the first provider that has a valid API key configured.',
+                      where: 'Settings > API Keys',
+                    },
+                  ].map((row, i) => (
+                    <tr
+                      key={i}
+                      className="border-b border-[var(--cortex-border)] hover:bg-[var(--cortex-bg-secondary)]/50"
+                    >
+                      <td className="px-3 py-2 font-medium text-[var(--cortex-text-primary)]">
+                        {row.priority}
+                      </td>
+                      <td className="px-3 py-2 font-mono text-xs text-[var(--cortex-text-secondary)]">
+                        {row.level}
+                      </td>
+                      <td className="px-3 py-2 text-[var(--cortex-text-secondary)]">{row.desc}</td>
+                      <td className="px-3 py-2 text-[var(--cortex-text-secondary)]">{row.where}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        {/* ============================================================ */}
+        {/*  10. Settings & Configuration                                 */}
+        {/* ============================================================ */}
+        <section className="space-y-6">
+          <SectionHeading id="settings">Settings &amp; Configuration</SectionHeading>
+          <p className="text-sm text-[var(--cortex-text-secondary)]">
+            All settings are persisted to the database via the{' '}
+            <code className="rounded bg-[var(--cortex-bg-secondary)] px-1 py-0.5 text-xs">
+              AppSetting
+            </code>{' '}
+            model (key-value store with typed values). Changes take effect immediately — no server
+            restart is required. Accessible via the Admin &gt; Settings page.
+          </p>
+
+          {/* General Settings */}
+          <div className="space-y-3">
+            <SubHeading id="settings-general">General Settings</SubHeading>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              Organization-level identity and localization settings. These values appear in report
+              headers and date formatting throughout the application.
+            </p>
+            <div className="space-y-1">
+              <FieldDoc
+                name="Organization Name"
+                type="text"
+                required
+                description="Legal name of the organization. Appears in report headers, CER cover pages, and exported documents."
+              />
+              <FieldDoc
+                name="Language"
+                type="select"
+                required={false}
+                description="Application language for the UI. Currently supported: English (en). Additional languages can be added by the support team."
+              />
+              <FieldDoc
+                name="Date Format"
+                type="select"
+                required={false}
+                description="Preferred date display format. Options: DD/MM/YYYY (EU default), MM/DD/YYYY (US), YYYY-MM-DD (ISO 8601)."
+              />
+              <FieldDoc
+                name="Timezone"
+                type="select"
+                required={false}
+                description="Organization timezone. Used for scheduled PMS cycle notifications and report timestamps. Standard IANA timezone names (e.g., Europe/Paris, America/New_York)."
+              />
+            </div>
+          </div>
+
+          {/* Module Settings */}
+          <div className="space-y-3">
+            <SubHeading id="settings-modules">Module Settings</SubHeading>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              Per-module defaults that pre-populate fields when creating new sessions, studies, or
+              plans. Project-level overrides take precedence over module defaults.
+            </p>
+
+            <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-[var(--cortex-text-muted)]">
+              SLS Module
+            </p>
+            <div className="space-y-1">
+              <FieldDoc
+                name="Default Databases"
+                type="multi-select"
+                required={false}
+                description="Pre-selected databases when creating a new SLS session. Typical values: PubMed, Embase."
+              />
+              <FieldDoc
+                name="Relevance Threshold"
+                type="number (0–100)"
+                required={false}
+                description="Default minimum AI relevance score applied to new sessions. Can be overridden per session. Default: 60."
+              />
+              <FieldDoc
+                name="Max Articles"
+                type="number"
+                required={false}
+                description="Default maximum article retrieval count for new queries. Default: 1000."
+              />
+            </div>
+
+            <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-[var(--cortex-text-muted)]">
+              SOA Module
+            </p>
+            <div className="space-y-1">
+              <FieldDoc
+                name="Grid Template"
+                type="select"
+                required={false}
+                description="Default column set applied when creating a new extraction grid. Options: DIAGNOSTIC_ACCURACY (Author, Year, Design, N, Se, Sp, AUC), INTERVENTIONAL (Author, Year, Design, N, Intervention, Control, Outcome), CUSTOM."
+              />
+              <FieldDoc
+                name="Auto-Extract"
+                type="boolean"
+                required={false}
+                description="When enabled, AI extraction runs automatically as soon as a PDF is uploaded to the grid. Default: false (manual trigger)."
+              />
+            </div>
+
+            <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-[var(--cortex-text-muted)]">
+              CER Module
+            </p>
+            <div className="space-y-1">
+              <FieldDoc
+                name="Regulatory Context"
+                type="select"
+                required={false}
+                description="Default regulatory pathway for new CERs. CE_MDR or FDA_510K. Drives template and section selection."
+              />
+              <FieldDoc
+                name="Template Version"
+                type="select"
+                required={false}
+                description="Default document template version. MEDDEV_2_7_1_REV4, FDA_510K_SUMMARY, or CUSTOM."
+              />
+            </div>
+
+            <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-[var(--cortex-text-muted)]">
+              PMS Module
+            </p>
+            <div className="space-y-1">
+              <FieldDoc
+                name="PSUR Cycle"
+                type="select"
+                required={false}
+                description="Default PMS reporting cycle frequency: ANNUAL, SEMI_ANNUAL, QUARTERLY."
+              />
+              <FieldDoc
+                name="Notifications"
+                type="boolean"
+                required={false}
+                description="Enable email notifications when a PMS cycle is due. Sends to all ADMIN and MANAGER users."
+              />
+              <FieldDoc
+                name="PMCF Default"
+                type="boolean"
+                required={false}
+                description="Pre-check the 'PMCF Required' toggle for new PMS plans. Recommended: true for Class IIb+ CE-MDR projects."
+              />
+            </div>
+
+            <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-[var(--cortex-text-muted)]">
+              Validation Module
+            </p>
+            <div className="space-y-1">
+              <FieldDoc
+                name="Study Type"
+                type="select"
+                required={false}
+                description="Default study type for new validation studies: RETROSPECTIVE, PROSPECTIVE, READER_STUDY."
+              />
+              <FieldDoc
+                name="Confidence Interval"
+                type="number (0–1)"
+                required={false}
+                description="Default confidence interval width used in statistical calculations. Typical values: 0.90, 0.95 (default), 0.99."
+              />
+              <FieldDoc
+                name="Sample Size"
+                type="number"
+                required={false}
+                description="Default minimum sample size pre-populated in new study configuration forms."
+              />
+            </div>
+          </div>
+
+          {/* AI Configuration */}
+          <div className="space-y-3">
+            <SubHeading id="settings-ai">AI Configuration</SubHeading>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              The <strong>LlmConfigPanel</strong> controls which LLM provider and model is used for
+              each type of AI task. Configuration operates at two scopes: system-wide defaults and
+              per-project overrides. The resolution order at runtime is:{' '}
+              <strong>TASK &gt; PROJECT &gt; SYSTEM &gt; first available provider</strong> (see
+              Architecture &gt; Config Resolution for details).
+            </p>
+
+            <p className="mt-2 text-xs font-semibold uppercase tracking-wider text-[var(--cortex-text-muted)]">
+              System Defaults — Per Task Type
+            </p>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              Set a specific provider and model for each task type independently. If a task type has
+              no explicit config, it inherits the global system default.
+            </p>
+            <div className="space-y-1">
+              <FieldDoc
+                name="Task Type"
+                type="select"
+                required
+                description="The AI task being configured: SCORING (article relevance scoring), EXTRACTION (grid data extraction), DRAFTING (narrative and CER section drafting), METADATA_EXTRACTION (article metadata parsing)."
+              />
+              <FieldDoc
+                name="Provider"
+                type="select"
+                required
+                description="LLM provider: OPENAI, ANTHROPIC, OLLAMA. Only providers with a valid API key configured (see API Keys) are available."
+              />
+              <FieldDoc
+                name="Model"
+                type="text"
+                required
+                description="Model identifier as used by the provider API (e.g., gpt-4o, claude-3-5-sonnet-20241022, llama3.2)."
+              />
+              <FieldDoc
+                name="Temperature"
+                type="number (0–2)"
+                required={false}
+                description="Sampling temperature for the model. Lower = more deterministic (recommended for extraction). Higher = more creative (acceptable for drafting). Default: 0.2 for scoring/extraction, 0.7 for drafting."
+              />
+              <FieldDoc
+                name="Max Tokens"
+                type="number"
+                required={false}
+                description="Maximum tokens in the model response. Tune based on expected output length."
+              />
+            </div>
+
+            <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-[var(--cortex-text-muted)]">
+              Project Overrides
+            </p>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              Override the system defaults for a specific project. All tasks within that project use
+              the project-level config unless a task-type override exists. Useful for testing a new
+              model on a single project without affecting the whole organization.
+            </p>
+            <div className="space-y-1">
+              <FieldDoc
+                name="Project"
+                type="select"
+                required
+                description="The project to configure. Displays project name and regulatory context."
+              />
+              <FieldDoc
+                name="Provider"
+                type="select"
+                required
+                description="Override provider for this project."
+              />
+              <FieldDoc
+                name="Model"
+                type="text"
+                required
+                description="Override model identifier for this project."
+              />
+            </div>
+
+            <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-[var(--cortex-text-muted)]">
+              Cost Dashboard
+            </p>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              The cost dashboard aggregates LLM usage across all workers. It shows total token
+              consumption and estimated cost broken down by:
+            </p>
+            <ul className="list-inside list-disc space-y-1 text-sm text-[var(--cortex-text-secondary)]">
+              <li>
+                <strong>By provider</strong> — OpenAI vs Anthropic vs Ollama total spend for the
+                selected period.
+              </li>
+              <li>
+                <strong>By task type</strong> — which workflows (scoring, extraction, drafting,
+                metadata extraction) consume the most tokens.
+              </li>
+            </ul>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              Cost calculations use the provider's published per-token pricing at the time of the
+              request. Ollama (local) costs are tracked as $0 but token counts are still recorded
+              for capacity planning.
+            </p>
+          </div>
+
+          {/* API Keys */}
+          <div className="space-y-3">
+            <SubHeading id="settings-api-keys">API Keys</SubHeading>
+            <p className="text-sm text-[var(--cortex-text-secondary)]">
+              API keys for LLM providers are configured once at the organization level. They are
+              stored encrypted in the database — never in environment variables or configuration
+              files. Workers read the keys from the database at startup.
+            </p>
+            <div className="space-y-1">
+              <FieldDoc
+                name="OpenAI API Key"
+                type="secret text"
+                required={false}
+                description="API key from platform.openai.com. Enables GPT-4o, GPT-4o-mini, o1, and all OpenAI models. Format: sk-..."
+              />
+              <FieldDoc
+                name="Anthropic API Key"
+                type="secret text"
+                required={false}
+                description="API key from console.anthropic.com. Enables Claude 3.5 Sonnet, Claude 3 Haiku, and all Anthropic models. Format: sk-ant-..."
+              />
+              <FieldDoc
+                name="Ollama Base URL"
+                type="text"
+                required={false}
+                description="Base URL of your Ollama instance (e.g., http://localhost:11434). No API key needed. Ollama must be running and accessible from the worker containers."
+              />
+            </div>
+
+            <div className="rounded-lg border border-[var(--cortex-border)] bg-[var(--cortex-bg-secondary)] p-4">
+              <p className="mb-2 text-sm font-semibold text-[var(--cortex-text-primary)]">
+                ProviderHealthIndicator
+              </p>
+              <p className="text-sm text-[var(--cortex-text-secondary)]">
+                Each configured provider displays a health indicator next to its key field. The
+                indicator performs a lightweight connectivity check (e.g., list models API call)
+                when you save or reload the page. Statuses:
+              </p>
+              <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-[var(--cortex-text-secondary)]">
+                <li>
+                  <strong>Connected</strong> (green) — key is valid and provider is reachable.
+                </li>
+                <li>
+                  <strong>Error</strong> (red) — key present but authentication or network failed.
+                  Hover for error detail.
+                </li>
+                <li>
+                  <strong>Not configured</strong> (grey) — no key entered. Provider is unavailable
+                  and will be skipped by the config resolution fallback.
+                </li>
+              </ul>
+            </div>
+
+            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-400">
+                Security Note
+              </p>
+              <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                API keys are stored encrypted at rest using AES-256-GCM. Keys are never returned to
+                the frontend after being saved — the UI displays a masked placeholder (e.g.,
+                sk-...xxxx). If you need to rotate a key, paste the new value and save; the old
+                value is immediately replaced.
+              </p>
+            </div>
           </div>
         </section>
 

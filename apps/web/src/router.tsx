@@ -82,6 +82,10 @@ const routes: Route[] = [
     component: () => import('./routes/_authenticated/admin/audit'),
   },
   {
+    pattern: /^\/help\/tutorial\/?$/,
+    component: () => import('./routes/_authenticated/help/tutorial'),
+  },
+  {
     pattern: /^\/help\/?$/,
     component: () => import('./routes/_authenticated/help'),
   },

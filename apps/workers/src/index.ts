@@ -9,6 +9,7 @@ import {
   OpenAIProvider,
   ClaudeProvider,
   OllamaProvider,
+  type LlmProvider,
   type ConfigResolver,
   type LlmConfig,
   type TaskType,
@@ -43,19 +44,60 @@ const bullmqConnection = getBullMQConnection();
 // Initialize Prisma
 const prisma = new PrismaClient();
 
-// Initialize LLM providers
-const providers = new Map();
-if (process.env['OPENAI_API_KEY']) {
-  providers.set('openai', new OpenAIProvider());
-  log.info('OpenAI provider initialized');
+// ---------------------------------------------------------------------------
+// LLM providers — API keys are read from the AppSetting table (Settings UI)
+// so there is a single source of truth for configuration.
+// ---------------------------------------------------------------------------
+
+async function loadApiKeysFromDb(): Promise<{
+  anthropicApiKey: string | null;
+  openaiApiKey: string | null;
+  ollamaBaseUrl: string | null;
+}> {
+  try {
+    const settings = await (prisma as any).appSetting.findMany({
+      where: { category: 'api_keys' },
+    });
+    const map = new Map<string, string>(
+      settings.map((s: { key: string; value: string }) => [s.key, s.value]),
+    );
+    return {
+      anthropicApiKey: map.get('anthropicApiKey') ?? null,
+      openaiApiKey: map.get('openaiApiKey') ?? null,
+      ollamaBaseUrl: map.get('ollamaBaseUrl') ?? null,
+    };
+  } catch {
+    log.error('Could not load API keys from DB — falling back to env vars');
+    return {
+      anthropicApiKey: process.env['ANTHROPIC_API_KEY'] ?? null,
+      openaiApiKey: process.env['OPENAI_API_KEY'] ?? null,
+      ollamaBaseUrl: process.env['OLLAMA_BASE_URL'] ?? null,
+    };
+  }
 }
-if (process.env['ANTHROPIC_API_KEY']) {
-  providers.set('claude', new ClaudeProvider());
-  log.info('Claude provider initialized');
-}
-if (process.env['OLLAMA_BASE_URL']) {
-  providers.set('ollama', new OllamaProvider());
-  log.info('Ollama provider initialized');
+
+async function initProviders(): Promise<Map<string, LlmProvider>> {
+  const keys = await loadApiKeysFromDb();
+  const providers = new Map<string, LlmProvider>();
+
+  if (keys.anthropicApiKey) {
+    providers.set('claude', new ClaudeProvider(keys.anthropicApiKey));
+    log.info('Claude provider initialized (key from DB)');
+  }
+  if (keys.openaiApiKey) {
+    providers.set('openai', new OpenAIProvider(keys.openaiApiKey));
+    log.info('OpenAI provider initialized (key from DB)');
+  }
+  if (keys.ollamaBaseUrl) {
+    providers.set('ollama', new OllamaProvider(keys.ollamaBaseUrl));
+    log.info(`Ollama provider initialized (${keys.ollamaBaseUrl})`);
+  }
+
+  if (providers.size === 0) {
+    log.error('WARNING: No LLM provider configured. Go to Settings > API Keys to add one.');
+  }
+
+  return providers;
 }
 
 // Config resolver that queries database for LLM config
@@ -106,59 +148,72 @@ const configResolver: ConfigResolver = async (
       return { provider: systemConfig.provider, model: systemConfig.model };
     }
 
-    // Fallback to environment-based default
-    if (process.env['OPENAI_API_KEY']) {
+    // No DB config — pick the first available provider
+    const keys = await loadApiKeysFromDb();
+    if (keys.anthropicApiKey) {
+      return { provider: 'claude', model: 'claude-sonnet-4-20250514' };
+    }
+    if (keys.openaiApiKey) {
       return { provider: 'openai', model: 'gpt-4o' };
     }
-    if (process.env['ANTHROPIC_API_KEY']) {
-      return { provider: 'claude', model: 'claude-3-5-sonnet-20241022' };
-    }
 
-    throw new Error('No LLM provider configured');
+    throw new Error('No LLM provider configured — add an API key in Settings > API Keys');
   } catch (error) {
     log.error(
       `Error resolving LLM config: ${error instanceof Error ? error.message : 'Unknown error'}`,
     );
-    // Fallback to default
-    return { provider: 'openai', model: 'gpt-4o' };
+    throw error;
   }
 };
 
-// Initialize LLM service
-const llmService = new LlmService(providers, redis, configResolver);
+// ---------------------------------------------------------------------------
+// Deferred initialization — providers must be loaded from DB before workers start
+// ---------------------------------------------------------------------------
 
-// Map queue names to processor instances
-const processors: Record<string, { process: (job: Job<TaskJobData>) => Promise<unknown> }> = {
-  'sample.echo': new EchoProcessor(redis),
-  'sls.execute-query': new ExecuteQueryProcessor(redis, prisma),
-  'sls.score-articles': new ScoreArticlesProcessor(redis, llmService, prisma),
-  'sls.retrieve-pdfs': new RetrievePdfsProcessor(redis, prisma),
-  'sls.mine-references': new MineReferencesProcessor(redis),
-  'soa.extract-grid-data': new ExtractGridDataProcessor(redis, prisma, llmService),
-  'soa.assess-quality': new AssessQualityProcessor(redis, prisma, llmService),
-  'soa.draft-narrative': new DraftNarrativeProcessor(redis, prisma, llmService),
-  'cer.draft-section': new DraftSectionProcessor(redis, undefined as never),
-  'cer.generate-docx': new GenerateDocxProcessor(redis),
-  'validation.generate-report': new GenerateReportsProcessor(redis) as unknown as {
-    process: (job: Job<TaskJobData>) => Promise<unknown>;
-  },
-  'validation.import-xls': new ImportXlsDataProcessor(redis) as unknown as {
-    process: (job: Job<TaskJobData>) => Promise<unknown>;
-  },
-  'pms.generate-pmcf-report': new GeneratePmcfReportProcessor(redis),
-  'pms.generate-psur': new GeneratePsurProcessor(redis),
-  'sls.custom-filter-score': (() => {
-    const p = new CustomFilterScoreProcessor(redis);
-    p.setLlmService(llmService);
-    p.setPrisma(prisma);
-    return p;
-  })(),
-  'sls.enrich-abstracts': new EnrichAbstractsProcessor(redis, prisma),
-  'soa.import-document': new ImportSoaDocumentProcessor(redis, prisma, llmService),
-  'soa.generate-claims': new GenerateClaimsProcessor(redis, prisma, llmService),
-};
+let llmService: LlmService;
+
+async function initLlmService(): Promise<void> {
+  const providers = await initProviders();
+  llmService = new LlmService(providers, redis, configResolver);
+}
+
+function buildProcessors(): Record<
+  string,
+  { process: (job: Job<TaskJobData>) => Promise<unknown> }
+> {
+  return {
+    'sample.echo': new EchoProcessor(redis),
+    'sls.execute-query': new ExecuteQueryProcessor(redis, prisma),
+    'sls.score-articles': new ScoreArticlesProcessor(redis, llmService, prisma),
+    'sls.retrieve-pdfs': new RetrievePdfsProcessor(redis, prisma),
+    'sls.mine-references': new MineReferencesProcessor(redis),
+    'soa.extract-grid-data': new ExtractGridDataProcessor(redis, prisma, llmService),
+    'soa.assess-quality': new AssessQualityProcessor(redis, prisma, llmService),
+    'soa.draft-narrative': new DraftNarrativeProcessor(redis, prisma, llmService),
+    'cer.draft-section': new DraftSectionProcessor(redis, undefined as never),
+    'cer.generate-docx': new GenerateDocxProcessor(redis),
+    'validation.generate-report': new GenerateReportsProcessor(redis) as unknown as {
+      process: (job: Job<TaskJobData>) => Promise<unknown>;
+    },
+    'validation.import-xls': new ImportXlsDataProcessor(redis) as unknown as {
+      process: (job: Job<TaskJobData>) => Promise<unknown>;
+    },
+    'pms.generate-pmcf-report': new GeneratePmcfReportProcessor(redis),
+    'pms.generate-psur': new GeneratePsurProcessor(redis),
+    'sls.custom-filter-score': (() => {
+      const p = new CustomFilterScoreProcessor(redis);
+      p.setLlmService(llmService);
+      p.setPrisma(prisma);
+      return p;
+    })(),
+    'sls.enrich-abstracts': new EnrichAbstractsProcessor(redis, prisma),
+    'soa.import-document': new ImportSoaDocumentProcessor(redis, prisma, llmService),
+    'soa.generate-claims': new GenerateClaimsProcessor(redis, prisma, llmService),
+  };
+}
 
 const workers: Worker[] = [];
+const registeredQueues = new Set<string>();
 
 // BullMQ queues for dispatching jobs (lazy-initialized per queue name)
 const queues = new Map<string, Queue<TaskJobData>>();
@@ -201,7 +256,7 @@ function startTaskDispatcher(): void {
 
       const queueName = event.type;
 
-      if (!processors[queueName]) {
+      if (!registeredQueues.has(queueName)) {
         log.error(`No processor registered for queue: ${queueName}`);
         return;
       }
@@ -235,6 +290,11 @@ function startTaskDispatcher(): void {
 
 function startWorkers(): void {
   log.info(`${APP_NAME} Workers v${APP_VERSION} starting...`);
+
+  const processors = buildProcessors();
+  for (const name of Object.keys(processors)) {
+    registeredQueues.add(name);
+  }
 
   for (const [queueName, processor] of Object.entries(processors)) {
     const worker = new Worker<TaskJobData>(
@@ -369,5 +429,13 @@ async function shutdown(): Promise<void> {
 process.on('SIGINT', () => void shutdown());
 process.on('SIGTERM', () => void shutdown());
 
-startTaskDispatcher();
-startWorkers();
+async function main(): Promise<void> {
+  await initLlmService();
+  startTaskDispatcher();
+  startWorkers();
+}
+
+main().catch((err) => {
+  log.error(`Fatal startup error: ${err instanceof Error ? err.message : String(err)}`);
+  process.exit(1);
+});

@@ -42,19 +42,35 @@ interface LlmConfig {
   createdAt: string;
 }
 
-interface CostEntry {
-  provider?: string;
-  taskType?: string;
-  model?: string;
-  cost: number;
-  requests: number;
+interface CostBreakdownEntry {
+  key: string;
+  costUsd: number;
+  requestCount: number;
 }
 
 interface CostSummary {
-  totalCost: number;
-  byProvider: CostEntry[];
-  byTaskType: CostEntry[];
-  byModel: CostEntry[];
+  totalCostUsd: number;
+  byProvider: CostBreakdownEntry[];
+  byTaskType: CostBreakdownEntry[];
+}
+
+function timeRangeToDateRange(range: string): { startDate: string; endDate: string } | null {
+  if (range === 'all') return null;
+  const now = new Date();
+  const end = now.toISOString();
+  if (range === '24h') {
+    const start = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+    return { startDate: start, endDate: end };
+  }
+  if (range === '7d') {
+    const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    return { startDate: start, endDate: end };
+  }
+  if (range === '30d') {
+    const start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    return { startDate: start, endDate: end };
+  }
+  return null;
 }
 
 export function LlmConfigPanel() {
@@ -62,6 +78,10 @@ export function LlmConfigPanel() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editProvider, setEditProvider] = useState('');
   const [editModel, setEditModel] = useState('');
+  // For system tab: track which task type is being created inline
+  const [creatingTaskType, setCreatingTaskType] = useState<string | null>(null);
+  const [createProvider, setCreateProvider] = useState(PROVIDERS[0] as string);
+  const [createModel, setCreateModel] = useState(MODELS_BY_PROVIDER[PROVIDERS[0]]?.[0] ?? '');
   const [showAddOverride, setShowAddOverride] = useState(false);
   const [newOverride, setNewOverride] = useState({
     projectId: '',
@@ -75,8 +95,9 @@ export function LlmConfigPanel() {
     llmConfigs: LlmConfig[];
   }>(GET_LLM_CONFIGS);
 
+  const dateRange = timeRangeToDateRange(costTimeRange);
   const { data: costData } = useQuery<{ llmCostSummary: CostSummary }>(GET_LLM_COST_SUMMARY, {
-    variables: { timeRange: costTimeRange },
+    variables: dateRange ?? {},
   });
 
   const [createConfig] = useMutation(CREATE_LLM_CONFIG, {
@@ -90,8 +111,8 @@ export function LlmConfigPanel() {
   });
 
   const configs = configData?.llmConfigs ?? [];
-  const systemConfigs = configs.filter((c) => c.level === 'system');
-  const projectConfigs = configs.filter((c) => c.level === 'project');
+  const systemConfigs = configs.filter((c) => c.level === 'SYSTEM');
+  const projectConfigs = configs.filter((c) => c.level === 'PROJECT');
   const costSummary = costData?.llmCostSummary;
 
   const handleStartEdit = (config: LlmConfig) => {
@@ -102,7 +123,7 @@ export function LlmConfigPanel() {
 
   const handleSaveEdit = (id: string) => {
     updateConfig({
-      variables: { id, input: { provider: editProvider, model: editModel } },
+      variables: { id, provider: editProvider, model: editModel },
     });
     setEditingId(null);
   };
@@ -111,16 +132,36 @@ export function LlmConfigPanel() {
     setEditingId(null);
   };
 
+  const handleStartCreate = (taskType: string) => {
+    setCreatingTaskType(taskType);
+    setCreateProvider(PROVIDERS[0]);
+    setCreateModel(MODELS_BY_PROVIDER[PROVIDERS[0]]?.[0] ?? '');
+  };
+
+  const handleSaveCreate = (taskType: string) => {
+    createConfig({
+      variables: {
+        level: 'SYSTEM',
+        taskType,
+        provider: createProvider,
+        model: createModel,
+      },
+    });
+    setCreatingTaskType(null);
+  };
+
+  const handleCancelCreate = () => {
+    setCreatingTaskType(null);
+  };
+
   const handleAddOverride = () => {
     createConfig({
       variables: {
-        input: {
-          level: 'project',
-          projectId: newOverride.projectId,
-          taskType: newOverride.taskType,
-          provider: newOverride.provider,
-          model: newOverride.model,
-        },
+        level: 'PROJECT',
+        projectId: newOverride.projectId,
+        taskType: newOverride.taskType,
+        provider: newOverride.provider,
+        model: newOverride.model,
       },
     });
     setShowAddOverride(false);
@@ -138,7 +179,7 @@ export function LlmConfigPanel() {
 
   const handleToggleActive = (config: LlmConfig) => {
     updateConfig({
-      variables: { id: config.id, input: { isActive: !config.isActive } },
+      variables: { id: config.id, isActive: !config.isActive },
     });
   };
 
@@ -150,9 +191,8 @@ export function LlmConfigPanel() {
 
   const maxCost = costSummary
     ? Math.max(
-        ...costSummary.byProvider.map((e) => e.cost),
-        ...costSummary.byTaskType.map((e) => e.cost),
-        ...costSummary.byModel.map((e) => e.cost),
+        ...costSummary.byProvider.map((e) => e.costUsd),
+        ...costSummary.byTaskType.map((e) => e.costUsd),
         0.01,
       )
     : 1;
@@ -194,6 +234,7 @@ export function LlmConfigPanel() {
               {TASK_TYPES.map((taskType) => {
                 const config = systemConfigs.find((c) => c.taskType === taskType);
                 const isEditing = config && editingId === config.id;
+                const isCreating = !config && creatingTaskType === taskType;
 
                 return (
                   <div
@@ -273,6 +314,62 @@ export function LlmConfigPanel() {
                           </button>
                         </div>
                       </div>
+                    ) : isCreating ? (
+                      <div className="space-y-3" data-testid={`create-form-${taskType}`}>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Provider
+                          </label>
+                          <select
+                            value={createProvider}
+                            onChange={(e) => {
+                              setCreateProvider(e.target.value);
+                              setCreateModel(MODELS_BY_PROVIDER[e.target.value]?.[0] ?? '');
+                            }}
+                            className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+                            aria-label="Select provider"
+                          >
+                            {PROVIDERS.map((p) => (
+                              <option key={p} value={p}>
+                                {PROVIDER_LABELS[p]}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                            Model
+                          </label>
+                          <select
+                            value={createModel}
+                            onChange={(e) => setCreateModel(e.target.value)}
+                            className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+                            aria-label="Select model"
+                          >
+                            {(MODELS_BY_PROVIDER[createProvider] ?? []).map((m) => (
+                              <option key={m} value={m}>
+                                {m}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={handleCancelCreate}
+                            className="rounded border border-gray-300 px-3 py-1 text-xs"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSaveCreate(taskType)}
+                            className="rounded bg-blue-600 px-3 py-1 text-xs text-white hover:bg-blue-700"
+                          >
+                            Save
+                          </button>
+                        </div>
+                      </div>
                     ) : config ? (
                       <div className="space-y-1">
                         <div className="text-sm text-gray-600">
@@ -284,7 +381,15 @@ export function LlmConfigPanel() {
                         </div>
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-400">Not configured</div>
+                      <button
+                        type="button"
+                        onClick={() => handleStartCreate(taskType)}
+                        className="flex items-center gap-1 text-sm text-blue-500 hover:text-blue-700"
+                        data-testid={`configure-${taskType}`}
+                      >
+                        <Plus size={14} />
+                        Configure
+                      </button>
                     )}
                   </div>
                 );
@@ -334,9 +439,7 @@ export function LlmConfigPanel() {
                     </label>
                     <select
                       value={newOverride.taskType}
-                      onChange={(e) =>
-                        setNewOverride({ ...newOverride, taskType: e.target.value })
-                      }
+                      onChange={(e) => setNewOverride({ ...newOverride, taskType: e.target.value })}
                       className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
                       aria-label="Task type"
                     >
@@ -373,9 +476,7 @@ export function LlmConfigPanel() {
                     <label className="block text-xs font-medium text-gray-600 mb-1">Model</label>
                     <select
                       value={newOverride.model}
-                      onChange={(e) =>
-                        setNewOverride({ ...newOverride, model: e.target.value })
-                      }
+                      onChange={(e) => setNewOverride({ ...newOverride, model: e.target.value })}
                       className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
                       aria-label="Override model"
                     >
@@ -476,10 +577,7 @@ export function LlmConfigPanel() {
                   ))}
                   {projectConfigs.length === 0 && (
                     <tr>
-                      <td
-                        colSpan={6}
-                        className="px-4 py-8 text-center text-sm text-gray-500"
-                      >
+                      <td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-500">
                         No project overrides configured
                       </td>
                     </tr>
@@ -522,24 +620,26 @@ export function LlmConfigPanel() {
             <div className="mb-6 rounded-lg border border-gray-200 p-6 shadow-sm text-center">
               <div className="text-sm text-gray-500 mb-1">Total Cost</div>
               <div className="text-3xl font-bold text-gray-900" data-testid="total-cost">
-                ${costSummary?.totalCost?.toFixed(2) ?? '0.00'}
+                ${costSummary?.totalCostUsd?.toFixed(2) ?? '0.00'}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="rounded-lg border border-gray-200 p-4 shadow-sm">
                 <h4 className="mb-3 text-sm font-semibold text-gray-700">Cost by Provider</h4>
                 <div className="space-y-2" data-testid="cost-by-provider">
                   {(costSummary?.byProvider ?? []).map((entry) => (
-                    <div key={entry.provider}>
+                    <div key={entry.key}>
                       <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                        <span>{PROVIDER_LABELS[entry.provider!] ?? entry.provider}</span>
-                        <span>${entry.cost.toFixed(2)} ({entry.requests} req)</span>
+                        <span>{PROVIDER_LABELS[entry.key] ?? entry.key}</span>
+                        <span>
+                          ${entry.costUsd.toFixed(2)} ({entry.requestCount} req)
+                        </span>
                       </div>
                       <div className="h-2 rounded-full bg-gray-100">
                         <div
                           className="h-2 rounded-full bg-blue-500"
-                          style={{ width: `${(entry.cost / maxCost) * 100}%` }}
+                          style={{ width: `${(entry.costUsd / maxCost) * 100}%` }}
                         />
                       </div>
                     </div>
@@ -554,43 +654,22 @@ export function LlmConfigPanel() {
                 <h4 className="mb-3 text-sm font-semibold text-gray-700">Cost by Task Type</h4>
                 <div className="space-y-2" data-testid="cost-by-task-type">
                   {(costSummary?.byTaskType ?? []).map((entry) => (
-                    <div key={entry.taskType}>
+                    <div key={entry.key}>
                       <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                        <span>{TASK_TYPE_LABELS[entry.taskType!] ?? entry.taskType}</span>
-                        <span>${entry.cost.toFixed(2)} ({entry.requests} req)</span>
+                        <span>{TASK_TYPE_LABELS[entry.key] ?? entry.key}</span>
+                        <span>
+                          ${entry.costUsd.toFixed(2)} ({entry.requestCount} req)
+                        </span>
                       </div>
                       <div className="h-2 rounded-full bg-gray-100">
                         <div
                           className="h-2 rounded-full bg-green-500"
-                          style={{ width: `${(entry.cost / maxCost) * 100}%` }}
+                          style={{ width: `${(entry.costUsd / maxCost) * 100}%` }}
                         />
                       </div>
                     </div>
                   ))}
                   {(costSummary?.byTaskType ?? []).length === 0 && (
-                    <div className="text-xs text-gray-400">No data</div>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-lg border border-gray-200 p-4 shadow-sm">
-                <h4 className="mb-3 text-sm font-semibold text-gray-700">Cost by Model</h4>
-                <div className="space-y-2" data-testid="cost-by-model">
-                  {(costSummary?.byModel ?? []).map((entry) => (
-                    <div key={entry.model}>
-                      <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-                        <span className="font-mono">{entry.model}</span>
-                        <span>${entry.cost.toFixed(2)} ({entry.requests} req)</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-gray-100">
-                        <div
-                          className="h-2 rounded-full bg-purple-500"
-                          style={{ width: `${(entry.cost / maxCost) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                  {(costSummary?.byModel ?? []).length === 0 && (
                     <div className="text-xs text-gray-400">No data</div>
                   )}
                 </div>
