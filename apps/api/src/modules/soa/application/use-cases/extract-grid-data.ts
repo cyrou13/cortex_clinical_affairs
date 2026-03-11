@@ -53,7 +53,8 @@ export class ExtractGridDataUseCase {
 
     const articleFilter: Record<string, unknown> = {
       sessionId: { in: sessionIds },
-      pdfStorageKey: { not: null },
+      status: { in: ['INCLUDED', 'FINAL_INCLUDED'] },
+      OR: [{ pdfStorageKey: { not: null } }, { abstract: { not: '' } }],
     };
 
     if (input.articleIds && input.articleIds.length > 0) {
@@ -66,7 +67,7 @@ export class ExtractGridDataUseCase {
     });
 
     if (articles.length === 0) {
-      throw new ValidationError('No articles with PDFs found for extraction');
+      throw new ValidationError('No articles found for extraction');
     }
 
     const task = await this.prisma.asyncTask.create({
