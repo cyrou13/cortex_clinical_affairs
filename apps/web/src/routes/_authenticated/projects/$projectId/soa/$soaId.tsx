@@ -60,7 +60,7 @@ export default function SoaDetailPage() {
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [selectedGridId, setSelectedGridId] = useState<string | null>(null);
-  const [selectedArticleId] = useState<string>('');
+  const [selectedArticleId, setSelectedArticleId] = useState<string>('');
 
   const pathParts = window.location.pathname.split('/');
   const projectId = pathParts[pathParts.indexOf('projects') + 1] ?? '';
@@ -206,7 +206,14 @@ export default function SoaDetailPage() {
             {activeGridId ? (
               <>
                 <ExtractionProgressPanel gridId={activeGridId} />
-                <ExtractionGridPage gridId={activeGridId} soaStatus={soa.status} />
+                <ExtractionGridPage
+                  gridId={activeGridId}
+                  soaStatus={soa.status}
+                  onArticleSelect={(articleId) => {
+                    setSelectedArticleId(articleId);
+                    setActiveTab('quality');
+                  }}
+                />
                 <GridConfigurator
                   soaAnalysisId={soaId}
                   soaType={soa.type}
@@ -236,14 +243,28 @@ export default function SoaDetailPage() {
 
         {activeTab === 'quality' && (
           <div className="mx-auto max-w-2xl">
-            <QualityAssessmentForm
-              soaAnalysisId={soaId}
-              articleId={selectedArticleId}
-              locked={isLocked}
-            />
-            <p className="mt-4 text-center text-xs text-[var(--cortex-text-muted)]">
-              Select an article from the extraction grid to assess its quality.
-            </p>
+            {selectedArticleId ? (
+              <QualityAssessmentForm
+                soaAnalysisId={soaId}
+                articleId={selectedArticleId}
+                locked={isLocked}
+              />
+            ) : (
+              <div
+                className="rounded-lg border-2 border-dashed border-[var(--cortex-border)] p-12 text-center"
+                data-testid="no-article-selected"
+              >
+                <ClipboardCheck
+                  size={32}
+                  className="mx-auto mb-3 text-[var(--cortex-text-muted)]"
+                />
+                <p className="text-sm text-[var(--cortex-text-muted)]">
+                  No article selected. Go to the Grid tab and click the
+                  <ClipboardCheck size={12} className="mx-1 inline text-emerald-600" />
+                  button on an article row to assess its quality.
+                </p>
+              </div>
+            )}
           </div>
         )}
 

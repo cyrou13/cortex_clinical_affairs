@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
-import { Table, Download, Sparkles, RefreshCw } from 'lucide-react';
+import { Table, Download, Sparkles, RefreshCw, ClipboardCheck } from 'lucide-react';
 import { GET_GRID_COLUMNS, GET_GRID_CELLS } from '../graphql/queries';
 import { UPDATE_GRID_CELL, POPULATE_GRID_ROWS, EXTRACT_GRID_DATA } from '../graphql/mutations';
 
@@ -25,9 +25,14 @@ interface Cell {
 interface ExtractionGridPageProps {
   gridId: string;
   soaStatus?: string;
+  onArticleSelect?: (articleId: string) => void;
 }
 
-export function ExtractionGridPage({ gridId, soaStatus }: ExtractionGridPageProps) {
+export function ExtractionGridPage({
+  gridId,
+  soaStatus,
+  onArticleSelect,
+}: ExtractionGridPageProps) {
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
 
@@ -171,6 +176,11 @@ export function ExtractionGridPage({ gridId, soaStatus }: ExtractionGridPageProp
                     {col.displayName}
                   </th>
                 ))}
+                {onArticleSelect && (
+                  <th className="whitespace-nowrap px-3 py-2 text-center text-xs font-medium">
+                    Assess
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
@@ -211,6 +221,18 @@ export function ExtractionGridPage({ gridId, soaStatus }: ExtractionGridPageProp
                       </td>
                     );
                   })}
+                  {onArticleSelect && (
+                    <td className="border-r border-[#ECF0F1] px-2 py-1.5 text-center">
+                      <button
+                        type="button"
+                        onClick={() => onArticleSelect(artId)}
+                        className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-1 text-xs text-emerald-700 hover:bg-emerald-100"
+                        data-testid={`assess-btn-${artId}`}
+                      >
+                        <ClipboardCheck size={12} />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
